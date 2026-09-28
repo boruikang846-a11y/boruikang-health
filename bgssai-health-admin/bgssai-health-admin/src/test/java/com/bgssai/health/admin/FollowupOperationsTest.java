@@ -96,6 +96,7 @@ class FollowupOperationsTest {
     }
     @Test void archiveIsImmutableScopedAndDeliveryRequiresRealEvidence(){
         actor(3L,"NURSE");var archive=reports.archive(new ArchiveReportRequest("DAILY",LocalDate.now(),LocalDate.now(),"当日记录","继续跟进"));
+        assertFalse(archive.createdAt().isAfter(LocalDateTime.now()));
         long original=archive.snapshot().dueCount();create("FOLLOWUP");
         var persisted=reports.archives(new PageRequest(0,100)).items().stream().filter(x->x.id().equals(archive.id())).findFirst().orElseThrow();
         assertEquals(original,persisted.snapshot().dueCount());assertEquals(original+1,today().dueCount());
