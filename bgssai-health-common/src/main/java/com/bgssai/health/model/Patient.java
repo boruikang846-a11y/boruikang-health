@@ -3,6 +3,8 @@ import java.time.LocalDateTime;
 public class Patient extends BaseRow {
     public Long hospitalId;
     public Long accountId;
+    public String sourceSystem;
+    public String hospitalPatientId;
     public String name;
     public String gender;
     public Integer age;

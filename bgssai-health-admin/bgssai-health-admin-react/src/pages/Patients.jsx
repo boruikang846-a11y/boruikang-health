@@ -100,6 +100,8 @@ export function PatientDetail() {
       { key: 'doctor', label: '责任医生', children: staff.data?.find(x => x.user_id === patient.doctor_id)?.real_name || '待分配' },
       { key: 'owner', label: '负责管家', children: staff.data?.find(x => x.user_id === patient.owner_id)?.real_name || '待分配' },
       { key: 'join', label: '入组时间', children: dateText(patient.gmt_create) },
+      { key: 'source', label: '数据来源', children: patient.source_system === 'HOSPITAL_MOCK' ? <Tag color="gold">模拟医院接口</Tag> : '人工录入' },
+      { key: 'hospitalId', label: '医院患者编号', children: patient.hospital_patient_id || '暂无' },
       { key: 'note', label: '内部备注', children: patient.note || '暂无', span: 4 },
     ]} /></Card>
     <Card><Tabs activeKey={tab} onChange={value => { setTab(value); setPage(0) }} items={[{ key: 'records', label: '就诊与健康记录' }, { key: 'tasks', label: '服务任务' }, { key: 'messages', label: '沟通记录' }, { key: 'audits', label: '操作留痕' }]} />
@@ -107,7 +109,7 @@ export function PatientDetail() {
         tab === 'records' ? [
           { title: '记录类型', dataIndex: 'record_type', render: value => <Status value={value} /> }, { title: '发生时间', dataIndex: 'occurred_at', render: dateText },
           { title: '记录内容', render: (_, row) => <div className="record-content"><p>{row.content || '指标记录'}</p><Space wrap>{row.systolic != null && <Tag>血压 {row.systolic}/{row.diastolic} mmHg</Tag>}{row.heart_rate != null && <Tag>心率 {row.heart_rate} 次/分</Tag>}{row.weight != null && <Tag>体重 {row.weight} kg</Tag>}{row.glucose != null && <Tag>血糖 {row.glucose} mmol/L</Tag>}</Space>{row.next_visit_date && <p className="muted">原记录复诊日期：{row.next_visit_date}</p>}</div> },
-          { title: '来源', dataIndex: 'source_system' },
+          { title: '来源', render: (_, row) => <><Tag color={row.source_system === 'HOSPITAL_MOCK' ? 'gold' : 'default'}>{row.source_system === 'HOSPITAL_MOCK' ? '模拟医院接口' : row.source_system === 'MANUAL' ? '人工补充' : row.source_system}</Tag><p className="muted">{row.external_id}</p></> },
         ] : tab === 'messages' ? [
           { title: '方向', dataIndex: 'direction', render: value => value === 'PATIENT_TO_STAFF' ? '患者咨询' : '已审核人工联系记录' },
           { title: '内容', dataIndex: 'content', render: value => <div className="pre-wrap">{value}</div> }, { title: '时间', dataIndex: 'gmt_create', render: dateText },
@@ -123,9 +125,9 @@ export function PatientDetail() {
     <FormDialog title="添加门诊 / 出院 / 体检记录" open={recordOpen} initialValues={{ record_type: 'OUTPATIENT', occurred_at: dayjs() }} onClose={() => setRecordOpen(false)}
       onSubmit={async values => { await api('/records/create', { ...values, patient_id: Number(id), occurred_at: values.occurred_at.format('YYYY-MM-DDTHH:mm:ss'), next_visit_date: values.next_visit_date?.format('YYYY-MM-DD') }); refresh() }}>
       <div className="form-grid"><Form.Item name="record_type" label="记录类型" rules={required}><Select options={options(['OUTPATIENT', 'DISCHARGE', 'EXAM'])} /></Form.Item><Form.Item name="occurred_at" label="发生时间" rules={required}><DatePicker showTime style={{ width: '100%' }} /></Form.Item></div>
-      <Form.Item name="content" label="核对后的原始记录摘要" rules={required}><Input.TextArea rows={5} maxLength={10000} showCount /></Form.Item>
+      <Form.Item name="content" label="核对后的报告摘要 / 个体随访依据" rules={required}><Input.TextArea rows={5} maxLength={10000} showCount placeholder="按原报告核对录入：出院诊断、原医嘱、注意事项、需跟进的问题等。未记载的内容不要推测。" /></Form.Item>
       <div className="form-grid"><Form.Item name="medication_cycle_days" label="原记录用药周期（天）"><InputNumber min={1} max={730} /></Form.Item><Form.Item name="next_visit_date" label="原记录建议复诊日期"><DatePicker /></Form.Item></div>
-      <Alert type="info" message="保存后自动建立随访任务；填写复诊日期时同时建立复诊跟踪任务。请按核实后的原记录填写。" />
+      <Alert type="info" message="保存后建立次日核对报告的团队待办，不代表临床随访日期；填写原报告复诊日期时建立复诊跟踪任务。随访内容需结合报告和服务 SOP，由医生审核。" />
     </FormDialog>
   </>}</LoadState></>
 }

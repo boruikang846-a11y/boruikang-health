@@ -69,8 +69,26 @@ class AdminHttpTest {
         assertEquals(1,contacts);
         post("/tasks/transition",Map.of("id",id,"version",context.path("task").path("version").asInt(),"action","COMPLETE","outcome","并发请求验证完成"),nurse);
     }
+    @Test void hospitalMockHttpContractIsScopedIdempotentAndReportsUnavailable() throws Exception {
+        String manager=login("manager"),doctor=login("doctor");
+        assertEquals(403,request("/bgssai/admin/hospital/mock/query","{\"scenario\":\"NORMAL\"}",doctor).statusCode());
+        assertEquals(503,request("/bgssai/admin/hospital/sync","{\"scenario\":\"UNAVAILABLE\",\"doctor_id\":2,\"owner_id\":3}",manager).statusCode());
+        var preview=post("/hospital/mock/query",Map.of("scenario","NORMAL"),manager);
+        assertEquals("HOSPITAL_MOCK",preview.path("source_system").asText());assertEquals(2,preview.path("patients").size());
+        var imported=post("/hospital/sync",Map.of("scenario","NORMAL","doctor_id",2,"owner_id",3),manager);
+        assertEquals(2,imported.path("created_patients").asInt());assertEquals(3,imported.path("created_records").asInt());
+        var again=post("/hospital/sync",Map.of("scenario","NORMAL","doctor_id",2,"owner_id",3),manager);
+        assertEquals(0,again.path("created_records").asInt());assertEquals(3,again.path("skipped_records").asInt());
+        long patientId=imported.path("patient_ids").get(0).asLong();
+        var patient=json.readTree(request("/bgssai/admin/patients/"+patientId,null,doctor).body()).path("result");
+        assertEquals("MOCK-P-001",patient.path("hospital_patient_id").asText());
+        var records=post("/records/query",Map.of("patient_id",patientId,"page",0,"size",100),doctor);
+        assertEquals(2,records.path("total_size").asInt());assertTrue(records.path("items").get(0).has("external_id"));
+    }
     @Test void healthAndProtectedRoutesHaveDifferentAccessRules() throws Exception {
         assertEquals(200,request("/bgssai/health/liveness",null,null).statusCode());
+        assertEquals(200,request("/overview",null,null).statusCode());
+        assertEquals(200,request("/hospital",null,null).statusCode());
         assertEquals(401,request("/bgssai/admin/dashboard",null,null).statusCode());
         assertEquals(404,request("/bgssai/admin/unknown",null,null).statusCode());
     }

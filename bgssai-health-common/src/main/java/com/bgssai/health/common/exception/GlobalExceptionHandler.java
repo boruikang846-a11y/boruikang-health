@@ -23,6 +23,7 @@ public class GlobalExceptionHandler {
             case "404000" -> 404;
             case "409000" -> 409;
             case "429000" -> 429;
+            case "503000" -> 503;
             case "502000", "504000" -> 502;
             default -> 400;
         };

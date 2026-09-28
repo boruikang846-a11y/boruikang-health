@@ -29,13 +29,19 @@ public class RecordService {
         List<CareRecord> rows=records.selectByExample(ex);return Paged.of(rows,RecordService::view);
     }
     @Transactional
-    public RecordResponse create(CreateRecordRequest req){
+    public RecordResponse create(CreateRecordRequest req){return create(req,"MANUAL",null);}
+    @Transactional
+    public RecordResponse importHospital(CreateRecordRequest req,String sourceSystem,String externalId){
+        access.manager();Checks.require("HOSPITAL_MOCK".equals(sourceSystem)&&Checks.text(externalId),"Invalid hospital source");
+        return create(req,sourceSystem,externalId);
+    }
+    private RecordResponse create(CreateRecordRequest req,String sourceSystem,String externalId){
         log.info("create clinical record patientId={} type={}",req.patientId(),req.recordType());access.staff();Patient p=access.lock(req.patientId());
         Checks.require(req.nextVisitDate()==null||req.nextVisitDate().getYear()<2100,"Invalid next visit date");
-        CareRecord r=base(p);r.recordType=req.recordType();r.occurredAt=req.occurredAt();r.content=req.content();r.medicationCycleDays=req.medicationCycleDays();r.nextVisitDate=req.nextVisitDate();r.sourceSystem="MANUAL";
-        records.insertSelective(r);createTask(p,r,"FOLLOWUP","核对就诊记录并安排随访",LocalDateTime.now().plusDays(1),"P2");
+        CareRecord r=base(p);r.recordType=req.recordType();r.occurredAt=req.occurredAt();r.content=req.content();r.medicationCycleDays=req.medicationCycleDays();r.nextVisitDate=req.nextVisitDate();r.sourceSystem=sourceSystem;r.externalId=externalId;
+        records.insertSelective(r);createTask(p,r,"FOLLOWUP","DISCHARGE".equals(r.recordType)?"核对出院报告并准备随访":"核对就诊记录并准备随访",LocalDateTime.now().plusDays(1),"P2");
         if(r.nextVisitDate!=null)createTask(p,r,"REVISIT","按记录核对复诊安排",r.nextVisitDate.atTime(9,0),"P2");
-        audit.append(p.id,"CLINICAL_RECORD_CREATED",r.id,null,r.recordType,"Source MANUAL; follow-up created");return view(records.selectByPrimaryKey(r.id));
+        audit.append(p.id,"CLINICAL_RECORD_CREATED",r.id,null,r.recordType,"Source="+sourceSystem+"; follow-up created");return view(records.selectByPrimaryKey(r.id));
     }
     @Transactional
     public RecordResponse observation(CreateObservationRequest req){
@@ -55,5 +61,5 @@ public class RecordService {
         t.assigneeId=p.ownerId;t.doctorId=p.doctorId;t.dueAt=due;t.recordId=r.id;t.requestKey="record-"+r.id+"-"+type;t.version=0;t.creator=r.creator;tasks.insertSelective(t);
         audit.append(p.id,"TASK_CREATED",t.id,null,"PENDING","Linked record="+r.id);
     }
-    public static RecordResponse view(CareRecord r){return new RecordResponse(r.id,r.patientId,r.recordType,r.occurredAt,r.content,r.medicationCycleDays,r.nextVisitDate,r.systolic,r.diastolic,r.heartRate,r.weight,r.glucose,r.needsContact,r.sourceSystem,r.gmtCreate);}
+    public static RecordResponse view(CareRecord r){return new RecordResponse(r.id,r.patientId,r.recordType,r.occurredAt,r.content,r.medicationCycleDays,r.nextVisitDate,r.systolic,r.diastolic,r.heartRate,r.weight,r.glucose,r.needsContact,r.sourceSystem,r.gmtCreate,r.externalId);}
 }

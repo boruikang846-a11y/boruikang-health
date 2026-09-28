@@ -37,7 +37,13 @@ public class PatientService {
     public PatientResponse detail(Long id) { log.info("patient detail patientId={}",id);access.staff();return view(access.require(id),false); }
     public PatientResponse profile() { log.info("patient profile accountId={}",CurrentAccount.get().userId());Patient p=access.own(false);return p==null?null:view(p,false); }
     @Transactional
-    public PatientResponse create(CreatePatientRequest req) {
+    public PatientResponse create(CreatePatientRequest req) { return create(req,"MANUAL",null); }
+    @Transactional
+    public PatientResponse importHospital(CreatePatientRequest req,String sourceSystem,String externalId) {
+        access.manager();Checks.require("HOSPITAL_MOCK".equals(sourceSystem)&&Checks.text(externalId),"Invalid hospital source");
+        return create(req,sourceSystem,externalId);
+    }
+    private PatientResponse create(CreatePatientRequest req,String sourceSystem,String externalId) {
         log.info("create patient actorId={}",CurrentAccount.get().userId());access.staff();var actor=CurrentAccount.get();
         Long doctorId=req.doctorId(), ownerId=req.ownerId();
         if ("DOCTOR".equals(actor.roleCode())) { Checks.permit(doctorId==null||actor.userId().equals(doctorId));doctorId=actor.userId(); }
@@ -45,8 +51,9 @@ public class PatientService {
         validateStaff(doctorId,"DOCTOR"); validateStaff(ownerId,"NURSE","OPERATOR","MANAGER");
         Patient p=new Patient();p.hospitalId=actor.hospitalId();p.name=req.name().trim();p.gender=req.gender();p.age=req.age();p.phone=req.phone();
         p.department=req.department();p.disease=req.disease();p.doctorId=doctorId;p.ownerId=ownerId;p.note=req.note();p.creator=actor.userId().toString();
+        p.sourceSystem=sourceSystem;p.hospitalPatientId=externalId;
         p.riskLevel="UNKNOWN";p.lifecycle="ENROLLED";p.version=0;patients.insertSelective(p);
-        audit.append(p.id,"PATIENT_CREATED",p.id,null,"ENROLLED","Manual enrollment");return view(patients.selectByPrimaryKey(p.id),false);
+        audit.append(p.id,"PATIENT_CREATED",p.id,null,"ENROLLED","Source="+sourceSystem);return view(patients.selectByPrimaryKey(p.id),false);
     }
     @Transactional
     public PatientResponse update(UpdatePatientRequest req) {
@@ -124,6 +131,6 @@ public class PatientService {
     public static PatientResponse view(Patient p,boolean masked) {
         String name=masked&&p.name.length()>1?p.name.substring(0,1)+"*".repeat(p.name.length()-1):p.name;
         String phone=masked&&p.phone.length()>7?p.phone.substring(0,3)+"****"+p.phone.substring(p.phone.length()-4):p.phone;
-        return new PatientResponse(p.id,name,p.gender,p.age,phone,p.department,p.disease,p.riskLevel,p.lifecycle,p.doctorId,p.ownerId,p.channelId,p.servicePackageId,p.consentAt,masked||"USER".equals(CurrentAccount.get().roleCode())?null:p.note,p.version,p.gmtCreate);
+        return new PatientResponse(p.id,name,p.gender,p.age,phone,p.department,p.disease,p.riskLevel,p.lifecycle,p.doctorId,p.ownerId,p.channelId,p.servicePackageId,p.consentAt,masked||"USER".equals(CurrentAccount.get().roleCode())?null:p.note,p.version,p.gmtCreate,p.sourceSystem,p.hospitalPatientId);
     }
 }

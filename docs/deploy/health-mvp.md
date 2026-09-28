@@ -1,6 +1,6 @@
 # HEALTH 开发环境交接
 
-本文件是待执行部署说明。未连接或修改华为云主机、Nginx、数据库和 Jenkins；不表示环境已经上线。
+应用部署仍待执行：未修改华为云主机、Nginx、数据库和 Jenkins。域名 DNS 与证书已按用户要求完成，具体状态见末节；不表示应用已经上线。
 
 ## 目标拓扑
 
@@ -40,3 +40,12 @@ dev 上复核：MySQL 建表/种子脚本、登录/退出、同院归属、任�
 ## 回退
 
 发布前保留上一构建 JAR、profile 与数据库备份，回退使用中央 Jenkins 对应版本。不要为回退删除库或重新执行种子覆盖数据。结构变更必须另有迁移和回退方案；本首版 DDL 仅用于空库初始化。
+
+
+## 2026-09-28 DNS 与证书交接
+
+- 两个域名的 A 记录已在华为云 DNS 添加并从公共解析器复核，均为 46.250.162.15，TTL 300。
+- Let's Encrypt 已签发一张覆盖 dev.user.bgssai-health.com 与 dev.admin.bgssai-health.com 的 SAN 证书。有效期：2026-09-28 11:30:52 UTC 至 2026-12-27 11:30:51 UTC。
+- 按用户要求存于本机 `C:\Users\lzhao3730\Desktop\github\ssl\letsencrypt_dev.user.bgssai-health.com`：fullchain.pem、cert.pem、privkey.pem、account-key.pem、签发信息与续期脚本。私钥不进入本仓库；SSL 仓库通过本地 exclude 忽略该目录，Windows ACL 限制当前账号。
+- 通过 [ACME DNS-01](https://letsencrypt.org/docs/challenge-types/#dns-01-challenge) 校验签发，临时 TXT 已清理。当前未安装服务器证书、未配置自动续期；建议 11 月底前安排续期并部署更新。
+- 后续 Nginx 两域名可共用 fullchain.pem / privkey.pem，先检查证书 SAN、密钥匹配与 nginx 配置，再 reload；应用发布仍必须走 develop + Jenkins。

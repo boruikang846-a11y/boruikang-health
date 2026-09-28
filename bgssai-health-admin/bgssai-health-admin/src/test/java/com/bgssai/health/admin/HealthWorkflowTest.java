@@ -64,7 +64,7 @@ class HealthWorkflowTest {
     @Test void doctorScopedPaginationAndMaskedList() {
         actor(2L,"DOCTOR");
         var page=patients.query(new PatientQueryRequest(0,1,null,null,null));
-        assertEquals(1,page.items().size());assertEquals(2,page.totalSize());
+        assertEquals(1,page.items().size());assertEquals(10,page.totalSize());
         assertTrue(page.items().getFirst().name().contains("*"));
         assertNull(page.items().getFirst().note());
         rejects("404000",()->patients.detail(1002L));
@@ -131,8 +131,39 @@ class HealthWorkflowTest {
         TaskResponse row=awaitingReview();String snapshot=row.draftText();
         knowledge.save(new SaveKnowledgeRequest(1L,"New SOP","SOP","全科","New content","Test source",1,null,null));
         assertEquals(snapshot,tasks.context(row.id()).task().draftText());
-        actor(2L,"DOCTOR");
+        actor(1L,"MANAGER");
         assertEquals("PUBLISHED",knowledge.publish(new PublishKnowledgeRequest(1L,2)).status());
+    }
+    @Test void sopBelongsToOperationsAndCannotBeRelabelledByDoctor() {
+        var sop=knowledge.save(new SaveKnowledgeRequest(null,"Operations SOP","SOP","全科","Service workflow","Operations team",null,null,null));
+        actor(2L,"DOCTOR");
+        rejects("4003",()->knowledge.save(new SaveKnowledgeRequest(null,"No","SOP","全科","No","Doctor",null,null,null)));
+        rejects("4003",()->knowledge.save(new SaveKnowledgeRequest(sop.id(),"No","SOP","全科","No","Doctor",sop.version(),null,null)));
+        rejects("4003",()->knowledge.save(new SaveKnowledgeRequest(sop.id(),"No","EDUCATION","全科","No","Doctor",sop.version(),null,null)));
+        rejects("4003",()->knowledge.publish(new PublishKnowledgeRequest(sop.id(),sop.version())));
+        actor(1L,"MANAGER");
+        var published=knowledge.publish(new PublishKnowledgeRequest(sop.id(),sop.version()));
+        assertEquals("PUBLISHED",published.status());assertEquals(1L,published.reviewerId());
+        rejects("409000",()->knowledge.publish(new PublishKnowledgeRequest(sop.id(),sop.version())));
+        rejects("50000001",()->knowledge.save(new SaveKnowledgeRequest(sop.id(),"No","EDUCATION","全科","No","Ops",sop.version(),null,null)));
+    }
+    @Test void doctorStillReviewsEducationAndManagerCannotPublishIt() {
+        var education=knowledge.save(new SaveKnowledgeRequest(null,"Education","EDUCATION","全科","Service information","Test source",null,null,null));
+        rejects("4003",()->knowledge.publish(new PublishKnowledgeRequest(education.id(),education.version())));
+        actor(3L,"NURSE");rejects("4003",()->knowledge.publish(new PublishKnowledgeRequest(education.id(),education.version())));
+        actor(2L,"DOCTOR");assertEquals("PUBLISHED",knowledge.publish(new PublishKnowledgeRequest(education.id(),education.version())).status());
+    }
+    @Test void dischargeDraftUsesItsOwnReportAndDoesNotInventMissingFields() {
+        var record=records.create(new CreateRecordRequest(1001L,"DISCHARGE",LocalDateTime.now().minusDays(1),"Original report",14,LocalDate.of(2026,10,3)));
+        records.create(new CreateRecordRequest(1001L,"DISCHARGE",LocalDateTime.now().minusHours(1),"Later report",99,LocalDate.of(2026,12,12)));
+        var task=tasks.query(new TaskQueryRequest(0,100,1001L,"FOLLOWUP",null,null,false)).items().stream().filter(x->record.id().equals(x.recordId())).findFirst().orElseThrow();
+        task=tasks.claim(new ClaimTaskRequest(task.id(),task.version()));
+        var draft=tasks.draft(new DraftTaskRequest(task.id(),task.version(),1L,"TEMPLATE",null));
+        assertTrue(draft.draftText().contains("14 天"));assertTrue(draft.draftText().contains("2026-10-03"));assertFalse(draft.draftText().contains("99 天"));
+        assertEquals(record.id(),tasks.context(draft.id()).record().id());
+        TaskResponse noRecord=create("FOLLOWUP");noRecord=tasks.claim(new ClaimTaskRequest(noRecord.id(),noRecord.version()));
+        var generic=tasks.draft(new DraftTaskRequest(noRecord.id(),noRecord.version(),1L,"TEMPLATE",null));
+        assertFalse(generic.draftText().contains("14 天"));assertFalse(generic.draftText().contains("2026-10-03"));
     }
     @Test void rejectedDraftNeedsNewSubmissionBeforeApproval() {
         TaskResponse row=awaitingReview();actor(2L,"DOCTOR");

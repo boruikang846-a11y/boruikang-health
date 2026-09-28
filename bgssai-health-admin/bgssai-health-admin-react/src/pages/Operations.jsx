@@ -16,27 +16,29 @@ export function Knowledge() {
   const [detail, setDetail] = useState(null)
   const state = useLoad(() => api('/knowledge/query', { page, size: 10, kind, keyword }), [page, kind, keyword])
   const canEdit = ['MANAGER', 'DOCTOR'].includes(account.role_code)
-  return <><PageTitle title="知识与 SOP" subtitle="以科室为单位维护问询流程、宣教与服务包，经医生审核后发布。" extra={canEdit && <Button type="primary" icon={<PlusOutlined />} onClick={() => setEditor({ kind: 'SOP', department: '综合服务' })}>新建内容</Button>} />
+  const isManager = account.role_code === 'MANAGER'
+  const editableKinds = isManager ? ['SOP', 'EDUCATION', 'PACKAGE'] : ['EDUCATION', 'PACKAGE']
+  return <><PageTitle title="知识与 SOP" subtitle="运营团队制定、发布服务 SOP 并培训医生；医生按流程协作，审核宣教与服务包内容。" extra={canEdit && <Button type="primary" icon={<PlusOutlined />} onClick={() => setEditor({ kind: isManager ? 'SOP' : 'EDUCATION', department: '综合服务' })}>新建内容</Button>} />
     <Card><div className="toolbar"><Select aria-label="知识类型" placeholder="全部类型" allowClear style={{ width: 160 }} options={options(['SOP', 'EDUCATION', 'PACKAGE'])} onChange={value => { setKind(value); setPage(0) }} />
       <Input.Search placeholder="搜索标题" allowClear style={{ width: 280 }} onSearch={value => { setKeyword(value); setPage(0) }} /><Button onClick={state.reload} icon={<ReloadOutlined />}>刷新</Button></div>
       <DataTable state={state} page={page} setPage={setPage} columns={[
         { title: '标题', dataIndex: 'title', render: (value, row) => <Button type="link" onClick={() => setDetail(row)}>{value}</Button> },
         { title: '类型', dataIndex: 'kind', render: value => names[value] }, { title: '科室', dataIndex: 'department' },
         { title: '版本', dataIndex: 'version', render: value => 'v' + value }, { title: '状态', dataIndex: 'status', render: value => <Status value={value} /> },
-        { title: '操作', render: (_, row) => <Space>{canEdit && <Button type="link" onClick={() => setEditor(row)}>编辑</Button>}
-          {account.role_code === 'DOCTOR' && row.status === 'DRAFT' && <Button type="link" onClick={() => modal.confirm({ title: '审核并发布此版本？', content: <div><p>{row.title}</p><p className="pre-wrap">{row.content}</p><small>来源：{row.source}</small></div>, okText: '确认发布', cancelText: '取消', onOk: async () => { try { await api('/knowledge/publish', { id: row.id, version: row.version }); state.reload() } catch (e) { message.error(e.message); throw e } } })}>审核发布</Button>}</Space> },
+        { title: '操作', render: (_, row) => <Space>{canEdit && (row.kind !== 'SOP' || isManager) && <Button type="link" onClick={() => setEditor(row)}>编辑</Button>}
+          {(row.kind === 'SOP' ? isManager : account.role_code === 'DOCTOR') && row.status === 'DRAFT' && <Button type="link" onClick={() => modal.confirm({ title: row.kind === 'SOP' ? '发布此服务 SOP 版本？' : '审核并发布此版本？', content: <div><p>{row.title}</p><p className="pre-wrap">{row.content}</p><small>来源：{row.source}</small></div>, okText: '确认发布', cancelText: '取消', onOk: async () => { try { await api('/knowledge/publish', { id: row.id, version: row.version }); state.reload() } catch (e) { message.error(e.message); throw e } } })}>{row.kind === 'SOP' ? '发布 SOP' : '审核发布'}</Button>}</Space> },
       ]} /></Card>
     <Modal title={detail?.title} open={Boolean(detail)} footer={<Button onClick={() => setDetail(null)}>关闭</Button>} onCancel={() => setDetail(null)}><Tag>{names[detail?.kind]}</Tag><Tag>v{detail?.version}</Tag><p className="pre-wrap">{detail?.content}</p><p className="muted">来源：{detail?.source}</p>{detail?.kind === 'PACKAGE' && <p>服务周期 {detail.service_days} 天 / 随访 {detail.followup_count} 次</p>}</Modal>
     <FormDialog title={editor?.id ? '编辑并保存为草稿' : '新建知识内容'} open={Boolean(editor)} initialValues={editor} onClose={() => setEditor(null)} onSubmit={async values => {
       await api('/knowledge/save', { ...values, id: editor.id, version: editor.version }); state.reload()
     }}>
       <Form.Item name="title" label="标题" rules={required}><Input maxLength={160} /></Form.Item><div className="form-grid">
-        <Form.Item name="kind" label="类型" rules={required}><Select options={options(['SOP', 'EDUCATION', 'PACKAGE'])} /></Form.Item><Form.Item name="department" label="适用科室" rules={required}><Input maxLength={80} /></Form.Item></div>
+        <Form.Item name="kind" label="类型" rules={required}><Select disabled={Boolean(editor?.id)} options={options(editableKinds)} /></Form.Item><Form.Item name="department" label="适用科室" rules={required}><Input maxLength={80} /></Form.Item></div>
       <Form.Item name="content" label="内容" rules={required}><Input.TextArea rows={8} maxLength={5000} showCount /></Form.Item>
       <Form.Item name="source" label="来源 / 审批依据" rules={required}><Input maxLength={300} placeholder="记录资料名称或医院审核依据" /></Form.Item>
       <Form.Item noStyle shouldUpdate={(a, c) => a.kind !== c.kind}>{({ getFieldValue }) => getFieldValue('kind') === 'PACKAGE' && <div className="form-grid">
         <Form.Item name="service_days" label="服务周期（天）" rules={required}><InputNumber min={1} max={730} /></Form.Item><Form.Item name="followup_count" label="约定随访次数" rules={required}><InputNumber min={1} max={365} /></Form.Item></div>}</Form.Item>
-      <Alert type="info" message="保存后进入草稿状态，需医生重新发布。历史任务保留已起草和已批准的正文。" />
+      <Alert type="info" message="保存后进入草稿状态：SOP 由运营团队发布，宣教与服务包由医生审核发布。历史任务保留正文快照。" />
     </FormDialog>
   </>
 }
@@ -96,7 +98,7 @@ export function Settings() {
   const state = useLoad(() => api('/integrations'))
   return <><PageTitle title="接入设置" subtitle="区分配置状态与真实接通状态，按医院授权逐项联调。" extra={<Button icon={<ReloadOutlined />} onClick={state.reload}>刷新</Button>} />
     <LoadState state={state}>{data => <div className="integration-grid">{data.map(item => <Card key={item.provider} title={providers[item.provider]} extra={<Tag color={item.status === 'CONFIGURED_UNVERIFIED' ? 'gold' : 'default'}>{item.status === 'CONFIGURED_UNVERIFIED' ? '已配置 · 待联调' : '未接入'}</Tag>}>
-      <p>{item.provider === 'AI' ? '辅助整理问询草稿。所有建议仍由责任医生审核、人工联系。' : item.provider === 'HIS' ? '待医院提供接口、字段字典、患者身份映射与就诊事件。' : '待医院提供授权与接入资料。当前仅提供患者服务介绍，后台记录人工服务过程。'}</p>
+      <p>{item.provider === 'AI' ? '辅助整理问询草稿。所有建议仍由责任医生审核、人工联系。' : item.provider === 'HIS' ? '已提供虚构医院 Mock，可在“医院数据”页联调导入。真实医院接口尚未接通，待提供接口、字段字典与授权。' : '待医院提供授权与接入资料。当前仅提供患者服务介绍，后台记录人工服务过程。'}</p>
       {item.provider === 'AI' && <><Descriptions size="small" column={1} items={[{ key: 'model', label: '模型', children: item.model_name || '未设置' }, { key: 'key', label: 'API Key', children: item.configured ? '已配置（不回显）' : '未配置' }]} />
         {account.role_code === 'PLATFORM_ADMIN' && <Button className="mt" onClick={() => setEditor(item)}>配置 AI 接入</Button>}</>}
     </Card>)}</div>}</LoadState>

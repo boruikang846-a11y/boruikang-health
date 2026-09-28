@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import SystemIntro from './SystemIntro'
 import { Button, Collapse, Tag } from 'antd'
 import { ArrowRightOutlined, CheckOutlined, DesktopOutlined, GlobalOutlined, HeartOutlined,
   MessageOutlined, MobileOutlined, SafetyCertificateOutlined, TeamOutlined } from '@ant-design/icons'
@@ -9,7 +10,7 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('bgssai.lang', lang)
     document.documentElement.lang = lang
-    document.title = t('BGSSAI Health 患者服务介绍', 'BGSSAI Health | Connected care')
+    document.title = t('BGSSAI Health 医患运营管理系统与患者端介绍', 'BGSSAI Health | Connected care')
   }, [lang])
   const modes = [
     [MessageOutlined, 'wecom', t('企业微信', 'WeCom'), t('让日常联系，更有温度', 'A closer connection to your care team'),
@@ -23,13 +24,13 @@ export default function App() {
       t('当前仅开放介绍页面', 'Introduction available now')],
   ]
   return <div className="site"><header className="site-header"><a className="brand" href="/"><span className="brand-icon"><HeartOutlined /></span><span>BGSSAI <b>Health</b></span></a>
-    <nav aria-label={t('页面导航', 'Page navigation')}><a href="#modes">{t('服务模式', 'Channels')}</a><a href="#journey">{t('服务流程', 'Care journey')}</a><a href="#roadmap">{t('上线规划', 'Roadmap')}</a></nav>
+    <nav aria-label={t('页面导航', 'Page navigation')}><a href="#overview">{t('系统全貌', 'System')}</a><a href="#modes">{t('服务模式', 'Channels')}</a><a href="#journey">{t('服务流程', 'Care journey')}</a><a href="#roadmap">{t('上线规划', 'Roadmap')}</a></nav>
     <Button type="text" icon={<GlobalOutlined />} onClick={() => setLang(lang === 'en' ? 'zh-CN' : 'en')}>{lang === 'en' ? '中文' : 'English'}</Button>
   </header>
-  <main><section className="hero"><div className="hero-copy"><div className="eyebrow"><span /> {t('医患相连 · 关怀延续', 'CONNECTED CARE, EVERY DAY')}</div>
+  <main><section className="hero"><div className="hero-copy"><div className="eyebrow"><span /> {t('医患运营管理系统 · 关怀延续', 'PATIENT RELATIONSHIPS & CARE OPERATIONS')}</div>
     <h1>{t('让每一次关怀', 'Care that stays')}<br /><em>{t('延续到日常生活', 'with you.')}</em></h1>
     <p className="hero-description">{t('连接患者、医生与健康管理团队。让就诊之后的沟通、随访与复诊，成为有记录、有回应的连续服务。', 'Connecting patients, clinicians and care coordinators. Bringing continuity to communication, follow-ups and return visits beyond the hospital.')}</p>
-    <div className="hero-actions"><Button type="primary" size="large" href="#modes">{t('了解服务模式', 'Explore the channels')} <ArrowRightOutlined /></Button><a href="#roadmap">{t('查看建设进展', 'View the roadmap')}</a></div>
+    <div className="hero-actions"><Button type="primary" size="large" href="#overview">{t('一图看懂整个系统', 'Explore the system')} <ArrowRightOutlined /></Button><a href="#roadmap">{t('查看建设进展', 'View the roadmap')}</a></div>
     <div className="availability"><span className="availability-dot" />{t('当前为规划介绍，患者业务尚未开放', 'Introduction only. Patient services are not yet available.')}</div>
   </div><div className="hero-art" aria-label={t('患者与健康管理团队协作示意', 'Illustration of patients connected to a care team')}>
     <div className="orbit outer" /><div className="orbit inner" /><div className="center-heart"><HeartOutlined /><span>{t('以患者为中心', 'Patient centered')}</span></div>
@@ -38,13 +39,14 @@ export default function App() {
     <div className="art-caption">BGSSAI HEALTH / CONTINUOUS CARE</div>
   </div></section>
   <div className="principles">{[[TeamOutlined,t('明确的服务团队','A dedicated care team')],[SafetyCertificateOutlined,t('医生审核与人工跟进','Clinical review and human follow-up')],[HeartOutlined,t('从就诊到日常的连接','Connected beyond the visit')]].map(([Icon,title]) => <div key={title}><Icon /><span>{title}</span></div>)}</div>
+  <SystemIntro t={t} />
   <section id="modes" className="section"><div className="section-intro"><div className="eyebrow">THREE WAYS TO CONNECT</div><h2>{t('一个服务体系，三种连接方式', 'One care experience. Three ways to connect.')}</h2><p>{t('围绕患者熟悉的使用习惯，规划企业微信、小程序与 Web 协同服务。', 'Planned around familiar ways of connecting, across WeCom, a Mini Program and the web.')}</p></div>
     <div className="mode-grid">{modes.map(([Icon,key,title,subtitle,description,status]) => <article className={'mode-card ' + key} key={key}><div className="mode-top"><span className="mode-icon"><Icon /></span><Tag bordered={false} color={key === 'web' ? 'cyan' : 'default'}>{key === 'web' ? t('介绍已上线','Introduction') : t('规划中','Planned')}</Tag></div><h3>{title}</h3><h4>{subtitle}</h4><p>{description}</p><div className="mode-status"><span />{status}</div></article>)}</div>
   </section>
   <section id="journey" className="journey-section"><div className="section-intro"><div className="eyebrow">CARE WITH CONTINUITY</div><h2>{t('围绕患者，形成连续的服务', 'A continuous journey around the patient')}</h2><p>{t('医护后台先行建设，逐步连接患者服务入口。', 'Building the care team workspace first, then connecting patient channels.')}</p></div>
     <div className="journey-grid">{[
       [t('建立健康档案','Create a care profile'), t('医院团队核对信息，明确服务归属与责任人员。','The hospital verifies information and assigns the responsible care team.')],
-      [t('准备随访服务','Prepare follow-up care'), t('结合原始记录与 SOP，整理问询与服务计划。','The team prepares questions and plans using original records and approved SOPs.')],
+      [t('准备随访服务','Prepare follow-up care'), t('根据出院报告等原始记录，结合运营团队 SOP，准备个体随访内容。','The team prepares individual follow-ups using discharge or other clinical records and service SOPs defined by operations.')],
       [t('医生审核，人工联系','Review and personal contact'), t('建议由责任医生审核，团队人工联系并记录依据。','A responsible doctor reviews guidance, and the team records personal contact with evidence.')],
       [t('跟踪反馈与复诊','Track outcomes and visits'), t('记录处理结果，核实复诊安排，让服务有始有终。','The team records outcomes and verifies return visits to complete the care process.')],
     ].map(([title,description],index) => <article key={title}><span className="step-number">0{index+1}</span><h3>{title}</h3><p>{description}</p></article>)}</div>
@@ -63,5 +65,5 @@ export default function App() {
       { key:'3',label:t('系统会自动诊断或自动回复患者吗？','Will the system diagnose or automatically reply to patients?'),children:<p>{t('当前后台按医生审核、人工负责的方式设计。系统不独立诊断、开药或调整治疗方案；人工触达记录也不等同于系统已向患者自动发送消息。','The staff workspace is designed around clinical review and human responsibility. It does not independently diagnose, prescribe or change treatment. A manual contact record does not mean an automated message was sent.')}</p> },
       { key:'4',label:t('如何了解后续开放进展？','How can I learn about future availability?'),children:<p>{t('后续以本页面的建设进展与医院服务团队正式通知为准。当前没有预约名额或资料收集入口。','Refer to this roadmap and official announcements from your hospital care team. No waitlist or information collection form is available at this stage.')}</p> },
     ]} />
-  </section></main><footer className="site-footer"><a className="brand" href="/"><span className="brand-icon"><HeartOutlined /></span><span>BGSSAI <b>Health</b></span></a><p>{t('医患运营管理系统 · 患者服务介绍','Patient relationship and care operations · Patient introduction')}</p><span>HEALTH MVP / {t('持续建设中','In development')}</span></footer></div>
+  </section></main><footer className="site-footer"><a className="brand" href="/"><span className="brand-icon"><HeartOutlined /></span><span>BGSSAI <b>Health</b></span></a><p>{t('医患运营管理系统 · 系统与患者端介绍','Patient relationship and care operations · Patient introduction')}</p><span>HEALTH MVP / {t('持续建设中','In development')}</span></footer></div>
 }

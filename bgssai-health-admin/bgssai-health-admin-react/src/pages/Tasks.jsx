@@ -24,7 +24,7 @@ export default function Tasks({ taskType, patientId, compact = false }) {
   const title = taskType === 'ALERT' ? '异常处理' : taskType === 'REVISIT' ? '复诊跟踪' : '随访与咨询'
   function closeTask() { setSelected(null); if (search.has('task')) { search.delete('task'); setSearch(search, { replace: true }) } }
   const newButton = <Button type="primary" icon={<PlusOutlined />} onClick={() => { requestKey.current = crypto.randomUUID(); setCreate(true) }}>新建任务</Button>
-  return <>{!compact && <PageTitle title={title} subtitle={taskType === 'ALERT' ? '从人工确认到医生处置，每一次异常都有处理结果。' : taskType === 'REVISIT' ? '以核实的预约、到院证据和诊疗结果跟踪复诊。' : '依托原始记录与 SOP，让每一条建议经过审核。'} extra={newButton} />}
+  return <>{!compact && <PageTitle title={title} subtitle={taskType === 'ALERT' ? '从人工确认到医生处置，每一次异常都有处理结果。' : taskType === 'REVISIT' ? '以核实的预约、到院证据和诊疗结果跟踪复诊。' : '根据出院报告等原始记录，结合运营团队 SOP 准备个体随访，由医生审核。'} extra={newButton} />}
     <div className={compact ? '' : 'table-panel'}><div className="toolbar">
       {!taskType && <Select aria-label="任务类型" value={type} style={{ width: 150 }} options={options(['FOLLOWUP', 'CONSULTATION', ...(compact ? ['ALERT', 'REVISIT'] : [])])} onChange={value => { setType(value); setPage(0) }} />}
       <Select aria-label="任务状态" value={status} placeholder="全部状态" allowClear style={{ width: 155 }} options={options(type === 'ALERT' ? ['PENDING', 'IN_PROGRESS', 'ESCALATED', 'COMPLETED'] : type === 'REVISIT' ? ['PENDING', 'BOOKED', 'ARRIVED', 'COMPLETED', 'NO_SHOW', 'CANCELLED'] : ['PENDING', 'IN_PROGRESS', 'PENDING_REVIEW', 'REJECTED', 'APPROVED', 'CONTACTED', 'COMPLETED', 'CANCELLED'])} onChange={value => { setStatus(value); setPage(0) }} />
@@ -96,14 +96,14 @@ function TaskDrawer({ id, onClose, onChanged }) {
           { key: 'origin', label: '草稿来源', children: names[task.draft_origin] || '尚未起草' },
           { key: 'reviewed', label: '审核时间', children: dateText(task.reviewed_at) },
         ]} />
-        <div className="context-block"><h3>本任务关联依据</h3>{context.record ? <><Tag>{names[context.record.record_type]}</Tag><small>{dateText(context.record.occurred_at)}</small><p className="pre-wrap">{context.record.content || '指标记录'}</p>
+        <div className="context-block"><h3>个体随访依据 · 本任务关联报告</h3>{context.record ? <><Tag>{names[context.record.record_type]}</Tag>{context.record.source_system === 'HOSPITAL_MOCK' && <Tag color="gold">模拟医院接口 · {context.record.external_id}</Tag>}<small>{dateText(context.record.occurred_at)}</small><p className="pre-wrap">{context.record.content || '指标记录'}</p>
           {context.record.systolic != null && <p>血压 {context.record.systolic}/{context.record.diastolic} mmHg</p>}{context.record.heart_rate != null && <p>心率 {context.record.heart_rate} 次/分</p>}{context.record.weight != null && <p>体重 {context.record.weight} kg</p>}{context.record.glucose != null && <p>血糖 {context.record.glucose} mmol/L</p>}
-          {context.record.next_visit_date && <p>原记录复诊日期：{context.record.next_visit_date}</p>}</> : <p className="muted">此任务未关联就诊记录</p>}
+          {context.record.medication_cycle_days != null && <p>原记录用药周期：{context.record.medication_cycle_days} 天（按原医嘱核对）</p>}{context.record.next_visit_date && <p>原记录复诊日期：{context.record.next_visit_date}</p>}</> : <p className="muted">此任务未关联就诊记录。出院随访请从患者档案录入对应报告后，处理其关联任务。</p>}
           {context.messages.filter(x => x.direction === 'PATIENT_TO_STAFF').map(message => <blockquote key={message.id}><strong>患者原始咨询</strong><p className="pre-wrap">{message.content}</p></blockquote>)}
         </div>
         {task.status === 'PENDING' && task.task_type !== 'REVISIT' && <Button type="primary" loading={busy} onClick={() => run('claim')}>领取并开始处理</Button>}
         {editable && <div className="action-block"><h3>准备随访建议</h3>
-          <LoadState state={sop}>{data => <><label className="field-label" htmlFor="sop-choice">已发布 SOP</label><Select id="sop-choice" value={sopId} onChange={setSopId} placeholder="选择已发布的 SOP" style={{ width: '100%' }} options={data.items.map(item => ({ value: item.id, label: item.title + ' / v' + item.version }))} /></>}</LoadState>
+          <LoadState state={sop}>{data => <><Alert className="mb" type="info" showIcon message="报告决定个体随访重点，SOP 规范服务流程" description="请对照关联报告补充原医嘱、注意事项和需跟进的问题。模板仅带入已有周期与复诊日期，AI 不读取报告全文；内容仍需医生审核。" /><label className="field-label" htmlFor="sop-choice">运营团队已发布的服务 SOP</label><Select id="sop-choice" value={sopId} onChange={setSopId} placeholder="选择已发布的 SOP" style={{ width: '100%' }} options={data.items.map(item => ({ value: item.id, label: item.title + ' / v' + item.version }))} /></>}</LoadState>
           <Space className="mt mb"><Button disabled={!sopId || busy} onClick={() => run('draft', { sop_id: sopId, mode: 'TEMPLATE' })}>按模板起草</Button><Button disabled={!sopId || busy} onClick={() => run('draft', { sop_id: sopId, mode: 'AI' })}>AI 辅助起草</Button></Space>
           <label className="field-label" htmlFor="draft-text">建议草稿</label><Input.TextArea id="draft-text" rows={7} value={draft} onChange={event => setDraft(event.target.value)} maxLength={6000} showCount />
           <Space className="mt" wrap><Button disabled={!draft.trim() || !sopId || busy} onClick={() => run('draft', { sop_id: sopId, mode: 'MANUAL', draft_text: draft })}>保存编辑</Button>

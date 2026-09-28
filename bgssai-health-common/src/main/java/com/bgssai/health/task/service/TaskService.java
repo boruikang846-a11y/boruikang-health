@@ -106,7 +106,7 @@ public class TaskService {
             // External network I/O deliberately runs outside the short database write transaction.
             CareRecord record=t.recordId==null?null:records.selectByPrimaryKey(t.recordId);
             content=ai.generate(sop,record);
-        } else content="您好，健康管理团队希望了解您最近的情况。\n\n"+sop.content+"\n\n请按原医嘱执行，如有疑问请联系您的医生。";
+        } else content=template(sop,t.recordId==null?null:records.selectByPrimaryKey(t.recordId));
         Checks.require(content.length()<=6000,"Draft too long");
         CareTask patch=new CareTask();patch.sopId=sop.id;patch.draftText=content;patch.draftOrigin=req.mode();patch.status="IN_PROGRESS";patch.approvedText="";patch.reviewNote="";
         return view(writer.save(t,patch,"DRAFT_SAVED"),p);
@@ -162,7 +162,18 @@ public class TaskService {
         Checks.conflict(version.equals(t.version));return t;
     }
     private KnowledgeEntry publishedSop(Long id,Long hospitalId) {
-        KnowledgeEntry k=knowledge.selectByPrimaryKey(id);Checks.require(k!=null&&hospitalId.equals(k.hospitalId)&&"SOP".equals(k.kind)&&"PUBLISHED".equals(k.status),"Select a published SOP / 请选择已审核发布的 SOP");return k;
+        KnowledgeEntry k=knowledge.selectByPrimaryKey(id);Checks.require(k!=null&&hospitalId.equals(k.hospitalId)&&"SOP".equals(k.kind)&&"PUBLISHED".equals(k.status),"Select a published SOP / 请选择运营团队已发布的 SOP");return k;
+    }
+    private String template(KnowledgeEntry sop,CareRecord record) {
+        StringBuilder content=new StringBuilder("您好，健康管理团队希望了解您最近的情况。\n\n").append(sop.content);
+        if(record!=null){
+            String source="DISCHARGE".equals(record.recordType)?"出院报告":"原始就诊记录";
+            content.append("\n\n结合您的").append(source).append("，本次还需要核对：");
+            if(record.medicationCycleDays!=null)content.append("\n• 原记录载明的用药周期为 ").append(record.medicationCycleDays).append(" 天。请问按原医嘱执行时是否遇到困难？具体用法和后续安排请与医生核对。");
+            if(record.nextVisitDate!=null)content.append("\n• 原记录建议复诊日期为 ").append(record.nextVisitDate).append("。请问是否已确认复诊安排，是否需要团队协助？");
+            content.append("\n• 对原记录中的注意事项或后续安排，是否有希望医生解答的问题？");
+        }
+        return content.append("\n\n请按原医嘱执行，如有疑问请联系您的医生。").toString();
     }
     public static TaskResponse view(CareTask t,Patient patient) {
         String name=patient==null?"":patient.name.substring(0,1)+"*".repeat(Math.max(0,patient.name.length()-1));

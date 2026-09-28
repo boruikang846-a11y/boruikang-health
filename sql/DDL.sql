@@ -11,13 +11,14 @@ CREATE TABLE IF NOT EXISTS health_account (
 );
 CREATE TABLE IF NOT EXISTS patient (
  id BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键', hospital_id BIGINT NOT NULL, account_id BIGINT DEFAULT NULL,
+ source_system VARCHAR(24) NOT NULL DEFAULT 'MANUAL', hospital_patient_id VARCHAR(120) DEFAULT NULL,
  name VARCHAR(80) NOT NULL, gender VARCHAR(16) NOT NULL, age INT NOT NULL, phone VARCHAR(24) NOT NULL,
  department VARCHAR(80) NOT NULL, disease VARCHAR(120) NOT NULL, risk_level VARCHAR(16) NOT NULL DEFAULT 'UNKNOWN', lifecycle VARCHAR(20) NOT NULL DEFAULT 'ENROLLED',
  doctor_id BIGINT DEFAULT NULL, owner_id BIGINT DEFAULT NULL, channel_id BIGINT DEFAULT NULL, service_package_id BIGINT DEFAULT NULL,
  consent_at DATETIME DEFAULT NULL, note VARCHAR(2000) DEFAULT NULL, version INT NOT NULL DEFAULT 0,
  del_flag TINYINT(1) NOT NULL DEFAULT 0 COMMENT '逻辑删除字段', creator VARCHAR(64) DEFAULT NULL, modifier VARCHAR(64) DEFAULT NULL,
  gmt_create DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, gmt_modified DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
- PRIMARY KEY (id), UNIQUE KEY uk_patient_account (account_id), KEY idx_patient_scope (hospital_id, doctor_id, owner_id), KEY idx_patient_risk (hospital_id, risk_level)
+ PRIMARY KEY (id), UNIQUE KEY uk_patient_account (account_id), UNIQUE KEY uk_patient_source (hospital_id, source_system, hospital_patient_id), KEY idx_patient_scope (hospital_id, doctor_id, owner_id), KEY idx_patient_risk (hospital_id, risk_level)
 );
 CREATE TABLE IF NOT EXISTS care_task (
  id BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键', hospital_id BIGINT NOT NULL, patient_id BIGINT NOT NULL,

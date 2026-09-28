@@ -7,6 +7,8 @@ import { api, setToken, token } from './api'
 import { names } from './ui'
 import { Dashboard, Patients, PatientDetail } from './pages/Patients'
 import Tasks from './pages/Tasks'
+import Hospital from './pages/Hospital'
+import SystemOverview from './pages/SystemOverview'
 import { Knowledge, Channels, Reports, Settings } from './pages/Operations'
 
 const navigation = [
@@ -14,7 +16,7 @@ const navigation = [
   ['/followups', '随访与咨询', ScheduleOutlined], ['/alerts', '异常处理', AlertOutlined],
   ['/revisits', '复诊跟踪', CalendarOutlined], ['/knowledge', '知识与 SOP', ReadOutlined],
   ['/channels', '渠道管理', QrcodeOutlined], ['/reports', '医生周报', BarChartOutlined],
-  ['/settings', '接入设置', SettingOutlined],
+  ['/hospital', '医院数据', QrcodeOutlined], ['/settings', '接入设置', SettingOutlined], ['/overview', '系统介绍', HeartOutlined],
 ]
 function Login({ onLogin, account }) {
   const [busy, setBusy] = useState(false)
@@ -36,12 +38,12 @@ function Login({ onLogin, account }) {
       <Form.Item name="identifier" label="工作账号" rules={[{ required: true, message: '请输入工作账号' }]}><Input size="large" autoComplete="username" placeholder="请输入工作账号" /></Form.Item>
       <Form.Item name="password" label="密码" rules={[{ required: true, message: '请输入密码' }]}><Input.Password size="large" autoComplete="current-password" placeholder="请输入密码" /></Form.Item>
       <Button type="primary" size="large" htmlType="submit" block loading={busy}>进入工作台</Button>
-    </Form><p className="login-note">账号由机构管理员分配。平台管理员与临床工作账号的权限相互独立。</p>
+    </Form><p className="mt"><Link to="/overview">了解整个系统与团队分工 →</Link></p><p className="login-note">账号由机构管理员分配。平台管理员与临床工作账号的权限相互独立。</p>
   </Card></section></div>
 }
 function Shell({ account, logout }) {
   const location = useLocation()
-  const visible = navigation.filter(([path]) => account.role_code === 'PLATFORM_ADMIN' ? path === '/settings' : path !== '/channels' || account.role_code === 'MANAGER')
+  const visible = navigation.filter(([path]) => account.role_code === 'PLATFORM_ADMIN' ? ['/settings', '/overview'].includes(path) : path !== '/channels' || account.role_code === 'MANAGER')
   return <Layout className="app-shell"><Layout.Sider width={222} breakpoint="lg" collapsedWidth={64} className="sidebar">
     <Link className="brand" to={visible[0][0]}><HeartOutlined /><span>BGSSAI <b>Health</b></span></Link>
     <div className="nav-caption">院外连续服务</div>
@@ -67,11 +69,11 @@ export default function App() {
   if (loading) return <div className="loading full"><Spin size="large" /></div>
   if (sessionError && token() && !account) return <div className="loading full"><Alert type="error" message={sessionError} action={<Button onClick={() => window.location.reload()}>重试</Button>} /></div>
   const allowed = account && (account.role_code !== 'PLATFORM_ADMIN' || location.pathname === '/settings')
-  return <Routes><Route path="/login" element={<Login account={account} onLogin={result => { setAccount(result); navigate(result.role_code === 'PLATFORM_ADMIN' ? '/settings' : '/workbench') }} />} />
+  return <Routes><Route path="/overview" element={<SystemOverview account={account} />} /><Route path="/login" element={<Login account={account} onLogin={result => { setAccount(result); navigate(result.role_code === 'PLATFORM_ADMIN' ? '/settings' : '/workbench') }} />} />
     <Route element={account ? allowed ? <Shell account={account} logout={async () => { try { await api('/logout', {}) } catch {} setToken(null); setAccount(null); navigate('/login') }} /> : <Navigate to="/settings" replace /> : <Navigate to="/login" replace />}>
       <Route path="/workbench" element={<Dashboard />} /><Route path="/patients" element={<Patients />} /><Route path="/patients/:id" element={<PatientDetail />} />
       <Route path="/followups" element={<Tasks />} /><Route path="/alerts" element={<Tasks taskType="ALERT" />} /><Route path="/revisits" element={<Tasks taskType="REVISIT" />} />
-      <Route path="/knowledge" element={<Knowledge />} /><Route path="/channels" element={<Channels />} /><Route path="/reports" element={<Reports />} /><Route path="/settings" element={<Settings />} />
+      <Route path="/hospital" element={<Hospital />} /><Route path="/knowledge" element={<Knowledge />} /><Route path="/channels" element={<Channels />} /><Route path="/reports" element={<Reports />} /><Route path="/settings" element={<Settings />} />
       <Route path="*" element={<Navigate to="/workbench" replace />} />
     </Route></Routes>
 }
