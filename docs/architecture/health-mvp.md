@@ -1,3 +1,5 @@
+> 版本说明：本文保留 1.2 基线。1.3 以 `docs/feature/followup-operations-1.3.md` 与 `docs/api/followup-operations-1.3.md` 为准，已撤销 SOP 管理及必选 SOP 设计；SOP 为系统外的业务使用流程。
+
 # HEALTH-MVP-1.2 技术设计
 
 需求基线：[health-mvp.md](../feature/health-mvp.md)。原型先于本设计落盘，代码按本设计实现。图示：[服务闭环](../feature/health-flow.html)。

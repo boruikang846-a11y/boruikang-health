@@ -127,7 +127,7 @@ export function PatientDetail() {
       <div className="form-grid"><Form.Item name="record_type" label="记录类型" rules={required}><Select options={options(['OUTPATIENT', 'DISCHARGE', 'EXAM'])} /></Form.Item><Form.Item name="occurred_at" label="发生时间" rules={required}><DatePicker showTime style={{ width: '100%' }} /></Form.Item></div>
       <Form.Item name="content" label="核对后的报告摘要 / 个体随访依据" rules={required}><Input.TextArea rows={5} maxLength={10000} showCount placeholder="按原报告核对录入：出院诊断、原医嘱、注意事项、需跟进的问题等。未记载的内容不要推测。" /></Form.Item>
       <div className="form-grid"><Form.Item name="medication_cycle_days" label="原记录用药周期（天）"><InputNumber min={1} max={730} /></Form.Item><Form.Item name="next_visit_date" label="原记录建议复诊日期"><DatePicker /></Form.Item></div>
-      <Alert type="info" message="保存后建立次日核对报告的团队待办，不代表临床随访日期；填写原报告复诊日期时建立复诊跟踪任务。随访内容需结合报告和服务 SOP，由医生审核。" />
+      <Alert type="info" message="保存后建立次日核对报告的团队待办，不代表临床随访日期；填写原报告复诊日期时建立复诊跟踪任务。随访内容依据原报告补充，由医生审核。" />
     </FormDialog>
   </>}</LoadState></>
 }
