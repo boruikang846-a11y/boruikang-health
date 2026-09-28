@@ -7,8 +7,8 @@ umask 077
 [[ "$BACKUP_DIR" == /* && -d "$BACKUP_DIR" ]] || { echo 'Existing absolute backup directory required' >&2; exit 1; }
 export MYSQL_PWD
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-ARGS=(--protocol=TCP --host="$MYSQL_HOST" --port="${MYSQL_PORT:-3306}" --user="$MYSQL_USER" --default-character-set=utf8mb4 --connect-timeout=15)
-MYSQL=(mysql "${ARGS[@]}")
+ARGS=(--protocol=TCP --host="$MYSQL_HOST" --port="${MYSQL_PORT:-3306}" --user="$MYSQL_USER" --default-character-set=utf8mb4)
+MYSQL=(mysql "${ARGS[@]}" --connect-timeout=15)
 columns="$("${MYSQL[@]}" -N -B -e "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='bgssai_health' AND table_name='care_task' AND column_name IN ('followup_stage','next_contact_at','contact_result','identity_verified','handover_status','doctor_feedback','acknowledged_at')")"
 [[ "$columns" == 0 || "$columns" == 7 ]] || { echo 'Partial schema detected; inspect before continuing' >&2; exit 1; }
 backup="$(mktemp "${BACKUP_DIR%/}/health-before-1.3-$(date +%Y%m%d-%H%M%S)-XXXXXX.sql")"

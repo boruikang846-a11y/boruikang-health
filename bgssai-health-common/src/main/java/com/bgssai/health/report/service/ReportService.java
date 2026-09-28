@@ -72,6 +72,8 @@ public class ReportService {
         WeeklyReportResponse snapshot=weekly(new WeeklyReportRequest(req.fromDate(),req.toDate()));
         OperationsReport row=new OperationsReport();row.hospitalId=CurrentAccount.get().hospitalId();row.ownerId=CurrentAccount.get().userId();row.reportType=req.reportType();
         row.fromDate=req.fromDate();row.toDate=req.toDate();row.summary=req.summary();row.actionPlan=req.actionPlan();row.version=0;row.creator=row.ownerId.toString();
+        // Persist second precision explicitly: H2 DATETIME can round a default timestamp into the next second.
+        row.gmtCreate=LocalDateTime.now().withNano(0);
         try {row.snapshotJson=json.writeValueAsString(snapshot);}catch(com.fasterxml.jackson.core.JsonProcessingException e){throw new IllegalStateException("Unable to archive report",e);}
         archives.insertSelective(row);audit.append(null,"REPORT_ARCHIVED",row.id,null,req.reportType(),"Immutable report snapshot");return archivedView(archives.selectByPrimaryKey(row.id));
     }
