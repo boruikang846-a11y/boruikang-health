@@ -1,3 +1,5 @@
+> 版本说明：本文保留 1.2 基线。1.3 以 `docs/feature/followup-operations-1.3.md` 与 `docs/api/followup-operations-1.3.md` 为准，已撤销 SOP 管理及必选 SOP 设计；SOP 为系统外的业务使用流程。
+
 # HEALTH-MVP-1.2 API 契约
 
 所有响应 `{code,message,success,result}`，成功 code="0"。请求 JSON snake_case；鉴权头 `Jwttoken`。HTTP 401 失效会话，403 无权，404 不存在/不可见资源，409 状态或版本冲突，400 校验错误，429 限流。分页 result 为 `{items,page_num,page_size,total_size}`，请求 page 从 0 起、size 1–100。

@@ -53,12 +53,12 @@ class HospitalMockTest {
         var discharge=list.stream().filter(x->x.title().contains("出院报告")).findFirst().orElseThrow();
         var context=tasks.context(discharge.id());assertEquals("MOCK-DC-001",context.record().externalId());assertEquals("HOSPITAL_MOCK",context.record().sourceSystem());
         var claimed=tasks.claim(new ClaimTaskRequest(discharge.id(),discharge.version()));
-        var draft=tasks.draft(new DraftTaskRequest(claimed.id(),claimed.version(),1L,"TEMPLATE",null));
+        var draft=tasks.draft(new DraftTaskRequest(claimed.id(),claimed.version(),null,"TEMPLATE",null));
         assertTrue(draft.draftText().contains("14 天"));assertTrue(draft.draftText().contains("2026-10-03"));
         var missing=tasks.query(new TaskQueryRequest(0,100,synced.patientIds().get(1),null,null,null,false)).items();
         assertEquals(1,missing.size());assertNull(tasks.context(missing.getFirst().id()).record().nextVisitDate());
         var next=tasks.claim(new ClaimTaskRequest(missing.getFirst().id(),missing.getFirst().version()));
-        var missingDraft=tasks.draft(new DraftTaskRequest(next.id(),next.version(),1L,"TEMPLATE",null));
+        var missingDraft=tasks.draft(new DraftTaskRequest(next.id(),next.version(),null,"TEMPLATE",null));
         assertFalse(missingDraft.draftText().contains("14 天"));assertFalse(missingDraft.draftText().contains("2026-10-03"));
     }
     @Test void unavailableAndEmptyScenariosDoNotCreateBusinessRows(){

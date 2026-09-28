@@ -49,10 +49,10 @@ class AdminHttpTest {
             "priority","P2","due_at",LocalDateTime.now().plusDays(1).withNano(0).toString(),"request_key",UUID.randomUUID().toString()),nurse);
         long id=row.path("id").asLong();
         row=post("/tasks/claim",Map.of("id",id,"version",row.path("version").asInt()),nurse);
-        row=post("/tasks/draft",Map.of("id",id,"version",row.path("version").asInt(),"sop_id",1,"mode","TEMPLATE"),nurse);
+        row=post("/tasks/draft",Map.of("id",id,"version",row.path("version").asInt(),"mode","TEMPLATE"),nurse);
         row=post("/tasks/submit-review",Map.of("id",id,"version",row.path("version").asInt()),nurse);
         row=post("/tasks/review",Map.of("id",id,"version",row.path("version").asInt(),"approved",true,"approved_text","请核对原医嘱并记录问题。"),doctor);
-        String body=json.writeValueAsString(Map.of("id",id,"version",row.path("version").asInt(),"evidence","测试人工电话核验，患者确认收到已审核建议"));
+        String body=json.writeValueAsString(Map.of("id",id,"version",row.path("version").asInt(),"evidence","测试人工电话核验，患者确认收到已审核建议","contact_at",LocalDateTime.now().minusSeconds(1).toString(),"method","PHONE","identity_verified",true,"recipient_role","PATIENT","report_reviewed",true,"medication_feedback","未调整用药","patient_questions","暂无问题"));
         var start=new CountDownLatch(1);
         try(var workers=Executors.newVirtualThreadPerTaskExecutor()) {
             var first=workers.submit(()->{start.await();return request("/bgssai/admin/tasks/contact",body,nurse).statusCode();});
@@ -62,7 +62,7 @@ class AdminHttpTest {
         }
         var context=json.readTree(request("/bgssai/admin/tasks/"+id,null,nurse).body()).path("result");
         assertEquals("CONTACTED",context.path("task").path("status").asText());
-        assertEquals(1,context.path("messages").size());
+        assertEquals(1,context.path("messages").size());assertEquals(1,context.path("attempts").size());
         var audit=post("/audits/query",Map.of("patient_id",1001,"page",0,"size",100),nurse);
         long contacts=0;
         for(JsonNode event:audit.path("items"))if(event.path("resource_id").asLong()==id&&"MANUAL_CONTACT_RECORDED".equals(event.path("action").asText()))contacts++;

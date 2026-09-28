@@ -14,8 +14,8 @@ import { Knowledge, Channels, Reports, Settings } from './pages/Operations'
 const navigation = [
   ['/workbench', '运营工作台', DashboardOutlined], ['/patients', '患者中心', TeamOutlined],
   ['/followups', '随访与咨询', ScheduleOutlined], ['/alerts', '异常处理', AlertOutlined],
-  ['/revisits', '复诊跟踪', CalendarOutlined], ['/knowledge', '知识与 SOP', ReadOutlined],
-  ['/channels', '渠道管理', QrcodeOutlined], ['/reports', '医生周报', BarChartOutlined],
+  ['/revisits', '复诊跟踪', CalendarOutlined], ['/knowledge', '宣教与服务内容', ReadOutlined],
+  ['/channels', '渠道管理', QrcodeOutlined], ['/reports', '随访统计与复盘', BarChartOutlined],
   ['/hospital', '医院数据', QrcodeOutlined], ['/settings', '接入设置', SettingOutlined], ['/overview', '系统介绍', HeartOutlined],
 ]
 function Login({ onLogin, account }) {
@@ -49,7 +49,7 @@ function Shell({ account, logout }) {
     <div className="nav-caption">院外连续服务</div>
     <Menu mode="inline" selectedKeys={['/' + location.pathname.split('/')[1]]} items={visible.map(([path, title, Icon]) => ({
       key: path, icon: <Icon />, label: <Link to={path}>{title}</Link>,
-    }))} /><div className="sidebar-foot"><span className="online-dot" /> 医患协作 / MVP 1.0</div>
+    }))} /><div className="sidebar-foot"><span className="online-dot" /> 医患协作 / MVP 1.3</div>
   </Layout.Sider><Layout><header className="topbar"><span className="muted">医患运营管理平台 <span className="topbar-divider">/</span> 工作空间</span>
     <Space><Tag>{names[account.role_code]}</Tag><Avatar size="small" style={{ background: '#e5efff', color: '#2469d9' }}>{account.real_name?.slice(0, 1)}</Avatar><span>{account.real_name}</span><Button type="text" icon={<LogoutOutlined />} onClick={logout}>退出</Button></Space>
   </header><main className="main-content"><Outlet context={account} /></main></Layout></Layout>

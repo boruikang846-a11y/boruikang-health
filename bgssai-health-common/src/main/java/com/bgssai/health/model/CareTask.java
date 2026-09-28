@@ -22,5 +22,12 @@ public class CareTask extends BaseRow {
     public String outcome;
     public String evidence;
     public String requestKey;
+    public String followupStage;
+    public LocalDateTime nextContactAt;
+    public String contactResult;
+    public Boolean identityVerified;
+    public String handoverStatus;
+    public String doctorFeedback;
+    public LocalDateTime acknowledgedAt;
     public Integer version;
 }

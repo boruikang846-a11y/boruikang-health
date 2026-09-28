@@ -10,9 +10,9 @@ export const names = {
   BOOKED: '已预约', ARRIVED: '已到院', NO_SHOW: '未到院', UNKNOWN: '待评估', LOW: '低风险',
   MEDIUM: '中风险', HIGH: '高风险', CRITICAL: '重点关注', ENROLLED: '已入组', MANAGING: '管理中',
   PAUSED: '已暂停', CLOSED: '已结案', MALE: '男', FEMALE: '女',
-  SOP: '随访 SOP', EDUCATION: '健康宣教', PACKAGE: '服务包', DRAFT: '草稿', PUBLISHED: '已发布',
+  EDUCATION: '健康宣教', PACKAGE: '服务包', DRAFT: '草稿', PUBLISHED: '已发布',
   OUTPATIENT: '门诊记录', DISCHARGE: '出院记录', EXAM: '体检记录', OBSERVATION: '患者自测',
-  PRIMARY_CARE: '基层协作', CAMPAIGN: '筛查活动', TEMPLATE: 'SOP 模板', MANUAL: '人工编辑', AI: 'AI 辅助',
+  PRIMARY_CARE: '基层协作', CAMPAIGN: '筛查活动', TEMPLATE: '基础问询模板', MANUAL: '人工编辑', AI: 'AI 辅助',
 }
 const colors = { HIGH: 'orange', CRITICAL: 'red', PENDING_REVIEW: 'gold', APPROVED: 'cyan', COMPLETED: 'green',
   CONTACTED: 'blue', ESCALATED: 'red', REJECTED: 'orange', LOW: 'green', PUBLISHED: 'green', P0: 'red', P1: 'orange', P2: 'blue' }

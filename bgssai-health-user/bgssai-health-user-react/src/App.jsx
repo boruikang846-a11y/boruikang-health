@@ -46,7 +46,7 @@ export default function App() {
   <section id="journey" className="journey-section"><div className="section-intro"><div className="eyebrow">CARE WITH CONTINUITY</div><h2>{t('围绕患者，形成连续的服务', 'A continuous journey around the patient')}</h2><p>{t('医护后台先行建设，逐步连接患者服务入口。', 'Building the care team workspace first, then connecting patient channels.')}</p></div>
     <div className="journey-grid">{[
       [t('建立健康档案','Create a care profile'), t('医院团队核对信息，明确服务归属与责任人员。','The hospital verifies information and assigns the responsible care team.')],
-      [t('准备随访服务','Prepare follow-up care'), t('根据出院报告等原始记录，结合运营团队 SOP，准备个体随访内容。','The team prepares individual follow-ups using discharge or other clinical records and service SOPs defined by operations.')],
+      [t('准备随访服务','Prepare follow-up care'), t('根据出院报告等原始记录，准备个体随访问询内容。','The team prepares individual follow-up questions using discharge or other clinical records.')],
       [t('医生审核，人工联系','Review and personal contact'), t('建议由责任医生审核，团队人工联系并记录依据。','A responsible doctor reviews guidance, and the team records personal contact with evidence.')],
       [t('跟踪反馈与复诊','Track outcomes and visits'), t('记录处理结果，核实复诊安排，让服务有始有终。','The team records outcomes and verifies return visits to complete the care process.')],
     ].map(([title,description],index) => <article key={title}><span className="step-number">0{index+1}</span><h3>{title}</h3><p>{description}</p></article>)}</div>

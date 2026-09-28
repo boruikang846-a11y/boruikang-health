@@ -3,6 +3,7 @@ import { Link, useOutletContext, useSearchParams } from 'react-router-dom'
 import { Alert, App, Button, Card, DatePicker, Descriptions, Drawer, Form, Input, Select, Space, Switch, Tag } from 'antd'
 import { PlusOutlined, ReloadOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
+import { ContactExecution, ContactHistory, ScheduleFollowups, contactNames } from './FollowupExecution'
 import { api, useLoad } from '../api'
 import { DataTable, dateText, FormDialog, LoadState, names, options, PageTitle, required, Status } from '../ui'
 
@@ -16,30 +17,36 @@ export default function Tasks({ taskType, patientId, compact = false }) {
   const [page, setPage] = useState(0)
   const [selected, setSelected] = useState(Number(search.get('task')) || null)
   const [create, setCreate] = useState(false)
+  const [schedule, setSchedule] = useState(false)
+  const [contactPending, setContactPending] = useState(search.get('contact') === '1')
+  const [handoverPending, setHandoverPending] = useState(search.get('handover') === '1')
   const [keyword, setKeyword] = useState('')
   const requestKey = useRef('')
   useEffect(() => { setType(taskType || 'FOLLOWUP'); setStatus(undefined); setPage(0); setSelected(Number(search.get('task')) || null) }, [taskType])
-  const state = useLoad(() => api('/tasks/query', { page, size: 10, patient_id: patientId, task_type: type, status, priority, overdue }), [page, patientId, type, status, priority, overdue])
+  const state = useLoad(() => api('/tasks/query', { page, size: 10, patient_id: patientId, task_type: type, status, priority, overdue, contact_pending: contactPending, handover_pending: handoverPending, revisit_pending: search.get('pending') === '1', assignee_id: Number(search.get('assignee')) || undefined, due_from: search.get('due_from') || undefined, due_to: search.get('due_to') || undefined }), [page, patientId, type, status, priority, overdue, contactPending, handoverPending, search.toString()])
   const patients = useLoad(() => create ? api('/patients/query', { page: 0, size: 100, keyword }) : Promise.resolve({ items: [] }), [create, keyword])
   const title = taskType === 'ALERT' ? '异常处理' : taskType === 'REVISIT' ? '复诊跟踪' : '随访与咨询'
   function closeTask() { setSelected(null); if (search.has('task')) { search.delete('task'); setSearch(search, { replace: true }) } }
   const newButton = <Button type="primary" icon={<PlusOutlined />} onClick={() => { requestKey.current = crypto.randomUUID(); setCreate(true) }}>新建任务</Button>
-  return <>{!compact && <PageTitle title={title} subtitle={taskType === 'ALERT' ? '从人工确认到医生处置，每一次异常都有处理结果。' : taskType === 'REVISIT' ? '以核实的预约、到院证据和诊疗结果跟踪复诊。' : '根据出院报告等原始记录，结合运营团队 SOP 准备个体随访，由医生审核。'} extra={newButton} />}
+  return <>{!compact && <PageTitle title={title} subtitle={taskType === 'ALERT' ? '从人工确认到医生处置，每一次异常都有处理结果。' : taskType === 'REVISIT' ? '以核实的预约、到院证据和诊疗结果跟踪复诊。' : '依据原报告安排随访，记录每次联系与后续计划，完成后交接责任医生。'} extra={<Space>{type === 'FOLLOWUP' && <Button onClick={() => setSchedule(true)}>安排随访节点</Button>}{newButton}</Space>} />}
     <div className={compact ? '' : 'table-panel'}><div className="toolbar">
       {!taskType && <Select aria-label="任务类型" value={type} style={{ width: 150 }} options={options(['FOLLOWUP', 'CONSULTATION', ...(compact ? ['ALERT', 'REVISIT'] : [])])} onChange={value => { setType(value); setPage(0) }} />}
       <Select aria-label="任务状态" value={status} placeholder="全部状态" allowClear style={{ width: 155 }} options={options(type === 'ALERT' ? ['PENDING', 'IN_PROGRESS', 'ESCALATED', 'COMPLETED'] : type === 'REVISIT' ? ['PENDING', 'BOOKED', 'ARRIVED', 'COMPLETED', 'NO_SHOW', 'CANCELLED'] : ['PENDING', 'IN_PROGRESS', 'PENDING_REVIEW', 'REJECTED', 'APPROVED', 'CONTACTED', 'COMPLETED', 'CANCELLED'])} onChange={value => { setStatus(value); setPage(0) }} />
       <Select aria-label="优先级" value={priority} placeholder="全部优先级" allowClear style={{ width: 145 }} options={options(['P0', 'P1', 'P2', 'P3'])} onChange={value => { setPriority(value); setPage(0) }} />
       <Space><Switch checked={overdue} onChange={value => { setOverdue(value); setPage(0) }} aria-label="仅看逾期" />仅看逾期</Space>
-      <Button icon={<ReloadOutlined />} onClick={state.reload}>刷新</Button>{compact && newButton}
+      {type === 'FOLLOWUP' && <><Space><Switch checked={contactPending} onChange={v => { setContactPending(v); setPage(0) }} />待再次联系</Space><Space><Switch checked={handoverPending} onChange={v => { setHandoverPending(v); setPage(0) }} />待医生接收</Space></>}
+      <Button icon={<ReloadOutlined />} onClick={state.reload}>刷新</Button>{compact && <Space>{type === 'FOLLOWUP' && <Button onClick={() => setSchedule(true)}>安排随访节点</Button>}{newButton}</Space>}
     </div>
     <DataTable state={state} page={page} setPage={setPage} columns={[
       { title: '患者', dataIndex: 'patient_name', render: (value, row) => <Link to={'/patients/' + row.patient_id}>{value}</Link> },
-      { title: '任务', dataIndex: 'title', render: (value, row) => <><strong>{value}</strong><div className="muted">#{row.id} / {names[row.task_type]}</div></> },
+      { title: '任务', dataIndex: 'title', render: (value, row) => <><strong>{value}</strong><div className="muted">#{row.id} / {names[row.task_type]} {row.followup_stage && ' / ' + row.followup_stage}</div></> },
       { title: '优先级', dataIndex: 'priority', render: value => <Status value={value} /> },
       { title: '状态', dataIndex: 'status', render: value => <Status value={value} /> },
       { title: '截止时间', dataIndex: 'due_at', render: (value, row) => <><span className={row.overdue ? 'danger-text' : ''}>{dateText(value)}</span>{row.overdue && <div className="danger-text">已逾期</div>}</> },
+      { title: '联系进度', render: (_, row) => <>{row.contact_result && <Tag color={row.contact_result === 'CONNECTED' ? 'green' : 'orange'}>{contactNames[row.contact_result]}</Tag>}{row.next_contact_at && <div className="muted">下次：{dateText(row.next_contact_at)}</div>}{row.handover_status && <div className="muted">{row.handover_status === 'PENDING' ? '待医生接收' : '医生已接收'}</div>}</> },
       { title: '操作', render: (_, row) => <Button type="link" onClick={() => setSelected(row.id)}>查看 / 处理</Button> },
     ]} /></div>
+    <ScheduleFollowups open={schedule} patientId={patientId} onClose={() => setSchedule(false)} onSaved={state.reload} />
     <TaskDrawer id={selected} onClose={closeTask} onChanged={state.reload} />
     <FormDialog title="新建服务任务" open={create} initialValues={{ patient_id: patientId, task_type: taskType || type, priority: 'P2', due_at: dayjs().add(1, 'day') }}
       onClose={() => setCreate(false)} onSubmit={async values => { const task = await api('/tasks/create', { ...values, due_at: values.due_at.format('YYYY-MM-DDTHH:mm:ss'), request_key: requestKey.current }); state.reload(); setSelected(task.id) }}>
@@ -56,22 +63,24 @@ function TaskDrawer({ id, onClose, onChanged }) {
   const account = useOutletContext()
   const { modal } = App.useApp()
   const state = useLoad(() => id ? api('/tasks/' + id) : Promise.resolve(null), [id])
-  const sop = useLoad(() => id ? api('/knowledge/query', { page: 0, size: 100, kind: 'SOP', status: 'PUBLISHED' }) : Promise.resolve({ items: [] }), [id])
-  const [sopId, setSopId] = useState(null)
+  const reference = useLoad(() => id ? api('/knowledge/query', { page: 0, size: 100, kind: 'EDUCATION', status: 'PUBLISHED' }) : Promise.resolve({ items: [] }), [id])
+  const [knowledgeId, setKnowledgeId] = useState(null)
   const [draft, setDraft] = useState('')
   const [review, setReview] = useState('')
   const [reviewNote, setReviewNote] = useState('')
   const [outcome, setOutcome] = useState('')
   const [evidence, setEvidence] = useState('')
+  const [feedback, setFeedback] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
   useEffect(() => {
     if (!state.data) return
     const task = state.data.task
-    setSopId(task.sop_id); setDraft(task.draft_text || ''); setReview(task.approved_text || task.draft_text || '')
-    setReviewNote(task.review_note || ''); setOutcome(task.outcome || ''); setEvidence(task.evidence || '')
+    setKnowledgeId(task.knowledge_id); setDraft(task.draft_text || ''); setReview(task.approved_text || task.draft_text || '')
+    setReviewNote(task.review_note || ''); setOutcome(task.outcome || ''); setEvidence(task.evidence || ''); setFeedback(task.doctor_feedback || '')
   }, [state.data])
   useEffect(() => setError(null), [id])
+  useEffect(() => { if (reference.data && state.data) setKnowledgeId(reference.data.items.some(x => x.id === state.data.task.knowledge_id) ? state.data.task.knowledge_id : null) }, [reference.data, state.data])
   async function run(action, fields = {}) {
     if (busy) return
     setBusy(true); setError(null)
@@ -103,10 +112,10 @@ function TaskDrawer({ id, onClose, onChanged }) {
         </div>
         {task.status === 'PENDING' && task.task_type !== 'REVISIT' && <Button type="primary" loading={busy} onClick={() => run('claim')}>领取并开始处理</Button>}
         {editable && <div className="action-block"><h3>准备随访建议</h3>
-          <LoadState state={sop}>{data => <><Alert className="mb" type="info" showIcon message="报告决定个体随访重点，SOP 规范服务流程" description="请对照关联报告补充原医嘱、注意事项和需跟进的问题。模板仅带入已有周期与复诊日期，AI 不读取报告全文；内容仍需医生审核。" /><label className="field-label" htmlFor="sop-choice">运营团队已发布的服务 SOP</label><Select id="sop-choice" value={sopId} onChange={setSopId} placeholder="选择已发布的 SOP" style={{ width: '100%' }} options={data.items.map(item => ({ value: item.id, label: item.title + ' / v' + item.version }))} /></>}</LoadState>
-          <Space className="mt mb"><Button disabled={!sopId || busy} onClick={() => run('draft', { sop_id: sopId, mode: 'TEMPLATE' })}>按模板起草</Button><Button disabled={!sopId || busy} onClick={() => run('draft', { sop_id: sopId, mode: 'AI' })}>AI 辅助起草</Button></Space>
+          <LoadState state={reference}>{data => <><Alert className="mb" type="info" showIcon message="以原报告和患者实际反馈为依据" description="可以直接起草基础问询，无需选择资料。可选宣教仅作参考；个体建议仍需责任医生审核。" /><label className="field-label" htmlFor="knowledge-choice">已审核宣教参考（可选）</label><Select id="knowledge-choice" value={knowledgeId} allowClear onChange={setKnowledgeId} placeholder="不选择也可以起草" style={{ width: '100%' }} options={data.items.map(item => ({ value: item.id, label: item.title + ' / v' + item.version }))} /></>}</LoadState>
+          <Space className="mt mb"><Button disabled={busy} onClick={() => run('draft', { knowledge_id: knowledgeId, mode: 'TEMPLATE' })}>基础问询起草</Button><Button disabled={busy} onClick={() => run('draft', { knowledge_id: knowledgeId, mode: 'AI' })}>AI 辅助起草</Button></Space>
           <label className="field-label" htmlFor="draft-text">建议草稿</label><Input.TextArea id="draft-text" rows={7} value={draft} onChange={event => setDraft(event.target.value)} maxLength={6000} showCount />
-          <Space className="mt" wrap><Button disabled={!draft.trim() || !sopId || busy} onClick={() => run('draft', { sop_id: sopId, mode: 'MANUAL', draft_text: draft })}>保存编辑</Button>
+          <Space className="mt" wrap><Button disabled={!draft.trim() || busy} onClick={() => run('draft', { knowledge_id: knowledgeId, mode: 'MANUAL', draft_text: draft })}>保存编辑</Button>
             <Button type="primary" disabled={!task.draft_text || draft !== task.draft_text || task.status !== 'IN_PROGRESS' || busy} onClick={() => run('submit-review')}>提交医生审核</Button></Space>
           <p className="muted">修改后先保存，再提交审核。AI 接入未配置时可使用模板路径。</p>
         </div>}
@@ -117,14 +126,11 @@ function TaskDrawer({ id, onClose, onChanged }) {
         </div>}
         {task.review_note && <Alert className="mt" type="info" message="审核意见" description={task.review_note} />}
         {task.approved_text && <div className="approved-block"><h3>已批准正文</h3><p className="pre-wrap">{task.approved_text}</p></div>}
-        {task.status === 'APPROVED' && <div className="action-block"><h3>记录人工触达</h3>
-          <p className="muted">请在实际完成电话或当面联系后记录。本操作不会向企业微信、小程序或 Web 发送消息。</p>
-          <label className="field-label" htmlFor="contact-evidence">联系凭证（时间、方式与核验结果）</label>
-          <Input.TextArea id="contact-evidence" value={evidence} onChange={event => setEvidence(event.target.value)} maxLength={1000} rows={3} />
-          <Button className="mt" type="primary" disabled={!evidence.trim()} loading={busy} onClick={() => modal.confirm({
-            title: '确认已按批准正文完成人工联系？', content: evidence, okText: '记录已触达', cancelText: '取消',
-            onOk: () => run('contact', { evidence }),
-          })}>记录已触达</Button></div>}
+        {clinical && !ended.includes(task.status) && task.status !== 'CONTACTED' && <ContactExecution key={task.id + '-' + task.version} task={task} busy={busy} run={run} />}
+        <ContactHistory attempts={context.attempts} />
+        {task.handover_status && <div className="action-block"><h3>责任医生接收随访记录</h3><Tag color={task.handover_status === 'ACKNOWLEDGED' ? 'green' : 'gold'}>{task.handover_status === 'ACKNOWLEDGED' ? '医生已接收' : '待医生接收'}</Tag>
+          {task.handover_status === 'PENDING' && doctor ? <><Input.TextArea className="mt" aria-label="医生接收反馈" rows={3} value={feedback} onChange={e => setFeedback(e.target.value)} maxLength={2000} placeholder="查看联系记录与处理结果，记录反馈和下一步安排。" /><Button className="mt" type="primary" disabled={!feedback.trim() || busy} onClick={() => run('acknowledge', { feedback })}>确认接收并保存反馈</Button></> : <><p>{task.doctor_feedback || '完成记录已进入责任医生的待接收列表。'}</p>{task.acknowledged_at && <small>{dateText(task.acknowledged_at)}</small>}</>}
+        </div>}
         {task.task_type === 'ALERT' && task.status === 'IN_PROGRESS' && <Alert className="mt" type="warning" message="请核对患者上报内容，再升级至责任医生。" action={<Button disabled={busy} onClick={() => transition('ESCALATE')}>升级医生</Button>} />}
         {!ended.includes(task.status) && <div className="action-block"><h3>{task.task_type === 'REVISIT' ? '复诊核实' : '服务结果'}</h3>
           {task.task_type === 'REVISIT' && <><label className="field-label" htmlFor="evidence">预约 / 到院核验证据</label><Input.TextArea id="evidence" value={evidence} onChange={event => setEvidence(event.target.value)} maxLength={1000} placeholder="核验时间、科室、记录编号及核验方式" /></>}

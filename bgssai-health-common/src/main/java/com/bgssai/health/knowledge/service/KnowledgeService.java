@@ -27,13 +27,13 @@ public class KnowledgeService {
     @Transactional
     public KnowledgeResponse save(SaveKnowledgeRequest req){
         log.info("save knowledge id={} kind={}",req.id(),req.kind());access.staff();Checks.permit(List.of("MANAGER","DOCTOR").contains(CurrentAccount.get().roleCode()));
-        permitSopAuthor(req.kind());
+        Checks.require(List.of("EDUCATION","PACKAGE").contains(req.kind()),"Only education and service-package content are supported");
         if("PACKAGE".equals(req.kind()))Checks.require(req.serviceDays()!=null&&req.followupCount()!=null,"Package duration and follow-up count required");
         KnowledgeEntry row=new KnowledgeEntry();row.hospitalId=CurrentAccount.get().hospitalId();row.kind=req.kind();row.department=req.department();row.title=req.title();row.content=req.content();
         row.source=req.source();row.status="DRAFT";row.serviceDays=req.serviceDays();row.followupCount=req.followupCount();
         if(req.id()==null){row.version=1;row.creator=CurrentAccount.get().userId().toString();entries.insertSelective(row);}
         else{
-            KnowledgeEntry old=require(req.id());permitSopAuthor(old.kind);
+            KnowledgeEntry old=require(req.id());
             Checks.require(old.kind.equals(req.kind()),"Knowledge type cannot be changed / 内容类型创建后不可更改");
             Checks.conflict(req.version()!=null&&req.version().equals(old.version));row.id=old.id;row.version=old.version+1;row.modifier=CurrentAccount.get().userId().toString();
             KnowledgeEntryExample ex=new KnowledgeEntryExample();ex.eq("id",old.id).eq("hospital_id",old.hospitalId).eq("version",old.version);
@@ -44,7 +44,7 @@ public class KnowledgeService {
     @Transactional
     public KnowledgeResponse publish(PublishKnowledgeRequest req){
         log.info("publish knowledge id={}",req.id());access.staff();KnowledgeEntry old=require(req.id());
-        Checks.permit(("SOP".equals(old.kind)?"MANAGER":"DOCTOR").equals(CurrentAccount.get().roleCode()));
+        Checks.permit("DOCTOR".equals(CurrentAccount.get().roleCode()));
         Checks.conflict(req.version().equals(old.version)&&"DRAFT".equals(old.status));
         KnowledgeEntry patch=new KnowledgeEntry();patch.status="PUBLISHED";patch.reviewerId=CurrentAccount.get().userId();patch.reviewedAt=LocalDateTime.now();patch.modifier=patch.reviewerId.toString();
         KnowledgeEntryExample ex=new KnowledgeEntryExample();ex.eq("id",old.id).eq("hospital_id",old.hospitalId).eq("version",old.version).eq("status","DRAFT");
@@ -52,6 +52,5 @@ public class KnowledgeService {
         return view(entries.selectByPrimaryKey(old.id));
     }
     private KnowledgeEntry require(Long id){KnowledgeEntry row=entries.selectByPrimaryKey(id);Checks.found(row!=null&&CurrentAccount.get().hospitalId().equals(row.hospitalId));return row;}
-    private void permitSopAuthor(String kind){if("SOP".equals(kind))Checks.permit("MANAGER".equals(CurrentAccount.get().roleCode()));}
     private static KnowledgeResponse view(KnowledgeEntry k){return new KnowledgeResponse(k.id,k.kind,k.department,k.title,k.content,k.source,k.version,k.status,"PUBLISHED".equals(k.status)?k.reviewerId:null,"PUBLISHED".equals(k.status)?k.reviewedAt:null,k.serviceDays,k.followupCount);}
 }

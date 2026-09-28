@@ -11,10 +11,12 @@ DDL 使用 IF NOT EXISTS，只能初始化空库，不会迁移已有表。后�
 `patient.account_id` 与任务 `(hospital_id, request_key)` 使用唯一约束。任务变更通过患者行锁及 version 条件更新保证并发一致性，审计和人工沟通记录同事务提交。
 
 
-## 1.2 演示数据与医院来源
+## 1.3 演示数据与增量迁移
 
-dev/DML.sql 铺底 15 位患者、14 份记录、35 个任务、5 个渠道、4 条沟通记录；全部虚构。manager / doctor / doctor_b / nurse / platform 密码统一为 `HealthDemo@2026!`，仅供演示，公网开放前更换。doctor 可见 10 位患者，doctor_b 可见 5 位；manager 查看全部。
+新库铺底 87 位患者、182 份记录、371 个任务、17 个渠道、77 条结构化联系记录，覆盖 12 科室与各流程状态。全部虚构，来源标记 HOSPITAL_MOCK。账号见根 README。旧版基线与本轮扩展使用不同固定 ID；重复执行 DML 不覆盖用户业务修改。动态 Mock 同步另增加 2 患者 / 3 报告，与铺底数据区分。
 
-12 位扩展患者明确标记 HOSPITAL_MOCK，医院患者号 DEMO-HP-*、报告号 DEMO-REC-*；接口动态模拟的 MOCK-P-* / MOCK-DC-* 与铺底数据分开。SOP 演示发布人是运营主管，个案建议审核人是对应责任医生。已联系/完成的随访包含批准正文和虚构联系证据，联系留痕保持一致。
+`tools/generate-demo-seed.py` 可复现本轮扩展块，日期按首次执行时间生成。临床审核与联系凭证均明确标记虚构，不代表真实医生审批。
 
-新库使用当前 DDL。已有 MySQL 1.1 库须先备份并核查列，再执行 `migrations/20260928-hospital-source.sql`（只执行一次）；local H2 的 DDL-local 自动补齐来源列和唯一索引。新增唯一键 `(hospital_id,source_system,hospital_patient_id)` 防止重复导入，报告沿用 `(hospital_id,source_system,external_id)`。
+已有 MySQL 1.2 库：先备份，执行 `migrations/20260928-followup-operations.sql` 一次，再执行 `DML.sql` 和 `dev/DML.sql`。该脚本新增任务字段、contact_attempt 和 operations_report 表；旧 SOP 条目降为未发布参考内容，历史任务引用保留但新随访不依赖该引用。切勿重新执行空库初始化脚本或删除数据库。local/test 由 DDL-local 自动补齐字段。
+
+已有 1.1 库须先执行 `migrations/20260928-hospital-source.sql`，再执行上述 1.3 增量。MySQL 迁移需由 Jenkins 执行，核对库为 bgssai_health。
