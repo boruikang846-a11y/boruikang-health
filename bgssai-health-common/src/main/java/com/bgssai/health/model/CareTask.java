@@ -1,0 +1,26 @@
+package com.bgssai.health.model;
+import java.time.LocalDateTime;
+public class CareTask extends BaseRow {
+    public Long hospitalId;
+    public Long patientId;
+    public String taskType;
+    public String title;
+    public String priority;
+    public String status;
+    public Long assigneeId;
+    public Long doctorId;
+    public LocalDateTime dueAt;
+    public Long recordId;
+    public Long sopId;
+    public String draftText;
+    public String draftOrigin;
+    public String approvedText;
+    public String reviewNote;
+    public Long reviewerId;
+    public LocalDateTime reviewedAt;
+    public LocalDateTime completedAt;
+    public String outcome;
+    public String evidence;
+    public String requestKey;
+    public Integer version;
+}
