@@ -1,5 +1,7 @@
 # HEALTH 开发环境交接
 
+> 本文保留初次部署前的历史状态。当前发布状态请以 Jenkins `bgssai/dev-health-deploy` 记录、线上检查和本轮 PR 为准；本轮全量 SQL 包见 [1.4 契约](../api/managed-operations-1.4.md)。
+
 应用部署仍待执行：未修改华为云主机、Nginx、数据库和 Jenkins。域名 DNS 与证书已按用户要求完成，具体状态见末节；不表示应用已经上线。
 
 ## 目标拓扑

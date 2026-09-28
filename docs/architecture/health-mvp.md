@@ -1,4 +1,4 @@
-> 版本说明：本文保留 1.2 基线。1.3 以 `docs/feature/followup-operations-1.3.md` 与 `docs/api/followup-operations-1.3.md` 为准，已撤销 SOP 管理及必选 SOP 设计；SOP 为系统外的业务使用流程。
+> 版本说明：本文保留 1.2 基线。随访节点以 1.3 为准；院方全托管角色、审核凭证与数据结构以 [1.4 契约](../api/managed-operations-1.4.md) 为准。旧医生/护士后台账号设计已停用。SOP 为系统外的业务使用流程。
 
 # HEALTH-MVP-1.2 技术设计
 

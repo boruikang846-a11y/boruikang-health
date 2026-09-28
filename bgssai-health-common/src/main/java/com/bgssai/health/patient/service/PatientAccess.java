@@ -12,18 +12,16 @@ import java.util.List;
 public class PatientAccess {
     private final PatientMapper patients;
     public PatientAccess(PatientMapper patients) { this.patients=patients; }
-    public void staff() { Checks.permit(List.of("MANAGER","DOCTOR","NURSE","OPERATOR").contains(CurrentAccount.get().roleCode())); }
+    public void staff() { Checks.permit(List.of("MANAGER","OPERATOR").contains(CurrentAccount.get().roleCode())); }
     public void manager() { Checks.permit("MANAGER".equals(CurrentAccount.get().roleCode())); }
     public PatientExample scope() {
         staff(); var actor=CurrentAccount.get(); PatientExample ex=new PatientExample(); ex.eq("hospital_id",actor.hospitalId());
-        if ("DOCTOR".equals(actor.roleCode())) ex.eq("doctor_id",actor.userId());
-        if (List.of("NURSE","OPERATOR").contains(actor.roleCode())) ex.eq("owner_id",actor.userId());
+        if ("OPERATOR".equals(actor.roleCode())) ex.eq("owner_id",actor.userId());
         return ex;
     }
     public CareTaskExample taskScope() {
         staff(); var actor=CurrentAccount.get(); CareTaskExample ex=new CareTaskExample(); ex.eq("hospital_id",actor.hospitalId());
-        if ("DOCTOR".equals(actor.roleCode())) ex.eq("doctor_id",actor.userId());
-        if (List.of("NURSE","OPERATOR").contains(actor.roleCode())) ex.eq("assignee_id",actor.userId());
+        if ("OPERATOR".equals(actor.roleCode())) ex.eq("assignee_id",actor.userId());
         return ex;
     }
     public Patient require(Long id) {
@@ -44,8 +42,7 @@ public class PatientAccess {
         Checks.found(p != null && actor.hospitalId().equals(p.hospitalId));
         boolean visible=switch(actor.roleCode()) {
             case "MANAGER" -> true;
-            case "DOCTOR" -> actor.userId().equals(p.doctorId);
-            case "NURSE","OPERATOR" -> actor.userId().equals(p.ownerId);
+            case "OPERATOR" -> actor.userId().equals(p.ownerId);
             case "USER" -> actor.userId().equals(p.accountId);
             default -> false;
         };
@@ -59,5 +56,4 @@ public class PatientAccess {
         if (required) Checks.found(!rows.isEmpty());
         return rows.isEmpty()?null:rows.getFirst();
     }
-    public void doctor(Patient patient) { var actor=CurrentAccount.get(); Checks.permit("DOCTOR".equals(actor.roleCode()) && actor.userId().equals(patient.doctorId)); }
 }

@@ -45,13 +45,13 @@ public class ReportService {
         CareTaskExample revisits=cohort(req.fromDate(),req.toDate(),"REVISIT"),arrived=cohort(req.fromDate(),req.toDate(),"REVISIT");arrived.in("status",List.of("ARRIVED","COMPLETED"));
         long d=tasks.countByExample(due),c=tasks.countByExample(done),o=tasks.countByExample(onTime),a=tasks.countByExample(alerts),cl=tasks.countByExample(closed),r=tasks.countByExample(revisits),ar=tasks.countByExample(arrived);
         List<DoctorMetric> doctors=new ArrayList<>();
-        for(var doctor:patientService.staff())if("DOCTOR".equals(doctor.roleCode())){
-            PatientExample px=access.scope();px.eq("doctor_id",doctor.userId());CareTaskExample dx=cohort(req.fromDate(),req.toDate(),"FOLLOWUP");dx.eq("doctor_id",doctor.userId());
-            CareTaskExample cx=cohort(req.fromDate(),req.toDate(),"FOLLOWUP");cx.eq("doctor_id",doctor.userId()).eq("status","COMPLETED");CareTaskExample ax=active();ax.eq("doctor_id",doctor.userId()).eq("task_type","ALERT");
-            long count=patients.countByExample(px);if(count>0)doctors.add(new DoctorMetric(doctor.userId(),doctor.realName(),count,tasks.countByExample(dx),tasks.countByExample(cx),tasks.countByExample(ax)));
+        for(var doctor:patientService.clinicians()){
+            PatientExample px=access.scope();px.eq("doctor_id",doctor.id());CareTaskExample dx=cohort(req.fromDate(),req.toDate(),"FOLLOWUP");dx.eq("doctor_id",doctor.id());
+            CareTaskExample cx=cohort(req.fromDate(),req.toDate(),"FOLLOWUP");cx.eq("doctor_id",doctor.id()).eq("status","COMPLETED");CareTaskExample ax=active();ax.eq("doctor_id",doctor.id()).eq("task_type","ALERT");
+            long count=patients.countByExample(px);if(count>0)doctors.add(new DoctorMetric(doctor.id(),doctor.name(),count,tasks.countByExample(dx),tasks.countByExample(cx),tasks.countByExample(ax)));
         }
         List<NurseMetric> nurses=new ArrayList<>();
-        for(var nurse:patientService.staff())if(List.of("NURSE","OPERATOR","MANAGER").contains(nurse.roleCode())) {
+        for(var nurse:patientService.staff())if(List.of("OPERATOR","MANAGER").contains(nurse.roleCode())) {
             CareTaskExample nd=cohort(req.fromDate(),req.toDate(),"FOLLOWUP");nd.eq("assignee_id",nurse.userId());
             CareTaskExample nc=cohort(req.fromDate(),req.toDate(),"FOLLOWUP");nc.eq("assignee_id",nurse.userId()).eq("status","COMPLETED");
             CareTaskExample no=cohort(req.fromDate(),req.toDate(),"FOLLOWUP");no.eq("assignee_id",nurse.userId()).eq("status","COMPLETED").leColumn("completed_at","due_at");

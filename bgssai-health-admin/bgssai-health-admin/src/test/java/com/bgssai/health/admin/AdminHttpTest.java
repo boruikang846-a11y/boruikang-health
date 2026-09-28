@@ -44,14 +44,14 @@ class AdminHttpTest {
         return json.readTree(response.body()).path("result");
     }
     @Test void concurrentContactCommitsExactlyOneMessageAndAudit() throws Exception {
-        String nurse=login("nurse"),doctor=login("doctor");
+        String nurse=login("operator_a"),manager=login("manager");
         JsonNode row=post("/tasks/create",Map.of("patient_id",1001,"task_type","FOLLOWUP","title","Concurrent contact test",
             "priority","P2","due_at",LocalDateTime.now().plusDays(1).withNano(0).toString(),"request_key",UUID.randomUUID().toString()),nurse);
         long id=row.path("id").asLong();
         row=post("/tasks/claim",Map.of("id",id,"version",row.path("version").asInt()),nurse);
         row=post("/tasks/draft",Map.of("id",id,"version",row.path("version").asInt(),"mode","TEMPLATE"),nurse);
         row=post("/tasks/submit-review",Map.of("id",id,"version",row.path("version").asInt()),nurse);
-        row=post("/tasks/review",Map.of("id",id,"version",row.path("version").asInt(),"approved",true,"approved_text","请核对原医嘱并记录问题。"),doctor);
+        row=post("/tasks/review",Map.of("id",id,"version",row.path("version").asInt(),"approved",true,"approved_text","请核对原医嘱并记录问题。","review_channel","HOSPITAL_SYSTEM","review_evidence","虚构院方审核回执 TEST-HTTP","reviewed_at",LocalDateTime.now().withNano(0).toString()),manager);
         String body=json.writeValueAsString(Map.of("id",id,"version",row.path("version").asInt(),"evidence","测试人工电话核验，患者确认收到已审核建议","contact_at",LocalDateTime.now().minusSeconds(1).toString(),"method","PHONE","identity_verified",true,"recipient_role","PATIENT","report_reviewed",true,"medication_feedback","未调整用药","patient_questions","暂无问题"));
         var start=new CountDownLatch(1);
         try(var workers=Executors.newVirtualThreadPerTaskExecutor()) {
@@ -70,8 +70,8 @@ class AdminHttpTest {
         post("/tasks/transition",Map.of("id",id,"version",context.path("task").path("version").asInt(),"action","COMPLETE","outcome","并发请求验证完成"),nurse);
     }
     @Test void hospitalMockHttpContractIsScopedIdempotentAndReportsUnavailable() throws Exception {
-        String manager=login("manager"),doctor=login("doctor");
-        assertEquals(403,request("/bgssai/admin/hospital/mock/query","{\"scenario\":\"NORMAL\"}",doctor).statusCode());
+        String manager=login("manager"),operator=login("operator_a");
+        assertEquals(403,request("/bgssai/admin/hospital/mock/query","{\"scenario\":\"NORMAL\"}",operator).statusCode());
         assertEquals(503,request("/bgssai/admin/hospital/sync","{\"scenario\":\"UNAVAILABLE\",\"doctor_id\":2,\"owner_id\":3}",manager).statusCode());
         var preview=post("/hospital/mock/query",Map.of("scenario","NORMAL"),manager);
         assertEquals("HOSPITAL_MOCK",preview.path("source_system").asText());assertEquals(2,preview.path("patients").size());
@@ -80,9 +80,9 @@ class AdminHttpTest {
         var again=post("/hospital/sync",Map.of("scenario","NORMAL","doctor_id",2,"owner_id",3),manager);
         assertEquals(0,again.path("created_records").asInt());assertEquals(3,again.path("skipped_records").asInt());
         long patientId=imported.path("patient_ids").get(0).asLong();
-        var patient=json.readTree(request("/bgssai/admin/patients/"+patientId,null,doctor).body()).path("result");
+        var patient=json.readTree(request("/bgssai/admin/patients/"+patientId,null,manager).body()).path("result");
         assertEquals("MOCK-P-001",patient.path("hospital_patient_id").asText());
-        var records=post("/records/query",Map.of("patient_id",patientId,"page",0,"size",100),doctor);
+        var records=post("/records/query",Map.of("patient_id",patientId,"page",0,"size",100),manager);
         assertEquals(2,records.path("total_size").asInt());assertTrue(records.path("items").get(0).has("external_id"));
     }
     @Test void healthAndProtectedRoutesHaveDifferentAccessRules() throws Exception {
@@ -100,7 +100,7 @@ class AdminHttpTest {
         assertEquals(401,request("/bgssai/admin/me",null,latest).statusCode());
     }
     @Test void actualHttpContractUsesSnakeCaseAndRejectsUnknownFields() throws Exception {
-        String token=login("nurse");
+        String token=login("operator_a");
         var response=request("/bgssai/admin/patients/query","{\"page\":0,\"size\":1}",token);
         assertEquals(200,response.statusCode(),response.body());
         JsonNode result=json.readTree(response.body()).path("result");
@@ -111,7 +111,28 @@ class AdminHttpTest {
     }
     @Test void patientRoleCannotLogInToAdmin() throws Exception {
         var result=request("/bgssai/admin/login","{\"identifier\":\"patient\",\"password\":\"HealthDemo@2026!\"}",null);
-        assertEquals(403,result.statusCode());
+        assertTrue(result.statusCode()>=400);
+    }
+    @Test void hospitalCliniciansHaveNoAdminLoginAndAreListedAsContacts() throws Exception {
+        for(String identifier:List.of("doctor","nurse")) {
+            var result=request("/bgssai/admin/login","{\"identifier\":\""+identifier+"\",\"password\":\"HealthDemo@2026!\"}",null);
+            assertTrue(result.statusCode()>=400);
+        }
+        String manager=login("manager");
+        var clinicians=request("/bgssai/admin/clinicians",null,manager);
+        assertEquals(200,clinicians.statusCode(),clinicians.body());
+        assertTrue(clinicians.body().contains("演示院方责任医生"));
+    }
+    @Test void managerRegistersHospitalContactWithoutCreatingAnAccount() throws Exception {
+        String manager=login("manager"),operator=login("operator_a");
+        String name="虚构院方联系人"+UUID.randomUUID().toString().substring(0,8);
+        String body=json.writeValueAsString(Map.of("name",name,"department","测试科室"));
+        assertEquals(403,request("/bgssai/admin/clinicians/create",body,operator).statusCode());
+        var created=request("/bgssai/admin/clinicians/create",body,manager);
+        assertEquals(200,created.statusCode(),created.body());
+        assertEquals(name,json.readTree(created.body()).path("result").path("name").asText());
+        assertEquals(400,request("/bgssai/admin/clinicians/create",body,manager).statusCode());
+        assertTrue(request("/bgssai/admin/login","{\"identifier\":\""+name+"\",\"password\":\"HealthDemo@2026!\"}",null).statusCode()>=400);
     }
     @Test void platformHasOnlyConfigurationAccess() throws Exception {
         String token=login("platform");

@@ -27,7 +27,7 @@ public class ChannelService {
     }
     @Transactional
     public ChannelResponse create(CreateChannelRequest req){
-        log.info("create channel source={}",req.source());access.manager();patients.validateStaff(req.doctorId(),"DOCTOR");patients.validateStaff(req.ownerId(),"NURSE","OPERATOR","MANAGER");
+        log.info("create channel source={}",req.source());access.manager();patients.validateClinician(req.doctorId());patients.validateStaff(req.ownerId(),"OPERATOR","MANAGER");
         IntakeChannel c=new IntakeChannel();c.hospitalId=CurrentAccount.get().hospitalId();c.title=req.title();c.source=req.source();c.department=req.department();c.doctorId=req.doctorId();c.ownerId=req.ownerId();c.token=UUID.randomUUID().toString().replace("-","");c.active=true;c.creator=CurrentAccount.get().userId().toString();
         channels.insertSelective(c);audit.append(null,"CHANNEL_CREATED",c.id,null,"ACTIVE","Channel created");return view(c);
     }

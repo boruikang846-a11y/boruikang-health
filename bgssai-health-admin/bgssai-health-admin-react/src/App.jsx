@@ -28,7 +28,7 @@ function Login({ onLogin, account }) {
     <div><div className="eyebrow">CONTINUOUS CARE</div><h1>每一次随访，<br />都有下文。</h1><p>连接患者、医生与健康管理团队。<br />从入组到复诊，让院外服务有记录、可跟踪。</p>
       <div className="login-steps"><span>患者建档</span><span>随访审核</span><span>持续管理</span></div></div>
     <small>医患运营管理平台 / HEALTH-ADMIN</small>
-  </section><section className="login-panel"><Card bordered={false}><Tag color="blue">医护与运营团队</Tag><h2>登录工作台</h2><p className="muted">使用医院分配的工作账号继续</p>
+  </section><section className="login-panel"><Card bordered={false}><Tag color="blue">受托运营团队</Tag><h2>登录工作台</h2><p className="muted">使用运营团队分配的工作账号继续</p>
     {error && <Alert type="error" showIcon message={error} className="mb" />}
     <Form layout="vertical" onFinish={async values => {
       if (busy) return; setBusy(true); setError(null)
@@ -38,7 +38,7 @@ function Login({ onLogin, account }) {
       <Form.Item name="identifier" label="工作账号" rules={[{ required: true, message: '请输入工作账号' }]}><Input size="large" autoComplete="username" placeholder="请输入工作账号" /></Form.Item>
       <Form.Item name="password" label="密码" rules={[{ required: true, message: '请输入密码' }]}><Input.Password size="large" autoComplete="current-password" placeholder="请输入密码" /></Form.Item>
       <Button type="primary" size="large" htmlType="submit" block loading={busy}>进入工作台</Button>
-    </Form><p className="mt"><Link to="/overview">了解整个系统与团队分工 →</Link></p><p className="login-note">账号由机构管理员分配。平台管理员与临床工作账号的权限相互独立。</p>
+    </Form><p className="mt"><Link to="/overview">了解整个系统与团队分工 →</Link></p><p className="login-note">院方医生和护士无需登录本工作台；医学审核和报表交接由运营人员记录实际凭证。</p>
   </Card></section></div>
 }
 function Shell({ account, logout }) {

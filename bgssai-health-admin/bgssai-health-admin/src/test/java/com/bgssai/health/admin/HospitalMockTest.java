@@ -40,7 +40,7 @@ class HospitalMockTest {
         // A matching fictional phone already exists in the seed; it must not merge with that patient.
         assertNotEquals(1001L,patient.id());
         var before=taskMapper.countByExample(new CareTaskExample());
-        patients.update(new UpdatePatientRequest(patient.id(),patient.version(),5L,3L,null,null,null,null));
+        patients.update(new UpdatePatientRequest(patient.id(),patient.version(),5L,3L,null,null,null,null,null));
         var second=hospital.sync(request("NORMAL"));
         assertEquals(0,second.createdPatients());assertEquals(2,second.existingPatients());assertEquals(0,second.createdRecords());assertEquals(3,second.skippedRecords());
         assertEquals(first.patientIds(),second.patientIds());assertEquals(before,taskMapper.countByExample(new CareTaskExample()));
@@ -68,7 +68,7 @@ class HospitalMockTest {
         assertEquals(patientCount,patientMapper.countByExample(new PatientExample()));assertEquals(recordCount,recordMapper.countByExample(new CareRecordExample()));assertEquals(taskCount,taskMapper.countByExample(new CareTaskExample()));
     }
     @Test void onlyOperationsCanPreviewAndImport(){
-        for(String role:List.of("DOCTOR","NURSE","PLATFORM_ADMIN")){
+        for(String role:List.of("DOCTOR","NURSE","OPERATOR","PLATFORM_ADMIN")){
             CurrentAccount.set(new AccountInfo(2L,"Non-manager",role,1L));
             assertEquals("4003",assertThrows(BizException.class,()->hospital.preview(new HospitalQueryRequest("NORMAL"))).getCode());
             assertEquals("4003",assertThrows(BizException.class,()->hospital.sync(request("NORMAL"))).getCode());
