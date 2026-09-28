@@ -30,7 +30,7 @@ public class HospitalImportService {
         log.info("import hospital batch source={} count={}",batch.sourceSystem(),batch.patients().size());access.manager();
         Checks.require(MockHospitalGateway.SOURCE.equals(batch.sourceSystem()),"Unsupported hospital source");
         Checks.require(req.doctorId()!=null&&req.ownerId()!=null,"Assign a doctor and care coordinator first");
-        patients.validateStaff(req.doctorId(),"DOCTOR");patients.validateStaff(req.ownerId(),"MANAGER","NURSE","OPERATOR");
+        patients.validateClinician(req.doctorId());patients.validateStaff(req.ownerId(),"MANAGER","OPERATOR");
         Long hospitalId=CurrentAccount.get().hospitalId();int createdPatients=0,existingPatients=0,createdRecords=0,skippedRecords=0;
         var ids=new ArrayList<Long>();
         for(HospitalPatientResponse item:batch.patients()){

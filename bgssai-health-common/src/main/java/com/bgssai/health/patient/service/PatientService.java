@@ -19,11 +19,11 @@ import java.util.Objects;
 @Service
 public class PatientService {
     private static final Logger log=LoggerFactory.getLogger(PatientService.class);
-    private final PatientMapper patients; private final HealthAccountMapper accounts; private final CareTaskMapper tasks;
+    private final PatientMapper patients; private final HealthAccountMapper accounts; private final HospitalClinicianMapper clinicians; private final CareTaskMapper tasks;
     private final IntakeChannelMapper channels; private final KnowledgeEntryMapper knowledge; private final PatientAccess access; private final AuditService audit;
-    public PatientService(PatientMapper patients,HealthAccountMapper accounts,CareTaskMapper tasks,IntakeChannelMapper channels,
+    public PatientService(PatientMapper patients,HealthAccountMapper accounts,HospitalClinicianMapper clinicians,CareTaskMapper tasks,IntakeChannelMapper channels,
         KnowledgeEntryMapper knowledge,PatientAccess access,AuditService audit) {
-        this.patients=patients;this.accounts=accounts;this.tasks=tasks;this.channels=channels;this.knowledge=knowledge;this.access=access;this.audit=audit;
+        this.patients=patients;this.accounts=accounts;this.clinicians=clinicians;this.tasks=tasks;this.channels=channels;this.knowledge=knowledge;this.access=access;this.audit=audit;
     }
     public Paged<PatientResponse> query(PatientQueryRequest req) {
         log.info("query patients page={}",req.page());PatientExample ex=access.scope();
@@ -46,9 +46,8 @@ public class PatientService {
     private PatientResponse create(CreatePatientRequest req,String sourceSystem,String externalId) {
         log.info("create patient actorId={}",CurrentAccount.get().userId());access.staff();var actor=CurrentAccount.get();
         Long doctorId=req.doctorId(), ownerId=req.ownerId();
-        if ("DOCTOR".equals(actor.roleCode())) { Checks.permit(doctorId==null||actor.userId().equals(doctorId));doctorId=actor.userId(); }
-        if (List.of("NURSE","OPERATOR").contains(actor.roleCode())) { Checks.permit(ownerId==null||actor.userId().equals(ownerId));ownerId=actor.userId(); }
-        validateStaff(doctorId,"DOCTOR"); validateStaff(ownerId,"NURSE","OPERATOR","MANAGER");
+        if ("OPERATOR".equals(actor.roleCode())) { Checks.permit(ownerId==null||actor.userId().equals(ownerId));ownerId=actor.userId(); }
+        validateClinician(doctorId); validateStaff(ownerId,"OPERATOR","MANAGER");
         Patient p=new Patient();p.hospitalId=actor.hospitalId();p.name=req.name().trim();p.gender=req.gender();p.age=req.age();p.phone=req.phone();
         p.department=req.department();p.disease=req.disease();p.doctorId=doctorId;p.ownerId=ownerId;p.note=req.note();p.creator=actor.userId().toString();
         p.sourceSystem=sourceSystem;p.hospitalPatientId=externalId;
@@ -59,8 +58,8 @@ public class PatientService {
     public PatientResponse update(UpdatePatientRequest req) {
         log.info("update patient patientId={}",req.id());access.staff();Patient p=access.lock(req.id());Checks.conflict(req.version().equals(p.version));
         if ((req.doctorId()!=null&&!Objects.equals(req.doctorId(),p.doctorId))||(req.ownerId()!=null&&!Objects.equals(req.ownerId(),p.ownerId))) access.manager();
-        if (req.riskLevel()!=null&&!req.riskLevel().equals(p.riskLevel)) access.doctor(p);
-        validateStaff(req.doctorId(),"DOCTOR"); validateStaff(req.ownerId(),"NURSE","OPERATOR","MANAGER");
+        if (req.riskLevel()!=null&&!req.riskLevel().equals(p.riskLevel)) Checks.require(Checks.text(req.riskEvidence()),"Record hospital clinical assessment evidence / 请记录院方风险评估依据");
+        validateClinician(req.doctorId()); validateStaff(req.ownerId(),"OPERATOR","MANAGER");
         if (req.servicePackageId()!=null) {
             KnowledgeEntry k=knowledge.selectByPrimaryKey(req.servicePackageId());
             Checks.require(k!=null&&p.hospitalId.equals(k.hospitalId)&&"PACKAGE".equals(k.kind)&&"PUBLISHED".equals(k.status),"Published service package required");
@@ -92,7 +91,7 @@ public class PatientService {
                 }
             }
         }
-        audit.append(p.id,"PATIENT_UPDATED",p.id,p.lifecycle,req.lifecycle(),"Profile, assignment or risk updated");
+        audit.append(p.id,"PATIENT_UPDATED",p.id,p.lifecycle,req.lifecycle(),Checks.text(req.riskEvidence())?"Hospital risk evidence: "+req.riskEvidence():"Profile or assignment updated");
         return view(patients.selectByPrimaryKey(p.id),false);
     }
     @Transactional
@@ -119,7 +118,7 @@ public class PatientService {
     public List<AccountInfo> staff() {
         log.info("list staff hospitalId={}",CurrentAccount.get().hospitalId());access.staff();
         HealthAccountExample ex=new HealthAccountExample();ex.eq("hospital_id",CurrentAccount.get().hospitalId()).eq("is_enabled",true)
-            .in("role_code",List.of("DOCTOR","MANAGER","NURSE","OPERATOR"));ex.selectColumns("id","real_name","role_code","hospital_id");
+            .in("role_code",List.of("MANAGER","OPERATOR"));ex.selectColumns("id","real_name","role_code","hospital_id");
         PageHelper.startPage(1,100,false);
         List<HealthAccount> rows=accounts.selectByExample(ex);
         return rows.stream().map(r->new AccountInfo(r.id,r.realName,r.roleCode,r.hospitalId)).toList();
@@ -127,6 +126,26 @@ public class PatientService {
     public void validateStaff(Long id,String... roles) {
         if(id==null)return;HealthAccount a=accounts.selectByPrimaryKey(id);
         Checks.require(a!=null&&CurrentAccount.get().hospitalId().equals(a.hospitalId)&&Boolean.TRUE.equals(a.enabled)&&List.of(roles).contains(a.roleCode),"Invalid staff assignment / 请选择本院有效医护人员");
+    }
+    public List<ClinicianInfo> clinicians() {
+        access.staff();HospitalClinicianExample ex=new HospitalClinicianExample();ex.eq("hospital_id",CurrentAccount.get().hospitalId()).eq("is_active",true);
+        PageHelper.startPage(1,100,false);
+        return clinicians.selectByExample(ex).stream().map(r->new ClinicianInfo(r.id,r.name,r.department)).toList();
+    }
+    @Transactional
+    public ClinicianInfo createClinician(CreateClinicianRequest req) {
+        access.manager();String name=req.name().trim(), department=req.department().trim();
+        HospitalClinicianExample duplicate=new HospitalClinicianExample();duplicate.eq("hospital_id",CurrentAccount.get().hospitalId()).eq("name",name).eq("department",department);
+        Checks.require(clinicians.countByExample(duplicate)==0,"This hospital clinician is already recorded / 院方医生已存在");
+        HospitalClinician row=new HospitalClinician();row.hospitalId=CurrentAccount.get().hospitalId();row.name=name;row.department=department;row.active=true;row.creator=CurrentAccount.get().userId().toString();
+        clinicians.insertSelective(row);audit.append(null,"HOSPITAL_CLINICIAN_CONTACT_ADDED",row.id,null,"ACTIVE","Non-login hospital contact");
+        return new ClinicianInfo(row.id,row.name,row.department);
+    }
+    public HospitalClinician validateClinician(Long id) {
+        if(id==null)return null;
+        HospitalClinician row=clinicians.selectByPrimaryKey(id);
+        Checks.require(row!=null&&CurrentAccount.get().hospitalId().equals(row.hospitalId)&&Boolean.TRUE.equals(row.active),"Select an active hospital clinician / 请选择本院有效的审核医生");
+        return row;
     }
     public static PatientResponse view(Patient p,boolean masked) {
         String name=masked&&p.name.length()>1?p.name.substring(0,1)+"*".repeat(p.name.length()-1):p.name;

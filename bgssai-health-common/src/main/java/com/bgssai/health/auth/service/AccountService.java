@@ -73,6 +73,6 @@ public class AccountService {
         HealthAccountExample ex=new HealthAccountExample(); ex.eq("id",actor.userId()); accounts.updateByExampleSelective(patch,ex);
     }
     private boolean allowed(String role) {
-        return "user".equals(portal) ? "USER".equals(role) : List.of("MANAGER","DOCTOR","NURSE","OPERATOR","PLATFORM_ADMIN").contains(role);
+        return "user".equals(portal) ? "USER".equals(role) : List.of("MANAGER","OPERATOR","PLATFORM_ADMIN").contains(role);
     }
 }

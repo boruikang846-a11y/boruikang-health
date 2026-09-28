@@ -24,10 +24,11 @@ def insert(table, **fields):
     rows.append(f"INSERT INTO {table} ({','.join(fields)}) VALUES ({','.join(value(v) for v in fields.values())}) ON DUPLICATE KEY UPDATE id=id;")
 
 for id, username, role, name in [
-    (10, 'doctor_c', 'DOCTOR', '演示内科医生'), (11, 'doctor_d', 'DOCTOR', '演示综合科医生'),
-    (20, 'nurse_b', 'NURSE', '演示随访护士乙'), (21, 'nurse_c', 'NURSE', '演示随访护士丙'),
-    (22, 'operator', 'OPERATOR', '演示服务协调员')]:
+    (20, 'operator_b', 'OPERATOR', '演示运营专员乙'), (21, 'operator_c', 'OPERATOR', '演示运营专员丙'),
+    (22, 'operator_d', 'OPERATOR', '演示服务协调员')]:
     insert('health_account', id=id, username=username, password='HealthDemo@2026!', real_name=name, role_code=role, is_enabled=1)
+for id, name, department in [(10,'演示院方内科医生','内科'),(11,'演示院方综合科医生','综合科')]:
+    insert('hospital_clinician', id=id, name=name, department=department, is_active=1)
 departments = ['心血管内科','内分泌科','呼吸内科','神经内科','肾内科','消化内科','康复医学科','老年医学科','骨科','普通外科','全科','健康管理中心']
 sources = ['PRIMARY_CARE','EXAM','OUTPATIENT','DISCHARGE','CAMPAIGN']
 for i, dept in enumerate(departments):
@@ -36,7 +37,9 @@ for i, dept in enumerate(departments):
     insert('knowledge_entry', id=100+i, kind='EDUCATION', department=dept, title=f'{dept}复诊资料准备（演示）',
            content='请按医院要求准备原报告和当前问题清单。请向服务团队核实时间、地点和所需资料。本条不提供诊断、处方或用药调整。',
            source='虚构演示宣教；不代表该科室知识覆盖或医院临床批准', version=1, status='PUBLISHED' if i%2==0 else 'DRAFT',
-           reviewer_id=[2,5,10,11][i%4] if i%2==0 else None, reviewed_at=ago(30) if i%2==0 else None)
+           reviewer_id=[2,5,10,11][i%4] if i%2==0 else None, reviewed_at=ago(30) if i%2==0 else None,
+           review_channel='SIGNED_DOCUMENT' if i%2==0 else None,
+           review_evidence='虚构院方审核凭证 EDU-DEMO；仅用于演示。' if i%2==0 else None)
 
 states = ['PENDING','IN_PROGRESS','PENDING_REVIEW','APPROVED','CONTACTED','COMPLETED','REJECTED','CANCELLED']
 revisits = ['PENDING','BOOKED','ARRIVED','COMPLETED','NO_SHOW','CANCELLED']
@@ -78,10 +81,14 @@ for i in range(72):
                due_at=ago(days-offset), record_id=record, followup_stage=f'D{offset}',
                draft_text=None if status=='PENDING' else text, draft_origin=None if status=='PENDING' else 'MANUAL',
                approved_text=text if reviewed else None, reviewer_id=doctor if reviewed else None, reviewed_at=ago(2,3) if reviewed else None,
+               review_channel='HOSPITAL_SYSTEM' if reviewed else None,
+               review_evidence=f'虚构院方审核记录 REVIEW-DEMO-{i+1:03d}-{node}；运营人员登记。' if reviewed else None,
                review_note='演示审核：已核对关联报告。' if reviewed else '演示退回：请补充患者需要核实的问题。' if status=='REJECTED' else None,
                contact_result=result, identity_verified=1 if connected else 0, next_contact_at=future(1) if retry else None,
                handover_status=('ACKNOWLEDGED' if i%2 else 'PENDING') if status=='COMPLETED' else None,
                doctor_feedback='演示接收：已查看随访记录，请团队按记录安排继续跟进。' if status=='COMPLETED' and i%2 else None,
+               handover_channel='HOSPITAL_SYSTEM' if status=='COMPLETED' and i%2 else None,
+               handover_evidence=f'虚构院方查收记录 HANDOVER-DEMO-{i+1:03d}-{node}。' if status=='COMPLETED' and i%2 else None,
                acknowledged_at=ago(0,1) if status=='COMPLETED' and i%2 else None,
                completed_at=ago(1) if status=='COMPLETED' else None,
                outcome='演示完成：反馈已记录，需要医生处理的问题已交接。' if status=='COMPLETED' else '演示暂停或取消，保留历史记录。' if status=='CANCELLED' else None,
@@ -96,7 +103,7 @@ for i in range(72):
                    patient_questions='演示问题：希望确认复诊需携带的资料。' if connected else None,
                    evidence='虚构电话演示凭证，无真实外呼。', request_key=f'demo-full-contact-{task}')
         if connected:
-            insert('care_message', id=task, patient_id=patient, task_id=task, sender_id=owner, sender_role='OPERATOR' if owner==22 else 'NURSE',
+            insert('care_message', id=task, patient_id=patient, task_id=task, sender_id=owner, sender_role='OPERATOR',
                    direction='STAFF_TO_PATIENT', content=text, gmt_create=ago(1,1))
     revisit=30000+i*10+3
     state=revisits[i%6]

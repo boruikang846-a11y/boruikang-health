@@ -29,12 +29,12 @@ export default function App() {
   </header>
   <main><section className="hero"><div className="hero-copy"><div className="eyebrow"><span /> {t('医患运营管理系统 · 关怀延续', 'PATIENT RELATIONSHIPS & CARE OPERATIONS')}</div>
     <h1>{t('让每一次关怀', 'Care that stays')}<br /><em>{t('延续到日常生活', 'with you.')}</em></h1>
-    <p className="hero-description">{t('连接患者、医生与健康管理团队。让就诊之后的沟通、随访与复诊，成为有记录、有回应的连续服务。', 'Connecting patients, clinicians and care coordinators. Bringing continuity to communication, follow-ups and return visits beyond the hospital.')}</p>
+    <p className="hero-description">{t('医院委托我们持续运营患者服务。院方负责医学判断，我们负责沟通、随访、复诊跟踪与结果反馈。', 'The hospital entrusts our team with ongoing patient services. Clinicians make medical decisions; we manage follow-ups, visit tracking and feedback.')}</p>
     <div className="hero-actions"><Button type="primary" size="large" href="#overview">{t('一图看懂整个系统', 'Explore the system')} <ArrowRightOutlined /></Button><a href="#roadmap">{t('查看建设进展', 'View the roadmap')}</a></div>
     <div className="availability"><span className="availability-dot" />{t('当前为规划介绍，患者业务尚未开放', 'Introduction only. Patient services are not yet available.')}</div>
   </div><div className="hero-art" aria-label={t('患者与健康管理团队协作示意', 'Illustration of patients connected to a care team')}>
     <div className="orbit outer" /><div className="orbit inner" /><div className="center-heart"><HeartOutlined /><span>{t('以患者为中心', 'Patient centered')}</span></div>
-    <div className="care-card top"><span className="small-icon"><TeamOutlined /></span><div><b>{t('医院服务团队', 'Hospital care team')}</b><small>{t('明确责任，持续跟进', 'Assigned care and continued support')}</small></div></div>
+    <div className="care-card top"><span className="small-icon"><TeamOutlined /></span><div><b>{t('受托运营团队', 'Managed operations team')}</b><small>{t('明确责任，持续跟进', 'Assigned care and continued support')}</small></div></div>
     <div className="care-card bottom"><span className="small-icon warm"><SafetyCertificateOutlined /></span><div><b>{t('医生审核 · 人工负责', 'Doctor reviewed, human led')}</b><small>{t('每一步服务都有依据', 'Care grounded in clinical review')}</small></div></div>
     <div className="art-caption">BGSSAI HEALTH / CONTINUOUS CARE</div>
   </div></section>
@@ -43,17 +43,17 @@ export default function App() {
   <section id="modes" className="section"><div className="section-intro"><div className="eyebrow">THREE WAYS TO CONNECT</div><h2>{t('一个服务体系，三种连接方式', 'One care experience. Three ways to connect.')}</h2><p>{t('围绕患者熟悉的使用习惯，规划企业微信、小程序与 Web 协同服务。', 'Planned around familiar ways of connecting, across WeCom, a Mini Program and the web.')}</p></div>
     <div className="mode-grid">{modes.map(([Icon,key,title,subtitle,description,status]) => <article className={'mode-card ' + key} key={key}><div className="mode-top"><span className="mode-icon"><Icon /></span><Tag bordered={false} color={key === 'web' ? 'cyan' : 'default'}>{key === 'web' ? t('介绍已上线','Introduction') : t('规划中','Planned')}</Tag></div><h3>{title}</h3><h4>{subtitle}</h4><p>{description}</p><div className="mode-status"><span />{status}</div></article>)}</div>
   </section>
-  <section id="journey" className="journey-section"><div className="section-intro"><div className="eyebrow">CARE WITH CONTINUITY</div><h2>{t('围绕患者，形成连续的服务', 'A continuous journey around the patient')}</h2><p>{t('医护后台先行建设，逐步连接患者服务入口。', 'Building the care team workspace first, then connecting patient channels.')}</p></div>
+  <section id="journey" className="journey-section"><div className="section-intro"><div className="eyebrow">CARE WITH CONTINUITY</div><h2>{t('围绕患者，形成连续的服务', 'A continuous journey around the patient')}</h2><p>{t('受托运营后台先行建设，逐步连接患者服务入口。', 'Building the managed operations workspace first, then connecting patient channels.')}</p></div>
     <div className="journey-grid">{[
-      [t('建立健康档案','Create a care profile'), t('医院团队核对信息，明确服务归属与责任人员。','The hospital verifies information and assigns the responsible care team.')],
+      [t('建立健康档案','Create a care profile'), t('医院提供原始资料，我们核对信息并明确院方联系人和运营负责人。','The hospital provides source records; our team verifies them and assigns clinical and operational contacts.')],
       [t('准备随访服务','Prepare follow-up care'), t('根据出院报告等原始记录，准备个体随访问询内容。','The team prepares individual follow-up questions using discharge or other clinical records.')],
-      [t('医生审核，人工联系','Review and personal contact'), t('建议由责任医生审核，团队人工联系并记录依据。','A responsible doctor reviews guidance, and the team records personal contact with evidence.')],
+      [t('院方审核，人工联系','Review and personal contact'), t('院方医生审核个案建议，我们取得回执后人工联系并记录凭证。','Hospital doctors review patient-specific guidance; our team records the response and then contacts patients.')],
       [t('跟踪反馈与复诊','Track outcomes and visits'), t('记录处理结果，核实复诊安排，让服务有始有终。','The team records outcomes and verifies return visits to complete the care process.')],
     ].map(([title,description],index) => <article key={title}><span className="step-number">0{index+1}</span><h3>{title}</h3><p>{description}</p></article>)}</div>
   </section>
-  <section id="roadmap" className="section roadmap"><div className="roadmap-heading"><div className="eyebrow">STEP BY STEP</div><h2>{t('把每一步', 'Each step,')}<br />{t('都做清楚', 'clearly defined.')}</h2><p>{t('当前聚焦医护团队的工作闭环。患者端功能，将在需求和医院流程确认后逐步建设。', 'The current focus is the care team workflow. Patient features will follow confirmed needs and hospital processes.')}</p><a href="#faq">{t('还有疑问？', 'Questions?')} <ArrowRightOutlined /></a></div>
+  <section id="roadmap" className="section roadmap"><div className="roadmap-heading"><div className="eyebrow">STEP BY STEP</div><h2>{t('把每一步', 'Each step,')}<br />{t('都做清楚', 'clearly defined.')}</h2><p>{t('当前聚焦受托运营团队的工作闭环。患者端功能，将在需求和医院流程确认后逐步建设。', 'The current focus is the managed operations workflow. Patient features will follow confirmed needs and hospital processes.')}</p><a href="#faq">{t('还有疑问？', 'Questions?')} <ArrowRightOutlined /></a></div>
     <div className="roadmap-list">{[
-      [t('当前阶段','Current phase'),t('医护后台与患者服务介绍','Care workspace and patient introduction'),t('实现后台患者运营、随访审核、异常与复诊跟踪；患者端公开展示整体模式。','Building patient operations, follow-up review, alerts and return-visit tracking for staff, with this public patient introduction.')],
+      [t('当前阶段','Current phase'),t('受托运营后台与患者服务介绍','Managed operations and patient introduction'),t('运营团队完成后台随访、院方审核凭证、异常与复诊跟踪；患者端公开展示整体模式。','Our team uses the workspace for follow-ups, hospital review evidence, alerts and return-visit tracking, with this public introduction for patients.')],
       [t('下一阶段','Next phase'),t('确认患者需求与医院流程','Confirm patient needs and hospital workflows'),t('明确患者使用场景、授权说明、医院联系人与服务范围，确认各渠道的接入条件。','Define patient scenarios, consent, hospital contacts and service scope, then confirm integration requirements.')],
       [t('后续规划','Later phases'),t('分阶段开放患者服务','Open patient services in phases'),t('按确认的需求建设企业微信、小程序和 Web 功能，完成医院接口联调后再开放。','Develop the agreed WeCom, Mini Program and web features, and launch after hospital integrations are validated.')],
     ].map(([phase,title,description],index) => <article key={phase}><div className={'phase-mark ' + (index === 0 ? 'current' : '')}>{index === 0 ? <CheckOutlined /> : index+1}</div><div><small>{phase}</small><h3>{title}</h3><p>{description}</p></div></article>)}</div>

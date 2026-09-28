@@ -35,8 +35,8 @@ class FollowupOperationsTest {
     private TaskResponse approve(TaskResponse row){
         row=tasks.claim(new ClaimTaskRequest(row.id(),row.version()));
         row=tasks.draft(new DraftTaskRequest(row.id(),row.version(),null,"TEMPLATE",null));
-        row=tasks.submit(new SubmitReviewRequest(row.id(),row.version()));actor(2L,"DOCTOR");
-        return tasks.review(new ReviewTaskRequest(row.id(),row.version(),true,"仅核对原报告与问题，不调整用药。","已核对"));
+        row=tasks.submit(new SubmitReviewRequest(row.id(),row.version()));
+        return tasks.review(new ReviewTaskRequest(row.id(),row.version(),true,"仅核对原报告与问题，不调整用药。","已核对","HOSPITAL_SYSTEM","虚构院方审核回执 TEST-REVIEW",LocalDateTime.now()));
     }
     private RecordContactRequest contact(TaskResponse row,boolean identity,boolean report){return new RecordContactRequest(row.id(),row.version(),"虚构电话记录 TEST-CONNECTED",LocalDateTime.now().minusSeconds(1),"PHONE",identity,"PATIENT",report,"无新增困难，按原医嘱执行","暂无问题");}
     private WeeklyReportResponse today(){return reports.weekly(new WeeklyReportRequest(LocalDate.now(),LocalDate.now()));}
@@ -53,7 +53,7 @@ class FollowupOperationsTest {
         var row=create("FOLLOWUP");
         assertThrows(BizException.class,()->tasks.attempt(new RecordAttemptRequest(row.id(),row.version(),LocalDateTime.now().minusMinutes(1),"PHONE","BUSY","占线",null,"","凭证")));
         assertTrue(tasks.context(row.id()).attempts().isEmpty());
-        actor(5L,"DOCTOR");assertThrows(BizException.class,()->tasks.attempt(attempt(row)));
+        actor(20L,"OPERATOR");assertThrows(BizException.class,()->tasks.attempt(attempt(row)));
         CurrentAccount.set(new AccountInfo(99L,"Other","MANAGER",2L));assertThrows(BizException.class,()->tasks.context(row.id()));
     }
     @Test void completedRecordRequiresIdentityAndResponsibleDoctorAcknowledgement(){
@@ -63,13 +63,13 @@ class FollowupOperationsTest {
         assertThrows(BizException.class,()->tasks.contact(contact(approved,false,true)));
         assertThrows(BizException.class,()->tasks.contact(contact(approved,true,false)));
         assertTrue(tasks.context(initial.id()).attempts().isEmpty());
-        actor(3L,"NURSE");var connected=tasks.contact(contact(approved,true,true));
+        actor(3L,"OPERATOR");var connected=tasks.contact(contact(approved,true,true));
         var done=tasks.transition(new TransitionTaskRequest(connected.id(),connected.version(),"COMPLETE","已记录反馈并交接",null));
         assertEquals("PENDING",done.handoverStatus());assertNull(done.nextContactAt());
-        assertThrows(BizException.class,()->tasks.acknowledge(new AcknowledgeTaskRequest(done.id(),done.version(),"护士不能代替医生")));
-        actor(5L,"DOCTOR");assertThrows(BizException.class,()->tasks.acknowledge(new AcknowledgeTaskRequest(done.id(),done.version(),"其他医生")));
-        actor(2L,"DOCTOR");assertEquals("ACKNOWLEDGED",tasks.acknowledge(new AcknowledgeTaskRequest(done.id(),done.version(),"已查收，按原计划跟进")).handoverStatus());
-        assertThrows(BizException.class,()->tasks.acknowledge(new AcknowledgeTaskRequest(done.id(),done.version(),"重复")));
+        assertThrows(BizException.class,()->tasks.acknowledge(new AcknowledgeTaskRequest(done.id(),done.version(),"尚无凭证","PHONE","",LocalDateTime.now())));
+        actor(20L,"OPERATOR");assertThrows(BizException.class,()->tasks.acknowledge(new AcknowledgeTaskRequest(done.id(),done.version(),"其他组不能登记","PHONE","虚构回执",LocalDateTime.now())));
+        actor(3L,"OPERATOR");assertEquals("ACKNOWLEDGED",tasks.acknowledge(new AcknowledgeTaskRequest(done.id(),done.version(),"院方已查收，按原计划跟进","HOSPITAL_SYSTEM","虚构院方回执 TEST-HANDOVER",LocalDateTime.now())).handoverStatus());
+        assertThrows(BizException.class,()->tasks.acknowledge(new AcknowledgeTaskRequest(done.id(),done.version(),"重复","PHONE","虚构回执",LocalDateTime.now())));
     }
     @Test void explicitNodeSchedulingIsIdempotentAndCannotReuseAnotherPatientsRecord(){
         var record=records.create(new CreateRecordRequest(1001L,"DISCHARGE",LocalDateTime.now().minusDays(2),"Fictional report",null,null));
@@ -81,7 +81,7 @@ class FollowupOperationsTest {
         assertThrows(BizException.class,()->tasks.schedule(new ScheduleFollowupsRequest(1001L,record.id(),key,List.of(nodes.getFirst()))));
     }
     @Test void nursesSeeScopedRatesAndCancelledTasksDoNotInflateDenominator(){
-        actor(3L,"NURSE");var before=today();var row=create("FOLLOWUP");tasks.attempt(attempt(row));
+        actor(3L,"OPERATOR");var before=today();var row=create("FOLLOWUP");tasks.attempt(attempt(row));
         var during=today();assertEquals(before.dueCount()+1,during.dueCount());assertEquals(before.completedCount(),during.completedCount());
         assertTrue(during.nurses().stream().allMatch(n->n.ownerId().equals(3L)));
         var latest=tasks.context(row.id()).task();tasks.transition(new TransitionTaskRequest(latest.id(),latest.version(),"CANCEL","错误重复安排",null));
@@ -95,14 +95,14 @@ class FollowupOperationsTest {
         assertFalse(tasks.query(request).items().stream().anyMatch(x->x.id().equals(row.id())));
     }
     @Test void archiveIsImmutableScopedAndDeliveryRequiresRealEvidence(){
-        actor(3L,"NURSE");var archive=reports.archive(new ArchiveReportRequest("DAILY",LocalDate.now(),LocalDate.now(),"当日记录","继续跟进"));
+        actor(3L,"OPERATOR");var archive=reports.archive(new ArchiveReportRequest("DAILY",LocalDate.now(),LocalDate.now(),"当日记录","继续跟进"));
         assertFalse(archive.createdAt().isAfter(LocalDateTime.now()));
         long original=archive.snapshot().dueCount();create("FOLLOWUP");
         var persisted=reports.archives(new PageRequest(0,100)).items().stream().filter(x->x.id().equals(archive.id())).findFirst().orElseThrow();
         assertEquals(original,persisted.snapshot().dueCount());assertEquals(original+1,today().dueCount());
-        actor(20L,"NURSE");assertTrue(reports.archives(new PageRequest(0,100)).items().isEmpty());
+        actor(20L,"OPERATOR");assertTrue(reports.archives(new PageRequest(0,100)).items().isEmpty());
         assertThrows(BizException.class,()->reports.deliver(new DeliverReportRequest(archive.id(),archive.version(),"不可越权",LocalDateTime.now())));
-        actor(3L,"NURSE");assertThrows(BizException.class,()->reports.deliver(new DeliverReportRequest(archive.id(),archive.version(),"凭证",LocalDateTime.now().plusDays(1))));
+        actor(3L,"OPERATOR");assertThrows(BizException.class,()->reports.deliver(new DeliverReportRequest(archive.id(),archive.version(),"凭证",LocalDateTime.now().plusDays(1))));
         var sent=reports.deliver(new DeliverReportRequest(archive.id(),archive.version(),"测试：线下交接编号 DEMO，仅记录事实",LocalDateTime.now()));
         assertNotNull(sent.deliveredAt());assertEquals(original,sent.snapshot().dueCount());
         assertThrows(BizException.class,()->reports.deliver(new DeliverReportRequest(archive.id(),archive.version(),"重复",LocalDateTime.now())));

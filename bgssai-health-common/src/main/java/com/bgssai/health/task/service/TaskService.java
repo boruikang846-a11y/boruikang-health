@@ -8,6 +8,7 @@ import com.bgssai.health.integration.service.AiDraftService;
 import com.bgssai.health.mapper.*;
 import com.bgssai.health.model.*;
 import com.bgssai.health.patient.service.PatientAccess;
+import com.bgssai.health.patient.service.PatientService;
 import com.bgssai.health.task.dto.*;
 import com.github.pagehelper.PageHelper;
 import org.slf4j.Logger;
@@ -27,12 +28,12 @@ public class TaskService {
     private static final Logger log=LoggerFactory.getLogger(TaskService.class);
     private final CareTaskMapper tasks;private final PatientMapper patients;private final CareRecordMapper records;
     private final CareMessageMapper messages;private final KnowledgeEntryMapper knowledge;private final PatientAccess access;
-    private final AuditService audit;private final TaskWriter writer;private final AiDraftService ai;private final ContactAttemptMapper attempts;
+    private final AuditService audit;private final TaskWriter writer;private final AiDraftService ai;private final ContactAttemptMapper attempts;private final PatientService patientService;
     private static final List<String> FAILED_CONTACT=List.of("NO_ANSWER","BUSY","WRONG_NUMBER","REFUSED","IDENTITY_UNVERIFIED");
     public TaskService(CareTaskMapper tasks,PatientMapper patients,CareRecordMapper records,CareMessageMapper messages,
-        KnowledgeEntryMapper knowledge,PatientAccess access,AuditService audit,TaskWriter writer,AiDraftService ai,ContactAttemptMapper attempts) {
+        KnowledgeEntryMapper knowledge,PatientAccess access,AuditService audit,TaskWriter writer,AiDraftService ai,ContactAttemptMapper attempts,PatientService patientService) {
         this.tasks=tasks;this.patients=patients;this.records=records;this.messages=messages;this.knowledge=knowledge;
-        this.access=access;this.audit=audit;this.writer=writer;this.ai=ai;this.attempts=attempts;
+        this.access=access;this.audit=audit;this.writer=writer;this.ai=ai;this.attempts=attempts;this.patientService=patientService;
     }
     public Paged<TaskResponse> query(TaskQueryRequest req) {
         log.info("query tasks type={} status={} page={}",req.taskType(),req.status(),req.page());CareTaskExample ex=access.taskScope();
@@ -123,22 +124,26 @@ public class TaskService {
     public TaskResponse submit(SubmitReviewRequest req) {
         log.info("submit review taskId={}",req.id());CareTask t=load(req.id(),req.version());Patient p=access.require(t.patientId);
         Checks.conflict("IN_PROGRESS".equals(t.status));Checks.require(List.of("FOLLOWUP","CONSULTATION").contains(t.taskType)&&Checks.text(t.draftText),"Draft required");
-        Checks.require(p.doctorId!=null,"Assign a doctor first / 请先绑定审核医生");
+        Checks.require(p.doctorId!=null,"Assign a hospital reviewing doctor first / 请先关联院方审核医生");patientService.validateClinician(p.doctorId);
         CareTask patch=new CareTask();patch.status="PENDING_REVIEW";patch.doctorId=p.doctorId;
         return view(writer.save(t,patch,"REVIEW_SUBMITTED"),p);
     }
     public TaskResponse review(ReviewTaskRequest req) {
-        log.info("review task taskId={} approved={}",req.id(),req.approved());CareTask t=load(req.id(),req.version());Patient p=access.require(t.patientId);access.doctor(p);
+        log.info("record hospital review taskId={} approved={}",req.id(),req.approved());CareTask t=load(req.id(),req.version());Patient p=access.require(t.patientId);
         Checks.conflict("PENDING_REVIEW".equals(t.status));
+        Checks.require(p.doctorId!=null&&Objects.equals(t.doctorId,p.doctorId),"Current hospital doctor required");patientService.validateClinician(p.doctorId);
+        Checks.require(req.reviewedAt()!=null&&!req.reviewedAt().isAfter(LocalDateTime.now())&&!req.reviewedAt().isBefore(t.gmtCreate.minusSeconds(2)),"Enter actual hospital review time");
+        Checks.require(Checks.text(req.reviewEvidence()),"Record independently obtained hospital review evidence");
         Checks.require(Boolean.TRUE.equals(req.approved())?Checks.text(req.approvedText()):Checks.text(req.reviewNote()),"Approved text or rejection reason required");
         CareTask patch=new CareTask();patch.status=Boolean.TRUE.equals(req.approved())?"APPROVED":"REJECTED";
-        patch.approvedText=Boolean.TRUE.equals(req.approved())?req.approvedText().trim():"";patch.reviewNote=req.reviewNote();patch.reviewerId=CurrentAccount.get().userId();patch.reviewedAt=LocalDateTime.now();
-        return view(writer.save(t,patch,"DOCTOR_REVIEWED"),p);
+        patch.approvedText=Boolean.TRUE.equals(req.approved())?req.approvedText().trim():"";patch.reviewNote=req.reviewNote();patch.reviewerId=p.doctorId;patch.reviewedAt=req.reviewedAt();
+        patch.reviewChannel=req.reviewChannel();patch.reviewEvidence=req.reviewEvidence().trim();
+        return view(writer.save(t,patch,"HOSPITAL_REVIEW_EVIDENCE_RECORDED"),p);
     }
     @Transactional
     public TaskResponse contact(RecordContactRequest req) {
         log.info("record manual contact taskId={}",req.id());CareTask t=load(req.id(),req.version());Patient p=access.require(t.patientId);
-        Checks.conflict("APPROVED".equals(t.status));Checks.require(Checks.text(t.approvedText)&&Objects.equals(t.reviewerId,p.doctorId),"Current responsible doctor approval required");
+        Checks.conflict("APPROVED".equals(t.status));Checks.require(Checks.text(t.approvedText)&&Checks.text(t.reviewEvidence)&&Objects.equals(t.reviewerId,p.doctorId),"Recorded current hospital doctor approval required");
         Checks.require(Checks.text(req.evidence()),"Manual contact evidence required / 请填写实际人工联系凭证");
         Checks.require(Boolean.TRUE.equals(req.identityVerified()),"Verify patient or authorized contact identity first / 请先核实本人或授权联系人身份");
         Checks.require(t.recordId==null||Boolean.TRUE.equals(req.reportReviewed()),"Review the linked report first / 请核对本任务关联的原报告");
@@ -165,7 +170,7 @@ public class TaskService {
             case "CANCEL" -> {Checks.require(!"ALERT".equals(t.taskType)&&!"CONTACTED".equals(t.status)&&!"ARRIVED".equals(t.status),"This task cannot be cancelled");Checks.require(Checks.text(req.outcome()),"Cancellation reason required");patch.status="CANCELLED";}
             case "COMPLETE" -> {
                 Checks.require(Checks.text(req.outcome()),"Outcome required / 请记录处理结果");
-                if("ALERT".equals(t.taskType)) {access.doctor(p);Checks.conflict("ESCALATED".equals(t.status));}
+                if("ALERT".equals(t.taskType)) {Checks.conflict("ESCALATED".equals(t.status));Checks.require(p.doctorId!=null&&Checks.text(req.evidence()),"Record the hospital clinician's disposition and evidence before closing an alert");patientService.validateClinician(p.doctorId);}
                 else if("REVISIT".equals(t.taskType)) Checks.conflict("ARRIVED".equals(t.status));
                 else Checks.conflict("CONTACTED".equals(t.status));
                 patch.status="COMPLETED";patch.completedAt=LocalDateTime.now();
@@ -173,7 +178,7 @@ public class TaskService {
             }
             default -> throw new IllegalArgumentException("Unknown action");
         }
-        patch.outcome=req.outcome();if(List.of("BOOK","ARRIVE").contains(req.action()))patch.evidence=req.evidence();return view(writer.save(t,patch,"TASK_"+req.action()),p);
+        patch.outcome=req.outcome();if(List.of("BOOK","ARRIVE").contains(req.action())||("ALERT".equals(t.taskType)&&"COMPLETE".equals(req.action())))patch.evidence=req.evidence();return view(writer.save(t,patch,"TASK_"+req.action()),p);
     }
     @Transactional
     public TaskResponse attempt(RecordAttemptRequest req) {
@@ -222,11 +227,13 @@ public class TaskService {
         return result;
     }
     public TaskResponse acknowledge(AcknowledgeTaskRequest req) {
-        CareTask t=load(req.id(),req.version());Patient p=access.require(t.patientId);access.doctor(p);
+        CareTask t=load(req.id(),req.version());Patient p=access.require(t.patientId);
         Checks.conflict("COMPLETED".equals(t.status)&&"PENDING".equals(t.handoverStatus));
-        Checks.require(Checks.text(req.feedback()),"Record the doctor's acknowledgement and next actions");
-        CareTask patch=new CareTask();patch.handoverStatus="ACKNOWLEDGED";patch.doctorFeedback=req.feedback();patch.acknowledgedAt=LocalDateTime.now();
-        return view(writer.save(t,patch,"FOLLOWUP_ACKNOWLEDGED"),p);
+        Checks.require(p.doctorId!=null&&Objects.equals(p.doctorId,t.doctorId),"Current hospital doctor required");patientService.validateClinician(p.doctorId);
+        Checks.require(Checks.text(req.feedback())&&Checks.text(req.evidence()),"Record actual doctor feedback and its evidence");
+        Checks.require(req.acknowledgedAt()!=null&&!req.acknowledgedAt().isAfter(LocalDateTime.now())&&!req.acknowledgedAt().isBefore(t.completedAt.minusSeconds(2)),"Enter actual hospital acknowledgement time");
+        CareTask patch=new CareTask();patch.handoverStatus="ACKNOWLEDGED";patch.doctorFeedback=req.feedback();patch.acknowledgedAt=req.acknowledgedAt();patch.handoverChannel=req.channel();patch.handoverEvidence=req.evidence().trim();
+        return view(writer.save(t,patch,"HOSPITAL_ACKNOWLEDGEMENT_EVIDENCE_RECORDED"),p);
     }
     private ContactAttempt attemptBase(CareTask task,LocalDateTime time,String method,String result,String evidence) {
         ContactAttempt row=new ContactAttempt();row.hospitalId=task.hospitalId;row.patientId=task.patientId;row.taskId=task.id;row.actorId=CurrentAccount.get().userId();
@@ -257,7 +264,7 @@ public class TaskService {
     }
     public static TaskResponse view(CareTask t,Patient patient) {
         String name=patient==null?"":patient.name.substring(0,1)+"*".repeat(Math.max(0,patient.name.length()-1));
-        return new TaskResponse(t.id,t.patientId,name,t.taskType,t.title,t.priority,t.status,t.assigneeId,t.doctorId,t.dueAt,t.recordId,t.sopId==null||t.sopId==0?null:t.sopId,t.draftText,t.draftOrigin,t.approvedText,t.reviewNote,t.reviewerId,t.reviewedAt,t.completedAt,t.outcome,t.evidence,t.version,!TERMINAL.contains(t.status)&&t.dueAt.isBefore(LocalDateTime.now()),t.followupStage,FAILED_CONTACT.contains(t.contactResult==null?"":t.contactResult)&&!TERMINAL.contains(t.status)?t.nextContactAt:null,
-            t.contactResult,t.identityVerified,t.handoverStatus,t.doctorFeedback,t.acknowledgedAt);
+        return new TaskResponse(t.id,t.patientId,name,t.taskType,t.title,t.priority,t.status,t.assigneeId,t.doctorId,t.dueAt,t.recordId,t.sopId==null||t.sopId==0?null:t.sopId,t.draftText,t.draftOrigin,t.approvedText,t.reviewNote,t.reviewerId,t.reviewedAt,t.reviewChannel,t.reviewEvidence,t.completedAt,t.outcome,t.evidence,t.version,!TERMINAL.contains(t.status)&&t.dueAt.isBefore(LocalDateTime.now()),t.followupStage,FAILED_CONTACT.contains(t.contactResult==null?"":t.contactResult)&&!TERMINAL.contains(t.status)?t.nextContactAt:null,
+            t.contactResult,t.identityVerified,t.handoverStatus,t.doctorFeedback,t.handoverChannel,t.handoverEvidence,t.acknowledgedAt);
     }
 }
