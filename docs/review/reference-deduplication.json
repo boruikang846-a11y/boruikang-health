@@ -1,0 +1,77 @@
+[
+  {
+    "duplicate_id": "DUP-001",
+    "sha256": "8788029d07e44e05c20fd83da63e8b9e08099730d74d411498af41b789b67821",
+    "bytes": 424538
+  },
+  {
+    "duplicate_id": "DUP-002",
+    "sha256": "2b049f0614726a3ae3456ab4cb59aa03da81c659a91050ab150845619166f267",
+    "bytes": 563733
+  },
+  {
+    "duplicate_id": "DUP-003",
+    "sha256": "1a82a9dca8da0f60e060ac310a45249c6322e2723f5738e5631bfc056b1beaf3",
+    "bytes": 405163
+  },
+  {
+    "duplicate_id": "DUP-004",
+    "sha256": "0641e71b0642eb6b526413ecc9b90d63d2ae82dd040f5b5d90e8abb60a08fa22",
+    "bytes": 367885
+  },
+  {
+    "duplicate_id": "DUP-005",
+    "sha256": "a6d481fdb5c5fadc6136eab3a64ac0c0ee66a11098e4197bf1a255e41c9d2de4",
+    "bytes": 513247
+  },
+  {
+    "duplicate_id": "DUP-006",
+    "sha256": "77ca821c9d316270eaf08d5095ab8487410ed3d3c0bcef6cf47e26421ad71445",
+    "bytes": 648688
+  },
+  {
+    "duplicate_id": "DUP-007",
+    "sha256": "f7ca1d4d626702c2854964941ae57de8727c1a55e6560242b74fb2033c1ab9d6",
+    "bytes": 479036
+  },
+  {
+    "duplicate_id": "DUP-008",
+    "sha256": "493f5a6fd3011f935b9bbb10ba98fc1dd66af89a65ace60316dcd46033825476",
+    "bytes": 564407
+  },
+  {
+    "duplicate_id": "DUP-009",
+    "sha256": "b02a722603d60cfd483bbafeffbe8bb80372c732c21cd541866228b09f136292",
+    "bytes": 663733
+  },
+  {
+    "duplicate_id": "DUP-010",
+    "sha256": "0bc8b1c7a94872f8fd6ed9e0eb00915bf08cd316f77ab938d0874558e804a27d",
+    "bytes": 15612
+  },
+  {
+    "duplicate_id": "DUP-011",
+    "sha256": "9c6d7b937593f670d3afdccda356ea2871f54e53628aa5dcfb2870a5380eab8c",
+    "bytes": 16585
+  },
+  {
+    "duplicate_id": "DUP-012",
+    "sha256": "38bb6b71f9559d8ee2ed393f3373e5cce75a2049ff9ccbb8614a37b59ace4c6d",
+    "bytes": 21055
+  },
+  {
+    "duplicate_id": "DUP-013",
+    "sha256": "17c5d3f0596b05039359c1c59816a9aeb3ebbbcc22f6be07e75959dc0505de0c",
+    "bytes": 17011
+  },
+  {
+    "duplicate_id": "DUP-014",
+    "sha256": "6653bbcb6c84678176247a8d14b0668250872f5958dfe328451dc3d617aa9ae1",
+    "bytes": 70406
+  },
+  {
+    "duplicate_id": "DUP-015",
+    "sha256": "cfa61ef1474dec3a202f55c040d55747539569001fdcfc60fb39034a788fecdf",
+    "bytes": 24593
+  }
+]

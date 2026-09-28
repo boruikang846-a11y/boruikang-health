@@ -1,0 +1,157 @@
+# =========================================================================
+# 1. 操作系统自动生成文件
+# =========================================================================
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# =========================================================================
+# 2. 编辑器与 IDE 配置文件
+# =========================================================================
+# STS (Spring Tool Suite) & Eclipse
+.classpath
+.project
+.settings/
+.factorypath
+.springBeans
+# Eclipse 核心运行期插件状态与本地历史记录缓存
+.metadata/
+.recommenders/
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# VS Code 与本地工具配置
+.vscode/
+launch.json
+settings.json
+!.claude/settings.json
+.mcp.json
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim / Emacs
+*.swp
+*.swo
+*~
+\#*\#
+.\#*
+
+# =========================================================================
+# 3. 常见编译生成物与临时文件
+# =========================================================================
+# 通用构建输出与缓存
+bin/
+build/
+target/
+dist/
+dist-ssr/
+out/
+*.tmp
+*.cache
+*.bak
+*.orig
+*.local
+
+# 日志文件
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# =========================================================================
+# 4. 编程语言特定编译产物
+# =========================================================================
+# Java
+*.class
+*.jar
+*.war
+*.ear
+
+# C / C++ / .NET / Go (编译输出、动静态库、调试文件)
+*.o
+*.obj
+*.dll
+*.so
+*.lib
+*.a
+*.exe
+*.pdb
+
+# Python
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+
+# Ruby
+*.gem
+*.rbc
+
+# =========================================================================
+# 5. 包管理器与依赖目录 (Node.js / Python / Ruby)
+# =========================================================================
+# Node.js
+node_modules/
+.npm/
+.yarn/
+.yarnrc
+.pnpm/
+.pnp
+.pnp.js
+.pnp.cjs
+.pnpify/
+bower_components/
+*.tsbuildinfo
+
+# Python 虚拟环境
+venv/
+env/
+.venv/
+ENV/
+
+# Ruby 依赖
+/.config
+/pkg/
+
+# =========================================================================
+# 6. 测试与覆盖率报告
+# =========================================================================
+lib-cov/
+coverage/
+.nyc_output/
+.nyc/
+.jest/
+/spec/reports/
+/test/tmp/
+
+# =========================================================================
+# 7. 环境配置与敏感信息（请根据项目实际情况调整）
+# =========================================================================
+# 环境变量文件
+.env
+.env.local
+.env.*.local
+
+# application-secrets.properties 注入机制已停用：三档配置全部写在 application-<profile>.properties
+# 里随 jar 打包。下面的忽略规则仅作兜底，防止有人误把这类文件提交进来。
+application-secrets.properties
+**/application-secrets.properties
+
+# =========================================================================
+# 8. logback 配置说明
+# =========================================================================
+# src/main/resources/log/ 下的 *.xml 为类路径日志配置（由 logging.config 引用），
+# 不被上面任何规则忽略，正常纳入版本控制。
+
+.local-data/
