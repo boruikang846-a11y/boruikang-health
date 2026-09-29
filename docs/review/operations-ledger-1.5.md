@@ -5,6 +5,6 @@
 - 既有 HealthWorkflowTest 的异常关闭用例按新口径调整：ESCALATED 异常完成时必须选择处置去向。
 - 种子在 H2 上暴露并修正两处约束：appointment.is_effective 非空、service_enrollment.start_date 允许待激活为空；三个含 is_ 布尔列的新表改用 resultMap 映射（自动映射会把 is_active 映射到不存在的 isActive）。
 - 演示种子由 tools/generate-ledger-seed.py 生成，标记块可重复执行；日期固定按 2026-09-29 生成，MySQL 与 H2 文本一致。全部虚构。
-- 本轮未执行真实浏览器逐页点击、真实 MySQL 迁移与 Jenkins 部署；MySQL 迁移脚本已提供但尚未在云端库执行，不宣称部署成功。
+- 本轮未执行真实浏览器逐页点击与 Jenkins 部署；发版按全量口径（备份后清库重建），仓库只保留 DDL 与 DML。
 
 范围外：短信网关、企微、医院接口、支付均未接入，系统只登记人工凭证；AI 生成不参与任何医学判断。
