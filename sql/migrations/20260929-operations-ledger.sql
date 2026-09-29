@@ -1,0 +1,166 @@
+USE bgssai_health;
+-- Upgrade 1.4 once, before deploying 1.5; non-destructive, no DROP. Back up first.
+ALTER TABLE patient
+ ADD COLUMN id_card VARCHAR(24) DEFAULT NULL,
+ ADD COLUMN birth_date DATE DEFAULT NULL,
+ ADD COLUMN address VARCHAR(200) DEFAULT NULL,
+ ADD COLUMN emergency_contact VARCHAR(80) DEFAULT NULL,
+ ADD COLUMN emergency_phone VARCHAR(24) DEFAULT NULL,
+ ADD COLUMN inpatient_no VARCHAR(60) DEFAULT NULL,
+ ADD COLUMN bed_no VARCHAR(20) DEFAULT NULL,
+ ADD COLUMN patient_type VARCHAR(16) NOT NULL DEFAULT 'UNKNOWN',
+ ADD COLUMN source_scene VARCHAR(24) NOT NULL DEFAULT 'MANUAL',
+ ADD COLUMN org_id BIGINT DEFAULT NULL,
+ ADD COLUMN referrer_id BIGINT DEFAULT NULL,
+ ADD COLUMN last_contact_at DATETIME DEFAULT NULL,
+ ADD COLUMN lost_since DATETIME DEFAULT NULL,
+ ADD COLUMN consent_version VARCHAR(20) DEFAULT NULL,
+ ADD COLUMN consent_evidence VARCHAR(400) DEFAULT NULL,
+ ADD COLUMN tags VARCHAR(400) DEFAULT NULL;
+ALTER TABLE care_task
+ ADD COLUMN alert_source VARCHAR(24) DEFAULT NULL,
+ ADD COLUMN sla_due_at DATETIME DEFAULT NULL,
+ ADD COLUMN ack_at DATETIME DEFAULT NULL,
+ ADD COLUMN disposition VARCHAR(24) DEFAULT NULL,
+ ADD COLUMN appointment_id BIGINT DEFAULT NULL,
+ ADD COLUMN enrollment_id BIGINT DEFAULT NULL,
+ ADD COLUMN plan_node_seq INT DEFAULT NULL,
+ ADD COLUMN reminder_sent_at DATETIME DEFAULT NULL;
+ALTER TABLE contact_attempt
+ ADD COLUMN satisfaction INT DEFAULT NULL,
+ ADD COLUMN complaint VARCHAR(400) DEFAULT NULL;
+-- 1.5 tables (same definitions as DDL.sql).
+CREATE TABLE IF NOT EXISTS care_org (
+ id BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键', hospital_id BIGINT NOT NULL, name VARCHAR(120) NOT NULL,
+ org_type VARCHAR(24) NOT NULL, parent_id BIGINT DEFAULT NULL, contact_name VARCHAR(80) DEFAULT NULL, contact_phone VARCHAR(24) DEFAULT NULL,
+ is_active TINYINT(1) NOT NULL DEFAULT 1, note VARCHAR(400) DEFAULT NULL,
+ del_flag TINYINT(1) NOT NULL DEFAULT 0 COMMENT '逻辑删除字段', creator VARCHAR(64) DEFAULT NULL, modifier VARCHAR(64) DEFAULT NULL,
+ gmt_create DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, gmt_modified DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+ PRIMARY KEY (id), UNIQUE KEY uk_org_name (hospital_id, name), KEY idx_org_parent (hospital_id, parent_id)
+);
+CREATE TABLE IF NOT EXISTS campaign (
+ id BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键', hospital_id BIGINT NOT NULL, name VARCHAR(120) NOT NULL,
+ campaign_type VARCHAR(24) NOT NULL, org_id BIGINT DEFAULT NULL, location VARCHAR(200) DEFAULT NULL,
+ starts_on DATE DEFAULT NULL, ends_on DATE DEFAULT NULL, owner_id BIGINT DEFAULT NULL, status VARCHAR(16) NOT NULL DEFAULT 'PLANNED',
+ target_count INT DEFAULT NULL, note VARCHAR(600) DEFAULT NULL, version INT NOT NULL DEFAULT 0,
+ del_flag TINYINT(1) NOT NULL DEFAULT 0 COMMENT '逻辑删除字段', creator VARCHAR(64) DEFAULT NULL, modifier VARCHAR(64) DEFAULT NULL,
+ gmt_create DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, gmt_modified DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+ PRIMARY KEY (id), UNIQUE KEY uk_campaign_name (hospital_id, name), KEY idx_campaign_status (hospital_id, status)
+);
+CREATE TABLE IF NOT EXISTS sla_config (
+ id BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键', hospital_id BIGINT NOT NULL, risk_level VARCHAR(16) NOT NULL,
+ first_contact_hours INT NOT NULL, booking_days INT NOT NULL, arrival_days INT NOT NULL, lost_after_attempts INT NOT NULL DEFAULT 3,
+ note VARCHAR(400) DEFAULT NULL, version INT NOT NULL DEFAULT 0,
+ del_flag TINYINT(1) NOT NULL DEFAULT 0 COMMENT '逻辑删除字段', creator VARCHAR(64) DEFAULT NULL, modifier VARCHAR(64) DEFAULT NULL,
+ gmt_create DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, gmt_modified DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+ PRIMARY KEY (id), UNIQUE KEY uk_sla_risk (hospital_id, risk_level)
+);
+CREATE TABLE IF NOT EXISTS screening_record (
+ id BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键', hospital_id BIGINT NOT NULL, patient_id BIGINT DEFAULT NULL,
+ org_id BIGINT DEFAULT NULL, campaign_id BIGINT DEFAULT NULL, owner_id BIGINT DEFAULT NULL, source_type VARCHAR(24) NOT NULL,
+ name VARCHAR(80) NOT NULL, gender VARCHAR(16) NOT NULL DEFAULT 'UNKNOWN', age INT DEFAULT NULL, phone VARCHAR(24) DEFAULT NULL, id_card_tail VARCHAR(8) DEFAULT NULL,
+ screened_at DATETIME NOT NULL, finding VARCHAR(500) DEFAULT NULL, category VARCHAR(80) DEFAULT NULL,
+ risk_level VARCHAR(16) NOT NULL DEFAULT 'UNKNOWN', risk_evidence VARCHAR(400) DEFAULT NULL, judged_by BIGINT DEFAULT NULL, judged_at DATETIME DEFAULT NULL,
+ pool_status VARCHAR(16) NOT NULL DEFAULT 'NEW', non_high_risk_reason VARCHAR(400) DEFAULT NULL,
+ external_id VARCHAR(120) DEFAULT NULL, import_batch VARCHAR(60) DEFAULT NULL, note VARCHAR(400) DEFAULT NULL, version INT NOT NULL DEFAULT 0,
+ del_flag TINYINT(1) NOT NULL DEFAULT 0 COMMENT '逻辑删除字段', creator VARCHAR(64) DEFAULT NULL, modifier VARCHAR(64) DEFAULT NULL,
+ gmt_create DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, gmt_modified DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+ PRIMARY KEY (id), UNIQUE KEY uk_screening_external (hospital_id, source_type, external_id), KEY idx_screening_pool (hospital_id, source_type, pool_status, risk_level), KEY idx_screening_patient (hospital_id, patient_id)
+);
+CREATE TABLE IF NOT EXISTS invitation (
+ id BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键', hospital_id BIGINT NOT NULL, patient_id BIGINT NOT NULL,
+ screening_id BIGINT DEFAULT NULL, campaign_id BIGINT DEFAULT NULL, round INT NOT NULL DEFAULT 1, invited_at DATETIME NOT NULL,
+ method VARCHAR(16) NOT NULL, result VARCHAR(24) NOT NULL, planned_visit_mode VARCHAR(24) DEFAULT NULL,
+ summary VARCHAR(1000) DEFAULT NULL, next_invite_at DATETIME DEFAULT NULL, actor_id BIGINT NOT NULL, evidence VARCHAR(400) NOT NULL,
+ request_key VARCHAR(80) NOT NULL,
+ del_flag TINYINT(1) NOT NULL DEFAULT 0 COMMENT '逻辑删除字段', creator VARCHAR(64) DEFAULT NULL, modifier VARCHAR(64) DEFAULT NULL,
+ gmt_create DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, gmt_modified DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+ PRIMARY KEY (id), UNIQUE KEY uk_invitation_request (hospital_id, request_key), KEY idx_invitation_patient (hospital_id, patient_id, invited_at), KEY idx_invitation_campaign (hospital_id, campaign_id, invited_at)
+);
+CREATE TABLE IF NOT EXISTS appointment (
+ id BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键', hospital_id BIGINT NOT NULL, patient_id BIGINT NOT NULL,
+ task_id BIGINT DEFAULT NULL, invitation_id BIGINT DEFAULT NULL, referral_id BIGINT DEFAULT NULL,
+ appointment_type VARCHAR(24) NOT NULL, channel VARCHAR(24) NOT NULL, appointment_at DATETIME NOT NULL,
+ department VARCHAR(80) NOT NULL, clinician_id BIGINT DEFAULT NULL, status VARCHAR(16) NOT NULL DEFAULT 'BOOKED',
+ reminder_sent_at DATETIME DEFAULT NULL, arrived_at DATETIME DEFAULT NULL, is_effective TINYINT(1) NOT NULL DEFAULT 0,
+ no_show_reason VARCHAR(24) DEFAULT NULL, outcome VARCHAR(24) DEFAULT NULL, outcome_note VARCHAR(1000) DEFAULT NULL,
+ evidence VARCHAR(1000) DEFAULT NULL, actor_id BIGINT NOT NULL, request_key VARCHAR(80) NOT NULL, version INT NOT NULL DEFAULT 0,
+ del_flag TINYINT(1) NOT NULL DEFAULT 0 COMMENT '逻辑删除字段', creator VARCHAR(64) DEFAULT NULL, modifier VARCHAR(64) DEFAULT NULL,
+ gmt_create DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, gmt_modified DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+ PRIMARY KEY (id), UNIQUE KEY uk_appointment_request (hospital_id, request_key), KEY idx_appointment_patient (hospital_id, patient_id, appointment_at), KEY idx_appointment_status (hospital_id, status, appointment_at)
+);
+CREATE TABLE IF NOT EXISTS followup_plan (
+ id BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键', hospital_id BIGINT NOT NULL, name VARCHAR(120) NOT NULL,
+ disease VARCHAR(80) NOT NULL, entry_scene VARCHAR(24) NOT NULL, description VARCHAR(1000) DEFAULT NULL,
+ status VARCHAR(16) NOT NULL DEFAULT 'DRAFT', version INT NOT NULL DEFAULT 0,
+ del_flag TINYINT(1) NOT NULL DEFAULT 0 COMMENT '逻辑删除字段', creator VARCHAR(64) DEFAULT NULL, modifier VARCHAR(64) DEFAULT NULL,
+ gmt_create DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, gmt_modified DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+ PRIMARY KEY (id), UNIQUE KEY uk_plan_name (hospital_id, name), KEY idx_plan_status (hospital_id, status)
+);
+CREATE TABLE IF NOT EXISTS followup_plan_node (
+ id BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键', hospital_id BIGINT NOT NULL, plan_id BIGINT NOT NULL, seq INT NOT NULL,
+ stage VARCHAR(24) NOT NULL, offset_days INT NOT NULL, task_type VARCHAR(24) NOT NULL, title VARCHAR(160) NOT NULL,
+ priority VARCHAR(4) NOT NULL DEFAULT 'P2', checklist VARCHAR(1000) DEFAULT NULL,
+ del_flag TINYINT(1) NOT NULL DEFAULT 0 COMMENT '逻辑删除字段', creator VARCHAR(64) DEFAULT NULL, modifier VARCHAR(64) DEFAULT NULL,
+ gmt_create DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, gmt_modified DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+ PRIMARY KEY (id), KEY idx_plan_node (plan_id, seq)
+);
+CREATE TABLE IF NOT EXISTS service_package (
+ id BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键', hospital_id BIGINT NOT NULL, code VARCHAR(40) NOT NULL, name VARCHAR(120) NOT NULL,
+ disease VARCHAR(80) NOT NULL, tier VARCHAR(16) NOT NULL, scene VARCHAR(24) NOT NULL, period_days INT NOT NULL,
+ price_cents INT DEFAULT NULL, followup_count INT NOT NULL DEFAULT 0, assessment_count INT NOT NULL DEFAULT 0, review_count INT NOT NULL DEFAULT 0,
+ device_note VARCHAR(200) DEFAULT NULL, privilege_note VARCHAR(400) DEFAULT NULL, service_hours VARCHAR(80) DEFAULT NULL,
+ content TEXT, red_lines VARCHAR(600) DEFAULT NULL, plan_id BIGINT DEFAULT NULL, status VARCHAR(16) NOT NULL DEFAULT 'DRAFT', version INT NOT NULL DEFAULT 0,
+ del_flag TINYINT(1) NOT NULL DEFAULT 0 COMMENT '逻辑删除字段', creator VARCHAR(64) DEFAULT NULL, modifier VARCHAR(64) DEFAULT NULL,
+ gmt_create DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, gmt_modified DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+ PRIMARY KEY (id), UNIQUE KEY uk_package_code (hospital_id, code), KEY idx_package_status (hospital_id, status)
+);
+CREATE TABLE IF NOT EXISTS service_enrollment (
+ id BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键', hospital_id BIGINT NOT NULL, patient_id BIGINT NOT NULL, package_id BIGINT NOT NULL,
+ order_no VARCHAR(60) DEFAULT NULL, signed_at DATETIME NOT NULL, start_date DATE DEFAULT NULL, end_date DATE DEFAULT NULL,
+ status VARCHAR(24) NOT NULL DEFAULT 'PENDING_ACTIVATION', activated_at DATETIME DEFAULT NULL, activated_by BIGINT DEFAULT NULL,
+ consent_at DATETIME DEFAULT NULL, consent_evidence VARCHAR(400) DEFAULT NULL, summary VARCHAR(2000) DEFAULT NULL,
+ closed_at DATETIME DEFAULT NULL, close_reason VARCHAR(400) DEFAULT NULL, upgrade_to_id BIGINT DEFAULT NULL,
+ request_key VARCHAR(80) NOT NULL, version INT NOT NULL DEFAULT 0,
+ del_flag TINYINT(1) NOT NULL DEFAULT 0 COMMENT '逻辑删除字段', creator VARCHAR(64) DEFAULT NULL, modifier VARCHAR(64) DEFAULT NULL,
+ gmt_create DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, gmt_modified DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+ PRIMARY KEY (id), UNIQUE KEY uk_enrollment_request (hospital_id, request_key), KEY idx_enrollment_patient (hospital_id, patient_id, status), KEY idx_enrollment_package (hospital_id, package_id, status)
+);
+CREATE TABLE IF NOT EXISTS referral (
+ id BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键', hospital_id BIGINT NOT NULL, patient_id BIGINT NOT NULL,
+ direction VARCHAR(16) NOT NULL, referral_type VARCHAR(16) NOT NULL, from_org_id BIGINT DEFAULT NULL, to_org_id BIGINT DEFAULT NULL,
+ reason VARCHAR(600) NOT NULL, risk_level VARCHAR(16) NOT NULL DEFAULT 'UNKNOWN', initiated_at DATETIME NOT NULL, sla_due_at DATETIME DEFAULT NULL,
+ status VARCHAR(24) NOT NULL DEFAULT 'INITIATED', accepted_at DATETIME DEFAULT NULL, arrived_at DATETIME DEFAULT NULL,
+ feedback_department VARCHAR(80) DEFAULT NULL, feedback_clinician_id BIGINT DEFAULT NULL, feedback_diagnosis VARCHAR(400) DEFAULT NULL,
+ feedback_disposition VARCHAR(24) DEFAULT NULL, feedback_at DATETIME DEFAULT NULL, evidence VARCHAR(1000) DEFAULT NULL,
+ actor_id BIGINT NOT NULL, request_key VARCHAR(80) NOT NULL, version INT NOT NULL DEFAULT 0,
+ del_flag TINYINT(1) NOT NULL DEFAULT 0 COMMENT '逻辑删除字段', creator VARCHAR(64) DEFAULT NULL, modifier VARCHAR(64) DEFAULT NULL,
+ gmt_create DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, gmt_modified DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+ PRIMARY KEY (id), UNIQUE KEY uk_referral_request (hospital_id, request_key), KEY idx_referral_patient (hospital_id, patient_id), KEY idx_referral_status (hospital_id, direction, status)
+);
+CREATE TABLE IF NOT EXISTS message_template (
+ id BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键', hospital_id BIGINT NOT NULL, code VARCHAR(40) NOT NULL, channel VARCHAR(16) NOT NULL,
+ scene VARCHAR(24) NOT NULL, title VARCHAR(120) NOT NULL, content TEXT NOT NULL, is_active TINYINT(1) NOT NULL DEFAULT 1, version INT NOT NULL DEFAULT 0,
+ del_flag TINYINT(1) NOT NULL DEFAULT 0 COMMENT '逻辑删除字段', creator VARCHAR(64) DEFAULT NULL, modifier VARCHAR(64) DEFAULT NULL,
+ gmt_create DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, gmt_modified DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+ PRIMARY KEY (id), UNIQUE KEY uk_template_code (hospital_id, code), KEY idx_template_scene (hospital_id, channel, scene)
+);
+CREATE TABLE IF NOT EXISTS message_log (
+ id BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键', hospital_id BIGINT NOT NULL, patient_id BIGINT NOT NULL, task_id BIGINT DEFAULT NULL,
+ channel VARCHAR(16) NOT NULL, template_code VARCHAR(40) DEFAULT NULL, content TEXT NOT NULL, sent_at DATETIME NOT NULL,
+ actor_id BIGINT NOT NULL, evidence VARCHAR(400) NOT NULL, request_key VARCHAR(80) NOT NULL,
+ del_flag TINYINT(1) NOT NULL DEFAULT 0 COMMENT '逻辑删除字段', creator VARCHAR(64) DEFAULT NULL, modifier VARCHAR(64) DEFAULT NULL,
+ gmt_create DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, gmt_modified DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+ PRIMARY KEY (id), UNIQUE KEY uk_message_log_request (hospital_id, request_key), KEY idx_message_log_patient (hospital_id, patient_id, sent_at)
+);
+CREATE TABLE IF NOT EXISTS medication (
+ id BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键', hospital_id BIGINT NOT NULL, patient_id BIGINT NOT NULL,
+ drug_name VARCHAR(120) NOT NULL, dosage VARCHAR(80) DEFAULT NULL, frequency VARCHAR(80) DEFAULT NULL,
+ start_date DATE DEFAULT NULL, end_date DATE DEFAULT NULL, status VARCHAR(16) NOT NULL DEFAULT 'ACTIVE',
+ source VARCHAR(24) NOT NULL DEFAULT 'STAFF', adherence VARCHAR(16) NOT NULL DEFAULT 'UNKNOWN', note VARCHAR(400) DEFAULT NULL, version INT NOT NULL DEFAULT 0,
+ del_flag TINYINT(1) NOT NULL DEFAULT 0 COMMENT '逻辑删除字段', creator VARCHAR(64) DEFAULT NULL, modifier VARCHAR(64) DEFAULT NULL,
+ gmt_create DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, gmt_modified DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+ PRIMARY KEY (id), KEY idx_medication_patient (hospital_id, patient_id, status)
+);
+-- patient.service_package_id now references service_package; legacy knowledge PACKAGE references are cleared.
+UPDATE patient SET service_package_id=NULL WHERE service_package_id IS NOT NULL;

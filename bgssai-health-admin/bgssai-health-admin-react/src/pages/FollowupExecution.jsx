@@ -4,7 +4,7 @@ import dayjs from 'dayjs'
 import { api, useLoad } from '../api'
 import { dateText, LoadState, required } from '../ui'
 
-export const contactNames = { CONNECTED: '已核实并完成联系', NO_ANSWER: '未接通', BUSY: '忙线 / 不便沟通', WRONG_NUMBER: '号码问题', REFUSED: '拒绝联系', IDENTITY_UNVERIFIED: '身份未核实' }
+export const contactNames = { CONNECTED: '已核实并完成联系', NO_ANSWER: '未接通', BUSY: '忙线 / 不便沟通', WRONG_NUMBER: '号码问题', REFUSED: '拒绝联系', IDENTITY_UNVERIFIED: '身份未核实', FAMILY_ANSWERED: '家属接听', NOT_COOPERATIVE: '不配合', DECEASED: '已去世', OTHER: '其他' }
 const methods = [{ value: 'PHONE', label: '电话' }, { value: 'IN_PERSON', label: '当面' }, { value: 'MANUAL_OTHER', label: '其他人工方式' }]
 export function ContactExecution({ task, busy, run }) {
   const [result, setResult] = useState(task.status === 'APPROVED' ? 'CONNECTED' : 'NO_ANSWER')
@@ -13,7 +13,7 @@ export function ContactExecution({ task, busy, run }) {
     <p className="muted">先核实身份，再按医生审核的内容问询。未接通也要留下记录与下一次处理计划。</p>
     <Form layout="vertical" initialValues={{ method: 'PHONE', contact_at: dayjs(), recipient_role: 'PATIENT', identity_verified: false, report_reviewed: false }} onFinish={values => {
       const data = { method: values.method, evidence: values.evidence, contact_at: values.contact_at.format('YYYY-MM-DDTHH:mm:ss') }
-      if (success) run('contact', { ...data, recipient_role: values.recipient_role, identity_verified: values.identity_verified, report_reviewed: Boolean(values.report_reviewed), medication_feedback: values.medication_feedback, patient_questions: values.patient_questions })
+      if (success) run('contact', { ...data, recipient_role: values.recipient_role, identity_verified: values.identity_verified, report_reviewed: Boolean(values.report_reviewed), medication_feedback: values.medication_feedback, patient_questions: values.patient_questions, satisfaction: values.satisfaction, complaint: values.complaint })
       else run('attempt', { ...data, result, reason: values.reason, next_plan: values.next_plan, next_contact_at: values.next_contact_at.format('YYYY-MM-DDTHH:mm:ss') })
     }}>
       <div className="form-grid"><Form.Item label="1. 联系结果"><Select value={result} onChange={setResult} options={Object.entries(contactNames).filter(([key]) => key !== 'CONNECTED' || task.status === 'APPROVED').map(([value, label]) => ({ value, label }))} /></Form.Item>
@@ -29,6 +29,7 @@ export function ContactExecution({ task, busy, run }) {
         <Form.Item name="next_contact_at" label="3. 下次处理时间" rules={required}><DatePicker showTime style={{ width: '100%' }} /></Form.Item>
         <Form.Item name="next_plan" label="下次处理计划" rules={required}><Input.TextArea rows={2} maxLength={1000} placeholder="例如核对联系方式、确认联系意愿、按约定时间再联系；拒绝联系不等于继续拨打。" /></Form.Item>
       </>}
+      {success && <div className="form-grid"><Form.Item name="satisfaction" label="满意度（1-5，可选）"><Select allowClear options={[1,2,3,4,5].map(v => ({ value: v, label: v + ' 分' }))} /></Form.Item><Form.Item name="complaint" label="投诉 / 意见（可选）"><Input maxLength={1000} /></Form.Item></div>}
       <Form.Item name="evidence" label="实际联系凭证" rules={required}><Input.TextArea maxLength={1000} rows={2} placeholder="记录实际使用的联系方式、核验情况或联系记录编号，不填写虚构成功结果。" /></Form.Item>
       <Button type="primary" htmlType="submit" loading={busy}>{success ? '记录已核实的人工联系' : '保存未完成原因与下次计划'}</Button>
       <p className="muted">这里只登记你已经执行的操作，不会发起外呼或发送患者消息。</p>
@@ -40,7 +41,7 @@ export function ContactHistory({ attempts }) {
   return <div className="context-block"><h3>历次联系记录</h3><Timeline items={attempts.map(a => ({ color: a.result === 'CONNECTED' ? 'green' : 'orange', children: <div>
     <Tag>{contactNames[a.result] || a.result}</Tag><small>{dateText(a.contact_at)} · {methods.find(x => x.value === a.method)?.label}</small>
     {a.reason && <p>原因：{a.reason}</p>}{a.next_contact_at && <p>下次处理：{dateText(a.next_contact_at)} · {a.next_plan}</p>}
-    {a.medication_feedback && <p>原医嘱反馈：{a.medication_feedback}</p>}{a.patient_questions && <p>问题与反馈：{a.patient_questions}</p>}<p className="muted">凭证：{a.evidence}</p>
+    {a.medication_feedback && <p>原医嘱反馈：{a.medication_feedback}</p>}{a.patient_questions && <p>问题与反馈：{a.patient_questions}</p>}{a.satisfaction != null && <p>满意度 {a.satisfaction} 分{a.complaint ? '，投诉：' + a.complaint : ''}</p>}<p className="muted">凭证：{a.evidence}</p>
   </div> }))} /></div>
 }
 const stages = [['ENROLLMENT','入组',0],['D3','D3',3],['D7','D7',7],['D30','D30',30],['M3','三个月',90],['Y1','一年',365]]

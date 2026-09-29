@@ -1,5 +1,4 @@
 package com.bgssai.health.model;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 public class ContactAttempt extends BaseRow {
     public Long hospitalId;
@@ -18,5 +17,7 @@ public class ContactAttempt extends BaseRow {
     public String medicationFeedback;
     public String patientQuestions;
     public String evidence;
+    public Integer satisfaction;
+    public String complaint;
     public String requestKey;
 }

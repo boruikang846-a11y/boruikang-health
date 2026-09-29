@@ -52,8 +52,25 @@ public class RecordService {
         CareRecord r=base(p);r.recordType="OBSERVATION";r.occurredAt=req.occurredAt();r.content=req.content();r.systolic=req.systolic();r.diastolic=req.diastolic();
         r.heartRate=req.heartRate();r.weight=req.weight();r.glucose=req.glucose();r.needsContact=Boolean.TRUE.equals(req.needsContact());r.sourceSystem="PATIENT_WEB";
         records.insertSelective(r);
-        if(Boolean.TRUE.equals(r.needsContact))createTask(p,r,"ALERT","患者上报后请求团队联系",LocalDateTime.now().plusHours(4),"P1");
+        if(Boolean.TRUE.equals(r.needsContact))createAlert(p,r,"患者上报后请求团队联系","PATIENT_REPORT");
         audit.append(p.id,"OBSERVATION_RECORDED",r.id,null,"RECORDED","Patient-reported; no automated diagnosis");return view(records.selectByPrimaryKey(r.id));
+    }
+    @Transactional
+    public RecordResponse observe(StaffObservationRequest req){
+        log.info("staff observation patientId={}",req.patientId());access.staff();Patient p=access.lock(req.patientId());
+        Checks.require(req.systolic()!=null||req.heartRate()!=null||req.weight()!=null||req.glucose()!=null||Checks.text(req.content()),"Enter a measurement or note / 请至少填写一项指标或身体感受");
+        Checks.require((req.systolic()==null)==(req.diastolic()==null),"Both blood pressure values are required / 请同时填写收缩压和舒张压");
+        Checks.require(req.systolic()==null||req.systolic().compareTo(req.diastolic())>0,"Check blood pressure input / 请核对血压输入");
+        CareRecord r=base(p);r.recordType="OBSERVATION";r.occurredAt=req.occurredAt();r.content=req.content();r.systolic=req.systolic();r.diastolic=req.diastolic();
+        r.heartRate=req.heartRate();r.weight=req.weight();r.glucose=req.glucose();r.needsContact=Boolean.TRUE.equals(req.needsContact());r.sourceSystem="STAFF_ENTRY";
+        records.insertSelective(r);
+        if(Boolean.TRUE.equals(r.needsContact))createAlert(p,r,"指标异常，需医生判断","OBSERVATION");
+        audit.append(p.id,"OBSERVATION_RECORDED",r.id,null,"RECORDED","Staff-entered on behalf of patient; source="+req.source());return view(records.selectByPrimaryKey(r.id));
+    }
+    private void createAlert(Patient p,CareRecord r,String title,String source){
+        CareTask t=new CareTask();t.hospitalId=p.hospitalId;t.patientId=p.id;t.taskType="ALERT";t.title=title;t.priority="P1";t.status="PENDING";t.alertSource=source;
+        t.assigneeId=p.ownerId;t.doctorId=p.doctorId;t.dueAt=LocalDateTime.now().plusHours(4);t.slaDueAt=LocalDateTime.now().plusHours(24);t.recordId=r.id;t.requestKey="record-"+r.id+"-ALERT";t.version=0;t.creator=r.creator;tasks.insertSelective(t);
+        audit.append(p.id,"TASK_CREATED",t.id,null,"PENDING","ALERT source="+source+"; record="+r.id);
     }
     private CareRecord base(Patient p){CareRecord r=new CareRecord();r.hospitalId=p.hospitalId;r.patientId=p.id;r.creator=CurrentAccount.get().userId().toString();r.needsContact=false;return r;}
     private void createTask(Patient p,CareRecord r,String type,String title,LocalDateTime due,String priority){

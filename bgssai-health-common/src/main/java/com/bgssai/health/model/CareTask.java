@@ -33,5 +33,13 @@ public class CareTask extends BaseRow {
     public String handoverChannel;
     public String handoverEvidence;
     public LocalDateTime acknowledgedAt;
+    public String alertSource;
+    public LocalDateTime slaDueAt;
+    public LocalDateTime ackAt;
+    public String disposition;
+    public Long appointmentId;
+    public Long enrollmentId;
+    public Integer planNodeSeq;
+    public LocalDateTime reminderSentAt;
     public Integer version;
 }

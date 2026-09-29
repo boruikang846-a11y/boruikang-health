@@ -1,4 +1,5 @@
 package com.bgssai.health.model;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 public class Patient extends BaseRow {
     public Long hospitalId;
@@ -20,4 +21,20 @@ public class Patient extends BaseRow {
     public LocalDateTime consentAt;
     public String note;
     public Integer version;
+    public String idCard;
+    public LocalDate birthDate;
+    public String address;
+    public String emergencyContact;
+    public String emergencyPhone;
+    public String inpatientNo;
+    public String bedNo;
+    public String patientType;
+    public String sourceScene;
+    public Long orgId;
+    public Long referrerId;
+    public LocalDateTime lastContactAt;
+    public LocalDateTime lostSince;
+    public String consentVersion;
+    public String consentEvidence;
+    public String tags;
 }

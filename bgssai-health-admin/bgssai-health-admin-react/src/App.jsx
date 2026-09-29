@@ -10,13 +10,20 @@ import Tasks from './pages/Tasks'
 import Hospital from './pages/Hospital'
 import SystemOverview from './pages/SystemOverview'
 import { Knowledge, Channels, Reports, Settings } from './pages/Operations'
+import Screening from './pages/Screening'
+import Invitations from './pages/Invitations'
+import Appointments from './pages/Appointments'
+import Packages from './pages/Packages'
+import Referrals from './pages/Referrals'
+import { FunnelPlotOutlined, PhoneOutlined, CarryOutOutlined, GiftOutlined, SwapOutlined } from '@ant-design/icons'
 
 const navigation = [
-  ['/workbench', '运营工作台', DashboardOutlined], ['/patients', '患者中心', TeamOutlined],
+  ['/workbench', '运营工作台', DashboardOutlined], ['/screening', '患者池', FunnelPlotOutlined], ['/patients', '患者中心', TeamOutlined],
+  ['/invitations', '邀约记录', PhoneOutlined], ['/appointments', '预约到诊', CarryOutOutlined],
   ['/followups', '随访与咨询', ScheduleOutlined], ['/alerts', '异常处理', AlertOutlined],
-  ['/revisits', '复诊跟踪', CalendarOutlined], ['/knowledge', '宣教与服务内容', ReadOutlined],
+  ['/revisits', '复诊跟踪', CalendarOutlined], ['/packages', '服务包与方案', GiftOutlined], ['/referrals', '转诊', SwapOutlined], ['/knowledge', '宣教与服务内容', ReadOutlined],
   ['/channels', '渠道管理', QrcodeOutlined], ['/reports', '随访统计与复盘', BarChartOutlined],
-  ['/hospital', '医院数据', QrcodeOutlined], ['/settings', '接入设置', SettingOutlined], ['/overview', '系统介绍', HeartOutlined],
+  ['/hospital', '医院数据', QrcodeOutlined], ['/settings', '运营设置', SettingOutlined], ['/overview', '系统介绍', HeartOutlined],
 ]
 function Login({ onLogin, account }) {
   const [busy, setBusy] = useState(false)
@@ -49,7 +56,7 @@ function Shell({ account, logout }) {
     <div className="nav-caption">院外连续服务</div>
     <Menu mode="inline" selectedKeys={['/' + location.pathname.split('/')[1]]} items={visible.map(([path, title, Icon]) => ({
       key: path, icon: <Icon />, label: <Link to={path}>{title}</Link>,
-    }))} /><div className="sidebar-foot"><span className="online-dot" /> 医患协作 / MVP 1.3</div>
+    }))} /><div className="sidebar-foot"><span className="online-dot" /> 医患协作 / 1.5</div>
   </Layout.Sider><Layout><header className="topbar"><span className="muted">医患运营管理平台 <span className="topbar-divider">/</span> 工作空间</span>
     <Space><Tag>{names[account.role_code]}</Tag><Avatar size="small" style={{ background: '#e5efff', color: '#2469d9' }}>{account.real_name?.slice(0, 1)}</Avatar><span>{account.real_name}</span><Button type="text" icon={<LogoutOutlined />} onClick={logout}>退出</Button></Space>
   </header><main className="main-content"><Outlet context={account} /></main></Layout></Layout>
@@ -72,6 +79,7 @@ export default function App() {
   return <Routes><Route path="/overview" element={<SystemOverview account={account} />} /><Route path="/login" element={<Login account={account} onLogin={result => { setAccount(result); navigate(result.role_code === 'PLATFORM_ADMIN' ? '/settings' : '/workbench') }} />} />
     <Route element={account ? allowed ? <Shell account={account} logout={async () => { try { await api('/logout', {}) } catch {} setToken(null); setAccount(null); navigate('/login') }} /> : <Navigate to="/settings" replace /> : <Navigate to="/login" replace />}>
       <Route path="/workbench" element={<Dashboard />} /><Route path="/patients" element={<Patients />} /><Route path="/patients/:id" element={<PatientDetail />} />
+      <Route path="/screening" element={<Screening />} /><Route path="/invitations" element={<Invitations />} /><Route path="/appointments" element={<Appointments />} /><Route path="/packages" element={<Packages />} /><Route path="/referrals" element={<Referrals />} />
       <Route path="/followups" element={<Tasks />} /><Route path="/alerts" element={<Tasks taskType="ALERT" />} /><Route path="/revisits" element={<Tasks taskType="REVISIT" />} />
       <Route path="/hospital" element={<Hospital />} /><Route path="/knowledge" element={<Knowledge />} /><Route path="/channels" element={<Channels />} /><Route path="/reports" element={<Reports />} /><Route path="/settings" element={<Settings />} />
       <Route path="*" element={<Navigate to="/workbench" replace />} />
