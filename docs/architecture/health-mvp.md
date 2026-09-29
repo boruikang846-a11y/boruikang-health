@@ -81,3 +81,11 @@ DISCHARGE 记录创建“核对出院报告并准备随访”的次日运营待�
 HospitalGateway 定义获取医院批次的接口；MockHospitalGateway 返回固定虚构数据并支持空数据与不可用场景。HTTP 预览与同步使用同一契约；本期不连接远端医院。HospitalSyncService 先读适配器，HospitalImportService 在短事务内持久化；不在事务内保留未来网络请求。患者增加 source_system、hospital_patient_id 和复合唯一键；care_record 沿用来源唯一键。映射不依赖手机号，患者行锁与唯一约束阻止重复任务。同一来源报告内容发生变化时拒绝覆盖，保留临床原始依据；真实修订语义后续联调。
 
 每次导入新增记录通过 RecordService 创建随访、复诊与审计；模拟接口失败、非法负责人或写入异常回滚整批。医院数据页列表采用有界 Mock 响应预览，业务患者列表仍通过 PageHelper 物理分页。新增列的迁移提供给已有 local/dev 库；不删除演示数据。
+
+## 1.5 运营台账
+
+新增 14 张台账表（care_org、campaign、sla_config、screening_record、invitation、appointment、followup_plan、followup_plan_node、service_package、service_enrollment、referral、message_template、message_log、medication），全部带六个审计列，写入侧按 `(hospital_id, request_key)` 幂等；`followup_plan_node` 以 `(plan_id, seq)` 建普通索引，软删除后可重建节点。`patient` 扩展档案字段、来源场景、机构、转介医生、`last_contact_at`、`lost_since`、同意版本与凭证、`tags`（逗号包裹便于 LIKE 匹配）；`service_package_id` 改指向 `service_package`。`care_task` 扩展 `alert_source sla_due_at ack_at disposition appointment_id enrollment_id plan_node_seq reminder_sent_at`，`task_type` 增加 OUTREACH；`contact_attempt` 增加满意度与投诉。
+
+服务分层：`SlaResolver` 只依赖 `sla_config`，供 `OrgService`、`OutreachService`、`ReferralService` 与 `InvitationService` 共用，避免 PatientService 与 OrgService 之间的循环依赖；`OutreachService` 在患者行锁内开、关首触任务并升级失联异常（`Propagation.MANDATORY`）；`PatientService.advance()` 只允许阶段向前推进且不越过人工态（PAUSED 及之后），各台账动作通过它同步患者阶段；`AppointmentService` 通过 `TaskWriter` 镜像复诊任务；`EnrollmentService.activate()` 展开方案节点为任务；`MetricService` 以有界样本（5000 行）在内存里算十项指标、漏斗、按人绩效、日统计与队列，不落库。ExampleBase 增加 `le/gt/isNull/isNotNull`。
+
+指标与 SLA 全部可按医院配置；默认口径见需求文档。控制器由 `tools` 中的生成脚本统一产出一接口一类。演示种子由 `tools/generate-ledger-seed.py` 生成，日期按参数绝对化，H2 与 MySQL 文本一致。

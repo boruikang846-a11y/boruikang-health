@@ -20,3 +20,7 @@ DDL 使用 IF NOT EXISTS，只能初始化空库，不会迁移已有表。后�
 已有 MySQL 1.2 库：先备份，执行 `migrations/20260928-followup-operations.sql` 一次，再执行 `DML.sql` 和 `dev/DML.sql`。该脚本新增任务字段、contact_attempt 和 operations_report 表；旧 SOP 条目降为未发布参考内容，历史任务引用保留但新随访不依赖该引用。切勿重新执行空库初始化脚本或删除数据库。local/test 由 DDL-local 自动补齐字段。
 
 已有 1.1 库须先执行 `migrations/20260928-hospital-source.sql`，再执行上述 1.3 增量。MySQL 迁移需由 Jenkins 执行，核对库为 bgssai_health。
+
+## 1.5 运营台账迁移
+
+新增 14 张台账表与患者、任务、联系记录的新列，见 `migrations/20260929-operations-ledger.sql`。已有 1.4 库：先备份，执行该脚本一次（会把患者上旧的 `service_package_id` 清空，因为它现在指向 `service_package`），再执行 `DML.sql` 与 `dev/DML.sql`。基础 DML 新增 14 条短信与话术模板、5 档 SLA 默认值；dev DML 新增机构、活动、方案、服务包、患者池、邀约、预约、签约、转诊、用药与已发消息的虚构种子（`tools/generate-ledger-seed.py --date YYYY-MM-DD` 可重生成，标记块可重复执行）。演示患者 1001/1002/2001 的阶段与服务包引用随台账一并调整。

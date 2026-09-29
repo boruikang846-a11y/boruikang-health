@@ -4,7 +4,7 @@
 
 代码与目录规范以工作区 bgssai-skeleton/docs/BGSSAI-Standards.md、DIRECTORY-LAYOUT.md 为准。Java 21、Spring Boot 4、MyBatis Example、PageHelper、React 18、Vite、Ant Design 5；禁止 Lombok、Swagger、properties 占位符。每个接口一个 Controller，POST 参数在专属 DTO body，API snake_case，DTO 不返回 Entity。
 
-需求 → HTML 原型 → 设计与契约 → 代码与 SQL，四层版本一致。医患业务基线见 docs/feature/health-mvp.md，当前增量以 docs/feature/followup-operations-1.3.md 为准。本轮用户明确要求优先：HEALTH-USER 只做企业微信、小程序、Web 公开介绍，不提供患者业务功能。既往会议作为后台业务依据。
+需求 → HTML 原型 → 设计与契约 → 代码与 SQL，四层版本一致。医患业务基线见 docs/feature/health-mvp.md，当前增量以 docs/feature/operations-ledger-1.5.md 为准（1.3、1.4 文档保留为历史基线）。本轮用户明确要求优先：HEALTH-USER 只做企业微信、小程序、Web 公开介绍，不提供患者业务功能。既往会议作为后台业务依据。
 
 临床建议必须经医生审核后由团队人工联系，系统只保存联系证据；未配置的外部服务不得显示已接通。数据库只使用虚构演示数据，禁止复制参考资料中的真实患者。审计只追加，患者只能访问本人数据。
 

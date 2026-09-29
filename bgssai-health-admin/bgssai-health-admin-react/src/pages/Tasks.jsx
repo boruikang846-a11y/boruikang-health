@@ -5,7 +5,10 @@ import { PlusOutlined, ReloadOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import { ContactExecution, ContactHistory, ScheduleFollowups, contactNames } from './FollowupExecution'
 import { api, useLoad } from '../api'
+import { AppointmentDialog } from './Appointments'
+import { MessageLogDialog } from './Configuration'
 import { DataTable, dateText, FormDialog, LoadState, names, options, PageTitle, required, Status } from '../ui'
+import { useSearchParams as useSearch } from 'react-router-dom'
 
 const ended = ['COMPLETED', 'CANCELLED']
 export default function Tasks({ taskType, patientId, compact = false }) {
@@ -21,19 +24,21 @@ export default function Tasks({ taskType, patientId, compact = false }) {
   const [contactPending, setContactPending] = useState(search.get('contact') === '1')
   const [handoverPending, setHandoverPending] = useState(search.get('handover') === '1')
   const [keyword, setKeyword] = useState('')
+  const [slaOverdue, setSlaOverdue] = useState(search.get('sla_overdue') === 'true')
   const requestKey = useRef('')
-  useEffect(() => { setType(taskType || 'FOLLOWUP'); setStatus(undefined); setPage(0); setSelected(Number(search.get('task')) || null) }, [taskType])
-  const state = useLoad(() => api('/tasks/query', { page, size: 10, patient_id: patientId, task_type: type, status, priority, overdue, contact_pending: contactPending, handover_pending: handoverPending, revisit_pending: search.get('pending') === '1', assignee_id: Number(search.get('assignee')) || undefined, due_from: search.get('due_from') || undefined, due_to: search.get('due_to') || undefined }), [page, patientId, type, status, priority, overdue, contactPending, handoverPending, search.toString()])
+  useEffect(() => { setType(search.get('task_type') || taskType || 'FOLLOWUP'); setStatus(undefined); setPage(0); setSelected(Number(search.get('task')) || null) }, [taskType])
+  const state = useLoad(() => api('/tasks/query', { page, size: 10, patient_id: patientId, task_type: type, status, priority, overdue, contact_pending: contactPending, handover_pending: handoverPending, revisit_pending: search.get('pending') === '1', assignee_id: Number(search.get('assignee')) || undefined, due_from: search.get('due_from') || (search.get('due') === 'today' ? dayjs().format('YYYY-MM-DD') : undefined), due_to: search.get('due_to') || (search.get('due') === 'today' ? dayjs().format('YYYY-MM-DD') : undefined), sla_overdue: slaOverdue || undefined, alert_source: search.get('alert_source') || undefined }), [page, patientId, type, status, priority, overdue, contactPending, handoverPending, slaOverdue, search.toString()])
   const patients = useLoad(() => create ? api('/patients/query', { page: 0, size: 100, keyword }) : Promise.resolve({ items: [] }), [create, keyword])
   const title = taskType === 'ALERT' ? '异常处理' : taskType === 'REVISIT' ? '复诊跟踪' : '随访与咨询'
   function closeTask() { setSelected(null); if (search.has('task')) { search.delete('task'); setSearch(search, { replace: true }) } }
   const newButton = <Button type="primary" icon={<PlusOutlined />} onClick={() => { requestKey.current = crypto.randomUUID(); setCreate(true) }}>新建任务</Button>
   return <>{!compact && <PageTitle title={title} subtitle={taskType === 'ALERT' ? '从人工确认到医生处置，每一次异常都有处理结果。' : taskType === 'REVISIT' ? '以核实的预约、到院证据和诊疗结果跟踪复诊。' : '依据原报告安排随访，记录每次联系与后续计划，完成后交接责任医生。'} extra={<Space>{type === 'FOLLOWUP' && <Button onClick={() => setSchedule(true)}>安排随访节点</Button>}{newButton}</Space>} />}
     <div className={compact ? '' : 'table-panel'}><div className="toolbar">
-      {!taskType && <Select aria-label="任务类型" value={type} style={{ width: 150 }} options={options(['FOLLOWUP', 'CONSULTATION', ...(compact ? ['ALERT', 'REVISIT'] : [])])} onChange={value => { setType(value); setPage(0) }} />}
+      {!taskType && <Select aria-label="任务类型" value={type} style={{ width: 150 }} options={options(['FOLLOWUP', 'CONSULTATION', 'OUTREACH', ...(compact ? ['ALERT', 'REVISIT'] : [])])} onChange={value => { setType(value); setPage(0) }} />}
       <Select aria-label="任务状态" value={status} placeholder="全部状态" allowClear style={{ width: 155 }} options={options(type === 'ALERT' ? ['PENDING', 'IN_PROGRESS', 'ESCALATED', 'COMPLETED'] : type === 'REVISIT' ? ['PENDING', 'BOOKED', 'ARRIVED', 'COMPLETED', 'NO_SHOW', 'CANCELLED'] : ['PENDING', 'IN_PROGRESS', 'PENDING_REVIEW', 'REJECTED', 'APPROVED', 'CONTACTED', 'COMPLETED', 'CANCELLED'])} onChange={value => { setStatus(value); setPage(0) }} />
       <Select aria-label="优先级" value={priority} placeholder="全部优先级" allowClear style={{ width: 145 }} options={options(['P0', 'P1', 'P2', 'P3'])} onChange={value => { setPriority(value); setPage(0) }} />
       <Space><Switch checked={overdue} onChange={value => { setOverdue(value); setPage(0) }} aria-label="仅看逾期" />仅看逾期</Space>
+      {['ALERT', 'OUTREACH'].includes(type) && <Space><Switch checked={slaOverdue} onChange={value => { setSlaOverdue(value); setPage(0) }} />超 SLA 未响应</Space>}
       {type === 'FOLLOWUP' && <><Space><Switch checked={contactPending} onChange={v => { setContactPending(v); setPage(0) }} />待再次联系</Space><Space><Switch checked={handoverPending} onChange={v => { setHandoverPending(v); setPage(0) }} />待院方确认</Space></>}
       <Button icon={<ReloadOutlined />} onClick={state.reload}>刷新</Button>{compact && <Space>{type === 'FOLLOWUP' && <Button onClick={() => setSchedule(true)}>安排随访节点</Button>}{newButton}</Space>}
     </div>
@@ -42,7 +47,7 @@ export default function Tasks({ taskType, patientId, compact = false }) {
       { title: '任务', dataIndex: 'title', render: (value, row) => <><strong>{value}</strong><div className="muted">#{row.id} / {names[row.task_type]} {row.followup_stage && ' / ' + row.followup_stage}</div></> },
       { title: '优先级', dataIndex: 'priority', render: value => <Status value={value} /> },
       { title: '状态', dataIndex: 'status', render: value => <Status value={value} /> },
-      { title: '截止时间', dataIndex: 'due_at', render: (value, row) => <><span className={row.overdue ? 'danger-text' : ''}>{dateText(value)}</span>{row.overdue && <div className="danger-text">已逾期</div>}</> },
+      { title: '截止时间', dataIndex: 'due_at', render: (value, row) => <><span className={row.overdue ? 'danger-text' : ''}>{dateText(value)}</span>{row.overdue && <div className="danger-text">已逾期</div>}{row.sla_overdue && <div className="danger-text">超 SLA 未响应</div>}{row.alert_source && <div className="muted">{names[row.alert_source]}</div>}</> },
       { title: '联系进度', render: (_, row) => <>{row.contact_result && <Tag color={row.contact_result === 'CONNECTED' ? 'green' : 'orange'}>{contactNames[row.contact_result]}</Tag>}{row.next_contact_at && <div className="muted">下次：{dateText(row.next_contact_at)}</div>}{row.handover_status && <div className="muted">{row.handover_status === 'PENDING' ? '待院方确认' : '院方已确认'}</div>}</> },
       { title: '操作', render: (_, row) => <Button type="link" onClick={() => setSelected(row.id)}>查看 / 处理</Button> },
     ]} /></div>
@@ -52,9 +57,10 @@ export default function Tasks({ taskType, patientId, compact = false }) {
       onClose={() => setCreate(false)} onSubmit={async values => { const task = await api('/tasks/create', { ...values, due_at: values.due_at.format('YYYY-MM-DDTHH:mm:ss'), request_key: requestKey.current }); state.reload(); setSelected(task.id) }}>
       {patientId ? <Form.Item name="patient_id" hidden><Input /></Form.Item> : <LoadState state={patients}>{data => <Form.Item name="patient_id" label="患者（可搜索）" rules={required}><Select showSearch filterOption={false} onSearch={setKeyword} options={data.items.map(row => ({ value: row.id, label: row.name + ' #' + row.id }))} /></Form.Item>}</LoadState>}
       <Form.Item name="title" label="任务标题" rules={required}><Input maxLength={160} /></Form.Item><div className="form-grid">
-        <Form.Item name="task_type" label="任务类型" rules={required}><Select options={options(['FOLLOWUP', 'CONSULTATION', 'ALERT', 'REVISIT'])} /></Form.Item>
+        <Form.Item name="task_type" label="任务类型" rules={required}><Select options={options(['FOLLOWUP', 'CONSULTATION', 'ALERT', 'REVISIT', 'OUTREACH'])} /></Form.Item>
         <Form.Item name="priority" label="优先级" rules={required}><Select options={options(['P0', 'P1', 'P2', 'P3'])} /></Form.Item></div>
       <Form.Item name="due_at" label="截止时间" rules={required}><DatePicker showTime style={{ width: '100%' }} /></Form.Item>
+      <Form.Item noStyle shouldUpdate={(a, b) => a.task_type !== b.task_type}>{({ getFieldValue }) => getFieldValue('task_type') === 'ALERT' && <Form.Item name="alert_source" label="异常来源"><Select options={options(['STAFF', 'PATIENT_REPORT', 'OBSERVATION', 'ECG', 'RULE'])} /></Form.Item>}</Form.Item>
     </FormDialog>
   </>
 }
@@ -79,13 +85,19 @@ function TaskDrawer({ id, onClose, onChanged }) {
   const [handoverAt, setHandoverAt] = useState(dayjs())
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
+  const [disposition, setDisposition] = useState(undefined)
+  const [book, setBook] = useState(false)
+  const [messageLog, setMessageLog] = useState(false)
+  const [reassign, setReassign] = useState(false)
+  const account = useOutletContext()
+  const staff = useLoad(() => id && account.role_code === 'MANAGER' ? api('/staff') : Promise.resolve([]), [id])
   useEffect(() => {
     if (!state.data) return
     const task = state.data.task
     setKnowledgeId(task.knowledge_id); setDraft(task.draft_text || ''); setReview(task.approved_text || task.draft_text || '')
     setReviewNote(task.review_note || ''); setOutcome(task.outcome || ''); setEvidence(task.evidence || ''); setFeedback(task.doctor_feedback || '')
     setReviewChannel(task.review_channel || 'PHONE'); setReviewEvidence(task.review_evidence || ''); setReviewAt(task.reviewed_at ? dayjs(task.reviewed_at) : dayjs())
-    setHandoverChannel(task.handover_channel || 'PHONE'); setHandoverEvidence(task.handover_evidence || ''); setHandoverAt(task.acknowledged_at ? dayjs(task.acknowledged_at) : dayjs())
+    setHandoverChannel(task.handover_channel || 'PHONE'); setHandoverEvidence(task.handover_evidence || ''); setHandoverAt(task.acknowledged_at ? dayjs(task.acknowledged_at) : dayjs()); setDisposition(task.disposition || undefined)
   }, [state.data])
   useEffect(() => setError(null), [id])
   useEffect(() => { if (reference.data && state.data) setKnowledgeId(reference.data.items.some(x => x.id === state.data.task.knowledge_id) ? state.data.task.knowledge_id : null) }, [reference.data, state.data])
@@ -97,13 +109,14 @@ function TaskDrawer({ id, onClose, onChanged }) {
       state.reload(); onChanged()
     } catch (e) { setError(e.message) } finally { setBusy(false) }
   }
-  const transition = action => run('transition', { action, outcome, evidence })
+  const transition = action => run('transition', { action, outcome, evidence, disposition })
   return <Drawer title="服务任务详情" open={Boolean(id)} width={700} onClose={() => !busy && onClose()} destroyOnClose extra={<Button disabled={busy} icon={<ReloadOutlined />} onClick={state.reload}>刷新</Button>}>
     {error && <Alert showIcon type="error" message={error} description="未确认成功时，请刷新核对最新状态。" className="mb" />}
     <LoadState state={state}>{context => {
       if (!context) return null
       const task = context.task
       const clinical = ['FOLLOWUP', 'CONSULTATION'].includes(task.task_type)
+      const outreach = task.task_type === 'OUTREACH'
       const editable = clinical && ['IN_PROGRESS', 'REJECTED', 'APPROVED'].includes(task.status)
       const clinician = clinicians.data?.find(x => x.id === task.doctor_id)
       return <><Space wrap><Status value={task.task_type} /><Status value={task.status} /><Status value={task.priority} />{task.overdue && <Tag color="red">已逾期</Tag>}</Space>
@@ -113,13 +126,24 @@ function TaskDrawer({ id, onClose, onChanged }) {
           { key: 'origin', label: '草稿来源', children: names[task.draft_origin] || '尚未起草' },
           { key: 'reviewed', label: '审核时间', children: dateText(task.reviewed_at) },
           { key: 'clinician', label: '院方责任医生', children: clinician?.name || '待关联' },
+          ...(task.sla_due_at ? [{ key: 'sla', label: 'SLA 截止', children: <span className={task.sla_overdue ? 'danger-text' : ''}>{dateText(task.sla_due_at)}{task.ack_at ? '（已响应 ' + dateText(task.ack_at) + '）' : ''}</span> }] : []),
+          ...(task.alert_source ? [{ key: 'source', label: '异常来源', children: names[task.alert_source] }] : []),
+          ...(task.enrollment_id ? [{ key: 'enrollment', label: '服务实例', children: '#' + task.enrollment_id + ' 节点 ' + task.plan_node_seq }] : []),
+          ...(task.reminder_sent_at ? [{ key: 'reminder', label: '提醒已发', children: dateText(task.reminder_sent_at) }] : []),
         ]} />
+        <Space wrap className="mb"><Button size="small" disabled={busy} onClick={() => setMessageLog(true)}>登记已发短信 / 消息</Button>{account.role_code === 'MANAGER' && !ended.includes(task.status) && <Button size="small" disabled={busy} onClick={() => setReassign(true)}>转交他人</Button>}{task.task_type === 'REVISIT' && ['PENDING', 'NO_SHOW'].includes(task.status) && <Button size="small" type="primary" disabled={busy} onClick={() => setBook(true)}>结构化预约</Button>}{task.appointment_id && <Link onClick={onClose} to="/appointments">查看预约台账</Link>}</Space>
+        <AppointmentDialog open={book} patientId={task.patient_id} taskId={task.id} onClose={() => setBook(false)} onSaved={() => { state.reload(); onChanged() }} />
+        <MessageLogDialog open={messageLog} patientId={task.patient_id} taskId={task.id} onClose={() => setMessageLog(false)} onSaved={() => { state.reload(); onChanged() }} />
+        <FormDialog title="转交任务" open={reassign} onClose={() => setReassign(false)} onSubmit={async values => { await api('/tasks/reassign', { id: task.id, version: task.version, ...values }); state.reload(); onChanged() }}>
+          <Form.Item name="assignee_id" label="转交给" rules={required}><Select options={(staff.data || []).filter(x => x.user_id !== task.assignee_id).map(x => ({ value: x.user_id, label: x.real_name }))} /></Form.Item><Form.Item name="reason" label="转交原因" rules={required}><Input maxLength={400} /></Form.Item>
+        </FormDialog>
         <div className="context-block"><h3>个体随访依据 · 本任务关联报告</h3>{context.record ? <><Tag>{names[context.record.record_type]}</Tag>{context.record.source_system === 'HOSPITAL_MOCK' && <Tag color="gold">模拟医院接口 · {context.record.external_id}</Tag>}<small>{dateText(context.record.occurred_at)}</small><p className="pre-wrap">{context.record.content || '指标记录'}</p>
           {context.record.systolic != null && <p>血压 {context.record.systolic}/{context.record.diastolic} mmHg</p>}{context.record.heart_rate != null && <p>心率 {context.record.heart_rate} 次/分</p>}{context.record.weight != null && <p>体重 {context.record.weight} kg</p>}{context.record.glucose != null && <p>血糖 {context.record.glucose} mmol/L</p>}
           {context.record.medication_cycle_days != null && <p>原记录用药周期：{context.record.medication_cycle_days} 天（按原医嘱核对）</p>}{context.record.next_visit_date && <p>原记录复诊日期：{context.record.next_visit_date}</p>}</> : <p className="muted">此任务未关联就诊记录。出院随访请从患者档案录入对应报告后，处理其关联任务。</p>}
           {context.messages.filter(x => x.direction === 'PATIENT_TO_STAFF').map(message => <blockquote key={message.id}><strong>患者原始咨询</strong><p className="pre-wrap">{message.content}</p></blockquote>)}
         </div>
-        {task.status === 'PENDING' && task.task_type !== 'REVISIT' && <Button type="primary" loading={busy} onClick={() => run('claim')}>领取并开始处理</Button>}
+        {task.status === 'PENDING' && task.task_type !== 'REVISIT' && <Button type="primary" loading={busy} onClick={() => run('claim')}>{task.task_type === 'ALERT' ? '响应并开始处理' : '领取并开始处理'}</Button>}
+        {outreach && !ended.includes(task.status) && <Alert className="mt" type="info" showIcon message="首次联系任务" description="在患者档案里记录邀约：接通类结果会自动完成本任务；未联系上时在下方登记尝试并约定下次时间。" action={<Link onClick={onClose} to={'/patients/' + task.patient_id}>去记录邀约</Link>} />}
         {editable && <div className="action-block"><h3>准备随访建议</h3>
           <LoadState state={reference}>{data => <><Alert className="mb" type="info" showIcon message="以原报告和患者实际反馈为依据" description="可以直接起草基础问询，无需选择资料。可选宣教仅作参考；个体建议仍需责任医生审核。" /><label className="field-label" htmlFor="knowledge-choice">已审核宣教参考（可选）</label><Select id="knowledge-choice" value={knowledgeId} allowClear onChange={setKnowledgeId} placeholder="不选择也可以起草" style={{ width: '100%' }} options={data.items.map(item => ({ value: item.id, label: item.title + ' / v' + item.version }))} /></>}</LoadState>
           <Space className="mt mb"><Button disabled={busy} onClick={() => run('draft', { knowledge_id: knowledgeId, mode: 'TEMPLATE' })}>基础问询起草</Button><Button disabled={busy} onClick={() => run('draft', { knowledge_id: knowledgeId, mode: 'AI' })}>AI 辅助起草</Button></Space>
@@ -138,23 +162,24 @@ function TaskDrawer({ id, onClose, onChanged }) {
         {task.review_note && <Alert className="mt" type="info" message="审核意见" description={task.review_note} />}
         {task.review_evidence && <p className="muted">院方审核凭证：{task.review_evidence} · {task.review_channel}</p>}
         {task.approved_text && <div className="approved-block"><h3>已批准正文</h3><p className="pre-wrap">{task.approved_text}</p></div>}
-        {clinical && !ended.includes(task.status) && task.status !== 'CONTACTED' && <ContactExecution key={task.id + '-' + task.version} task={task} busy={busy} run={run} />}
+        {(clinical || outreach) && !ended.includes(task.status) && task.status !== 'CONTACTED' && <ContactExecution key={task.id + '-' + task.version} task={task} busy={busy} run={run} />}
         <ContactHistory attempts={context.attempts} />
         {task.handover_status && <div className="action-block"><h3>院方随访交接</h3><Tag color={task.handover_status === 'ACKNOWLEDGED' ? 'green' : 'gold'}>{task.handover_status === 'ACKNOWLEDGED' ? '已登记院方确认' : '待交接院方'}</Tag>
           {task.handover_status === 'PENDING' ? <><p className="muted">由运营人员向 {clinician?.name || '院方责任医生'} 交接，取得实际确认后登记。未取得确认时保持待交接。</p><Input.TextArea aria-label="院方反馈" rows={3} value={feedback} onChange={e => setFeedback(e.target.value)} maxLength={2000} placeholder="记录医生实际反馈和下一步安排" /><div className="form-grid mt"><div><label className="field-label">确认渠道</label><Select value={handoverChannel} onChange={setHandoverChannel} style={{ width: '100%' }} options={[['PHONE','电话'],['IN_PERSON','当面'],['HOSPITAL_SYSTEM','医院系统'],['SIGNED_DOCUMENT','签字文件'],['MANUAL_OTHER','其他已核实方式']].map(([value,label]) => ({value,label}))} /></div><div><label className="field-label">实际确认时间</label><DatePicker showTime value={handoverAt} onChange={setHandoverAt} style={{ width: '100%' }} /></div></div><Input.TextArea className="mt" aria-label="院方确认凭证" value={handoverEvidence} onChange={e => setHandoverEvidence(e.target.value)} maxLength={1000} placeholder="回执编号、签字文件位置或可核实的沟通记录" /><Button className="mt" type="primary" disabled={!feedback.trim() || !handoverEvidence.trim() || !handoverAt || busy} onClick={() => run('acknowledge', { feedback, channel: handoverChannel, evidence: handoverEvidence, acknowledged_at: handoverAt.format('YYYY-MM-DDTHH:mm:ss') })}>登记院方已确认</Button></> : <><p>{task.doctor_feedback}</p><p className="muted">凭证：{task.handover_evidence} · {task.handover_channel}</p><small>{dateText(task.acknowledged_at)}</small></>}
         </div>}
         {task.task_type === 'ALERT' && task.status === 'IN_PROGRESS' && <Alert className="mt" type="warning" message="请核对患者上报内容，再升级至责任医生。" action={<Button disabled={busy} onClick={() => transition('ESCALATE')}>升级医生</Button>} />}
         {!ended.includes(task.status) && <div className="action-block"><h3>{task.task_type === 'REVISIT' ? '复诊核实' : '服务结果'}</h3>
-          {['REVISIT','ALERT'].includes(task.task_type) && <><label className="field-label" htmlFor="evidence">{task.task_type === 'ALERT' ? '院方临床处置凭证' : '预约 / 到院核验证据'}</label><Input.TextArea id="evidence" value={evidence} onChange={event => setEvidence(event.target.value)} maxLength={1000} placeholder="核验时间、科室、记录编号及核验方式" /></>}
+          {['REVISIT','ALERT','OUTREACH'].includes(task.task_type) && <><label className="field-label" htmlFor="evidence">{task.task_type === 'ALERT' ? '院方临床处置凭证' : task.task_type === 'OUTREACH' ? '联系凭证' : '预约 / 到院核验证据'}</label><Input.TextArea id="evidence" value={evidence} onChange={event => setEvidence(event.target.value)} maxLength={1000} placeholder="核验时间、科室、记录编号及核验方式" /></>}
+          {task.task_type === 'ALERT' && task.status === 'ESCALATED' && <><label className="field-label mt">处置去向</label><Select value={disposition} onChange={setDisposition} style={{ width: '100%' }} placeholder="由院方医生判断后登记" options={options(['OUTPATIENT', 'EMERGENCY', 'INPATIENT', 'OBSERVE', 'FALSE_ALARM', 'OTHER'])} /></>}
           <label className="field-label mt" htmlFor="outcome">处理结果 / 原因</label><Input.TextArea id="outcome" value={outcome} onChange={event => setOutcome(event.target.value)} maxLength={2000} placeholder="记录本次处理结果；不以已联系代替服务闭环" />
           <Space wrap className="mt">
             {task.task_type === 'REVISIT' && ['PENDING', 'NO_SHOW'].includes(task.status) && <Button type="primary" disabled={!evidence.trim() || busy} onClick={() => transition('BOOK')}>确认已预约</Button>}
             {task.task_type === 'REVISIT' && task.status === 'BOOKED' && <><Button type="primary" disabled={!evidence.trim() || busy} onClick={() => transition('ARRIVE')}>核实已到院</Button><Button disabled={!outcome.trim() || busy} onClick={() => transition('NO_SHOW')}>记录未到院</Button></>}
-            {((clinical && task.status === 'CONTACTED') || (task.task_type === 'REVISIT' && task.status === 'ARRIVED') || (task.task_type === 'ALERT' && task.status === 'ESCALATED')) && <Button type="primary" disabled={!outcome.trim() || (task.task_type === 'ALERT' && !evidence.trim()) || busy} onClick={() => transition('COMPLETE')}>记录结果并完成</Button>}
+            {((clinical && task.status === 'CONTACTED') || (task.task_type === 'REVISIT' && task.status === 'ARRIVED') || (task.task_type === 'ALERT' && task.status === 'ESCALATED') || (outreach && ['PENDING', 'IN_PROGRESS'].includes(task.status))) && <Button type="primary" disabled={!outcome.trim() || (['ALERT', 'OUTREACH'].includes(task.task_type) && !evidence.trim()) || (task.task_type === 'ALERT' && !disposition) || busy} onClick={() => transition('COMPLETE')}>记录结果并完成</Button>}
             {task.task_type !== 'ALERT' && !['CONTACTED', 'ARRIVED'].includes(task.status) && <Button danger disabled={!outcome.trim() || busy} onClick={() => transition('CANCEL')}>取消任务</Button>}
           </Space>
         </div>}
-        {ended.includes(task.status) && <div className="context-block"><h3>闭环记录</h3><p className="pre-wrap">{task.outcome}</p>{task.evidence && <p className="pre-wrap">核验证据：{task.evidence}</p>}<small>{dateText(task.completed_at)}</small></div>}
+        {ended.includes(task.status) && <div className="context-block"><h3>闭环记录</h3><p className="pre-wrap">{task.outcome}</p>{task.disposition && <p>处置去向：{names[task.disposition]}</p>}{task.evidence && <p className="pre-wrap">核验证据：{task.evidence}</p>}<small>{dateText(task.completed_at)}</small></div>}
       </>
     }}</LoadState>
   </Drawer>

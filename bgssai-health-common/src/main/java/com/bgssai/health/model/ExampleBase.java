@@ -23,6 +23,10 @@ public abstract class ExampleBase {
     public ExampleBase ne(String column, Object value) { return add(column, "<>", value); }
     public ExampleBase ge(String column, Object value) { return add(column, ">=", value); }
     public ExampleBase lt(String column, Object value) { return add(column, "<", value); }
+    public ExampleBase le(String column, Object value) { return add(column, "<=", value); }
+    public ExampleBase gt(String column, Object value) { return add(column, ">", value); }
+    public ExampleBase isNull(String column) { criteria.add(new Criterion(check(column), "IS NULL", null, false, null)); return this; }
+    public ExampleBase isNotNull(String column) { criteria.add(new Criterion(check(column), "IS NOT NULL", null, false, null)); return this; }
     public ExampleBase like(String column, String value) { return add(column, "LIKE", value); }
     public ExampleBase in(String column, List<?> values) {
         if (values == null || values.isEmpty()) return eq("id", -1L);

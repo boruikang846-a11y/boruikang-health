@@ -183,7 +183,8 @@ class HealthWorkflowTest {
         row=tasks.transition(new TransitionTaskRequest(row.id(),row.version(),"ESCALATE",null,null));
         TaskResponse escalated=row;
         rejects("50000001",()->tasks.transition(new TransitionTaskRequest(escalated.id(),escalated.version(),"COMPLETE","已核实",null)));
-        assertEquals("COMPLETED",tasks.transition(new TransitionTaskRequest(row.id(),row.version(),"COMPLETE","院方确认后记录处置结果","虚构院方处置凭证 TEST-ALERT")).status());
+        rejects("50000001",()->tasks.transition(new TransitionTaskRequest(escalated.id(),escalated.version(),"COMPLETE","院方确认后记录处置结果","虚构院方处置凭证 TEST-ALERT")));
+        assertEquals("COMPLETED",tasks.transition(new TransitionTaskRequest(row.id(),row.version(),"COMPLETE","院方确认后记录处置结果","虚构院方处置凭证 TEST-ALERT","OUTPATIENT")).status());
     }
     @Test void arrivalRequiresEvidenceAndCompletionRequiresOutcome() {
         TaskResponse row=create("REVISIT");

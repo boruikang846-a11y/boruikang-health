@@ -4,8 +4,10 @@ import { Alert, App, Button, Card, DatePicker, Descriptions, Form, Input, InputN
 import { PlusOutlined, PrinterOutlined, ReloadOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import ReportArchives from './ReportArchives'
+import { Campaigns, Orgs, Sla, Templates } from './Configuration'
 import { api, useLoad } from '../api'
 import { DataTable, dateText, FormDialog, LoadState, names, options, PageTitle, required, Status } from '../ui'
+import { Tabs } from 'antd'
 
 export function Knowledge() {
   const account = useOutletContext()
@@ -84,13 +86,40 @@ export function Channels() {
     </FormDialog>
   </>
 }
+const percentage = value => value == null ? '--' : value + '%'
+function Metrics({ query }) {
+  const state = useLoad(() => api('/reports/metrics', query), [JSON.stringify(query)])
+  const dictionary = useLoad(() => api('/reports/metric-dictionary'))
+  return <><LoadState state={state}>{data => <div className="metric-grid">{data.metrics.map(m => <div key={m.code} className={'metric-box' + (m.met == null ? '' : m.met ? ' met' : ' missed')}><small>{m.name}</small><div className="value">{m.denominator == null ? m.numerator : percentage(m.rate)}</div><small>{m.denominator == null ? '在管' : m.numerator + ' / ' + m.denominator}{m.target != null && ' · 目标 ' + (m.lower_is_better ? '≤' : '≥') + m.target + '%'}</small></div>)}</div>}</LoadState>
+    <Card className="mt" title="指标字典" size="small"><LoadState state={dictionary}>{rows => <Table size="small" rowKey="code" pagination={false} dataSource={rows} scroll={{ x: 900 }} columns={[{ title: '指标', dataIndex: 'name' }, { title: '分子', dataIndex: 'numerator' }, { title: '分母', dataIndex: 'denominator' }, { title: '排除', dataIndex: 'exclusions' }, { title: '目标', dataIndex: 'target', render: (v, r) => v == null ? '—' : (r.lower_is_better ? '≤' : '≥') + v + '%' }]} />}</LoadState></Card></>
+}
+function Funnel({ query }) {
+  const state = useLoad(() => api('/reports/funnel', query), [JSON.stringify(query)])
+  const steps = [['screened', '检出'], ['high_risk', '高危'], ['enrolled', '建档'], ['invited', '邀约'], ['reached', '触达'], ['willing', '愿意'], ['booked', '预约'], ['arrived', '到院'], ['effective_arrival', '有效到诊'], ['package_activated', '入组'], ['followup_done', '随访完成'], ['revisit_done', '复诊完成']]
+  return <LoadState state={state}>{data => <><div className="funnel">{steps.map(([key, label], i) => <React.Fragment key={key}>{i > 0 && <span className="funnel-arrow">→</span>}<div className="funnel-step"><b>{data[key]}</b><small>{label}</small></div></React.Fragment>)}</div>
+    <Table className="mt" size="small" rowKey="campaign_id" pagination={false} dataSource={data.campaigns} scroll={{ x: 900 }} columns={[{ title: '活动', dataIndex: 'name', render: (v, r) => <>{v} <Status value={r.status} /></> }, { title: '目标', dataIndex: 'target_count' }, { title: '检出', dataIndex: 'screened' }, { title: '高危', dataIndex: 'high_risk' }, { title: '建档', dataIndex: 'enrolled' }, { title: '邀约', dataIndex: 'invited' }, { title: '触达', dataIndex: 'reached' }, { title: '愿意', dataIndex: 'willing' }, { title: '预约', dataIndex: 'booked' }, { title: '到院', dataIndex: 'arrived' }]} /></>}</LoadState>
+}
+function Operators({ query }) {
+  const state = useLoad(() => api('/reports/operators', query), [JSON.stringify(query)])
+  return <LoadState state={state}>{rows => <Table rowKey="owner_id" pagination={false} dataSource={rows} scroll={{ x: 1100 }} columns={[
+    { title: '运营人员', dataIndex: 'owner_name' }, { title: '负责患者', dataIndex: 'managed' }, { title: '高风险', dataIndex: 'high_risk' }, { title: '邀约 / 触达', render: (_, r) => r.invited_patients + ' / ' + r.reached_patients }, { title: '触达率', dataIndex: 'reach_rate', render: percentage },
+    { title: '预约', dataIndex: 'booked' }, { title: '有效到诊', dataIndex: 'effective_arrived' }, { title: '到诊转化率', dataIndex: 'arrival_rate', render: percentage }, { title: '随访', render: (_, r) => r.followup_done + ' / ' + r.followup_due }, { title: '随访完成率', dataIndex: 'followup_rate', render: percentage },
+    { title: '逾期', dataIndex: 'overdue' }, { title: '失访', dataIndex: 'lost' }, { title: '评级', dataIndex: 'rating', render: v => <Tag color={v === '优秀' ? 'green' : v === '良好' ? 'blue' : v === '合格' ? 'gold' : 'red'}>{v}</Tag> },
+  ]} />}</LoadState>
+}
+function Daily() {
+  const [date, setDate] = useState(dayjs())
+  const state = useLoad(() => api('/reports/daily', { date: date.format('YYYY-MM-DD') }), [date.format('YYYY-MM-DD')])
+  const items = [['new_screenings', '新入池'], ['new_patients', '新建档'], ['invitations', '邀约次数'], ['reached', '触达次数'], ['appointments_booked', '新预约'], ['arrived', '到院'], ['followups_due', '应随访'], ['followups_done', '完成随访'], ['alerts_opened', '新异常'], ['alerts_closed', '关闭异常'], ['messages_logged', '已发消息'], ['enrollments_activated', '激活服务'], ['overdue_open', '累计逾期']]
+  return <><div className="toolbar"><DatePicker value={date} onChange={v => v && setDate(v)} allowClear={false} /></div><LoadState state={state}>{data => <div className="metric-grid">{items.map(([key, label]) => <div key={key} className="metric-box"><small>{label}</small><div className="value">{data[key]}</div></div>)}</div>}</LoadState></>
+}
 export function Reports() {
   const [range, setRange] = useState([dayjs().subtract(6, 'day'), dayjs()])
   const [query, setQuery] = useState({ from_date: range[0].format('YYYY-MM-DD'), to_date: range[1].format('YYYY-MM-DD') })
   const state = useLoad(() => api('/reports/weekly', query), [JSON.stringify(query)])
-  const percentage = value => value == null ? '--' : value + '%'
-  return <><PageTitle title="随访统计与运营复盘" subtitle="运营团队核对随访率、待办和到院凭证，再向院方交付报告。" extra={<Button icon={<PrinterOutlined />} disabled={!state.data} onClick={() => window.print()}>打印周报</Button>} />
-    <Card className="mb no-print"><div className="toolbar"><DatePicker.RangePicker value={range} onChange={setRange} allowClear={false} /><Button type="primary" disabled={!range?.[0] || !range?.[1]} onClick={() => setQuery({ from_date: range[0].format('YYYY-MM-DD'), to_date: range[1].format('YYYY-MM-DD') })}>生成报表</Button><span className="muted">最长 93 天，以北京时间统计</span></div></Card>
+  return <><PageTitle title="随访统计与运营复盘" subtitle="十项运营指标、漏斗、按人绩效与日统计都从台账计算；周报交付给院方。" extra={<Button icon={<PrinterOutlined />} disabled={!state.data} onClick={() => window.print()}>打印周报</Button>} />
+    <Card className="mb no-print"><div className="toolbar"><DatePicker.RangePicker value={range} onChange={setRange} allowClear={false} /><Button type="primary" disabled={!range?.[0] || !range?.[1]} onClick={() => setQuery({ from_date: range[0].format('YYYY-MM-DD'), to_date: range[1].format('YYYY-MM-DD') })}>生成报表</Button><span className="muted">周报最长 93 天，指标最长一年，以北京时间统计</span></div></Card>
+    <Card className="mb"><Tabs items={[{ key: 'metrics', label: '十项指标', children: <Metrics query={query} /> }, { key: 'funnel', label: '漏斗与活动', children: <Funnel query={query} /> }, { key: 'operators', label: '按人绩效', children: <Operators query={query} /> }, { key: 'daily', label: '日统计', children: <Daily /> }]} /></Card>
     <LoadState state={state}>{data => <section className="print-report"><h2>{data.from_date} 至 {data.to_date}</h2><div className="stats-grid">
       {[['随访完成率', percentage(data.completion_rate), data.completed_count + ' / ' + data.due_count + ' 项'],
         ['按时完成率', percentage(data.on_time_rate), data.on_time_count + ' / ' + data.due_count + ' 项'],
@@ -110,11 +139,11 @@ export function Reports() {
   </>
 }
 const providers = { AI: 'AI 随访草稿', WE_COM: '医院企业微信', WECHAT_OFFICIAL: '医院公众号', HIS: 'HIS / EMR 数据', WEEKLY_DELIVERY: '周报外部投递' }
-export function Settings() {
+function Integrations() {
   const account = useOutletContext()
   const [editor, setEditor] = useState(null)
   const state = useLoad(() => api('/integrations'))
-  return <><PageTitle title="接入设置" subtitle="区分配置状态与真实接通状态，按医院授权逐项联调。" extra={<Button icon={<ReloadOutlined />} onClick={state.reload}>刷新</Button>} />
+  return <><div className="toolbar"><Button icon={<ReloadOutlined />} onClick={state.reload}>刷新</Button></div>
     <LoadState state={state}>{data => <div className="integration-grid">{data.map(item => <Card key={item.provider} title={providers[item.provider]} extra={<Tag color={item.status === 'CONFIGURED_UNVERIFIED' ? 'gold' : 'default'}>{item.status === 'CONFIGURED_UNVERIFIED' ? '已配置 · 待联调' : '未接入'}</Tag>}>
       <p>{item.provider === 'AI' ? '辅助整理问询草稿。所有建议仍由责任医生审核、人工联系。' : item.provider === 'HIS' ? '已提供虚构医院 Mock，可在“医院数据”页联调导入。真实医院接口尚未接通，待提供接口、字段字典与授权。' : '待医院提供授权与接入资料。当前仅提供患者服务介绍，后台记录人工服务过程。'}</p>
       {item.provider === 'AI' && <><Descriptions size="small" column={1} items={[{ key: 'model', label: '模型', children: item.model_name || '未设置' }, { key: 'key', label: 'API Key', children: item.configured ? '已配置（不回显）' : '未配置' }]} />
@@ -127,4 +156,10 @@ export function Settings() {
       <Alert type="info" message="保存配置不代表已通过调用联调。密钥不会在接口响应中回显。" />
     </FormDialog>
   </>
+}
+export function Settings() {
+  const account = useOutletContext()
+  if (account.role_code === 'PLATFORM_ADMIN') return <><PageTitle title="接入设置" subtitle="区分配置状态与真实接通状态，按医院授权逐项联调。" /><Integrations /></>
+  return <><PageTitle title="运营设置" subtitle="机构网络、活动、SLA 时限、短信话术模板与外部接入，都由运营主管维护。" />
+    <Tabs items={[{ key: 'orgs', label: '机构', children: <Orgs /> }, { key: 'campaigns', label: '活动', children: <Campaigns /> }, { key: 'sla', label: 'SLA 时限', children: <Sla /> }, { key: 'templates', label: '短信与话术', children: <Templates /> }, { key: 'integrations', label: '外部接入', children: <Integrations /> }]} /></>
 }

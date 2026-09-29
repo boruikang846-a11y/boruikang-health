@@ -29,7 +29,8 @@ public class TaskService {
     private final CareTaskMapper tasks;private final PatientMapper patients;private final CareRecordMapper records;
     private final CareMessageMapper messages;private final KnowledgeEntryMapper knowledge;private final PatientAccess access;
     private final AuditService audit;private final TaskWriter writer;private final AiDraftService ai;private final ContactAttemptMapper attempts;private final PatientService patientService;
-    private static final List<String> FAILED_CONTACT=List.of("NO_ANSWER","BUSY","WRONG_NUMBER","REFUSED","IDENTITY_UNVERIFIED");
+    public static final List<String> FAILED_CONTACT=List.of("NO_ANSWER","BUSY","WRONG_NUMBER","REFUSED","IDENTITY_UNVERIFIED","FAMILY_ANSWERED","NOT_COOPERATIVE","DECEASED","OTHER");
+    private static final List<String> ATTEMPT_TYPES=List.of("FOLLOWUP","CONSULTATION","OUTREACH");
     public TaskService(CareTaskMapper tasks,PatientMapper patients,CareRecordMapper records,CareMessageMapper messages,
         KnowledgeEntryMapper knowledge,PatientAccess access,AuditService audit,TaskWriter writer,AiDraftService ai,ContactAttemptMapper attempts,PatientService patientService) {
         this.tasks=tasks;this.patients=patients;this.records=records;this.messages=messages;this.knowledge=knowledge;
@@ -48,6 +49,9 @@ public class TaskService {
         if(Boolean.TRUE.equals(req.revisitPending()))ex.eq("task_type","REVISIT").in("status",List.of("PENDING","BOOKED","NO_SHOW"));
         if(req.dueFrom()!=null)ex.ge("due_at",req.dueFrom().atStartOfDay());
         if(req.dueTo()!=null)ex.lt("due_at",req.dueTo().plusDays(1).atStartOfDay());
+        if(Boolean.TRUE.equals(req.slaOverdue()))ex.lt("sla_due_at",LocalDateTime.now()).isNull("ack_at").ne("status","COMPLETED").ne("status","CANCELLED");
+        if(Checks.text(req.alertSource()))ex.eq("alert_source",req.alertSource());
+        if(req.enrollmentId()!=null)ex.eq("enrollment_id",req.enrollmentId());
         ex.setOrderByClause("priority ASC,due_at ASC,id ASC");
         PageHelper.startPage(Paged.number(req.page()),Paged.size(req.size()));
         List<CareTask> rows=tasks.selectByExample(ex);
@@ -98,12 +102,14 @@ public class TaskService {
         if(req.knowledgeId()!=null)publishedReference(req.knowledgeId(),p.hospitalId);
         CareTask t=new CareTask();t.hospitalId=p.hospitalId;t.patientId=p.id;t.taskType=req.taskType();t.title=req.title();t.priority=req.priority();t.status="PENDING";
         t.assigneeId=p.ownerId;t.doctorId=p.doctorId;t.dueAt=req.dueAt();t.recordId=req.recordId();t.sopId=req.knowledgeId();t.requestKey=req.requestKey();t.version=0;t.creator=CurrentAccount.get().userId().toString();
+        if("ALERT".equals(req.taskType())){t.alertSource=req.alertSource()==null?"STAFF":req.alertSource();t.slaDueAt=slaFor(req.priority(),req.dueAt());}
+        if("OUTREACH".equals(req.taskType()))t.slaDueAt=req.dueAt();
         tasks.insertSelective(t);audit.append(p.id,"TASK_CREATED",t.id,null,"PENDING",t.taskType);return view(t,p);
     }
     public TaskResponse claim(ClaimTaskRequest req) {
         log.info("claim task taskId={}",req.id());CareTask t=load(req.id(),req.version());Checks.conflict("PENDING".equals(t.status));
         Checks.require(!"REVISIT".equals(t.taskType),"Use booking action for revisit");
-        CareTask patch=new CareTask();patch.status="IN_PROGRESS";return view(writer.save(t,patch,"TASK_CLAIMED"),access.require(t.patientId));
+        CareTask patch=new CareTask();patch.status="IN_PROGRESS";if("ALERT".equals(t.taskType)&&t.ackAt==null)patch.ackAt=LocalDateTime.now();return view(writer.save(t,patch,"TASK_CLAIMED"),access.require(t.patientId));
     }
     public TaskResponse draft(DraftTaskRequest req) {
         log.info("draft task taskId={} mode={}",req.id(),req.mode());CareTask t=load(req.id(),req.version());Patient p=access.require(t.patientId);
@@ -156,7 +162,7 @@ public class TaskService {
         m.direction="STAFF_TO_PATIENT";m.content=t.approvedText;m.creator=m.senderId.toString();messages.insertSelective(m);
         ContactAttempt attempt=attemptBase(t,req.contactAt(),req.method(),"CONNECTED",req.evidence());
         attempt.identityVerified=true;attempt.reportReviewed=Boolean.TRUE.equals(req.reportReviewed());attempt.recipientRole=req.recipientRole();
-        attempt.medicationFeedback=req.medicationFeedback();attempt.patientQuestions=req.patientQuestions();attempts.insertSelective(attempt);
+        attempt.medicationFeedback=req.medicationFeedback();attempt.patientQuestions=req.patientQuestions();attempt.satisfaction=req.satisfaction();attempt.complaint=req.complaint();attempts.insertSelective(attempt);
         return view(saved,p);
     }
     public TaskResponse transition(TransitionTaskRequest req) {
@@ -170,8 +176,9 @@ public class TaskService {
             case "CANCEL" -> {Checks.require(!"ALERT".equals(t.taskType)&&!"CONTACTED".equals(t.status)&&!"ARRIVED".equals(t.status),"This task cannot be cancelled");Checks.require(Checks.text(req.outcome()),"Cancellation reason required");patch.status="CANCELLED";}
             case "COMPLETE" -> {
                 Checks.require(Checks.text(req.outcome()),"Outcome required / 请记录处理结果");
-                if("ALERT".equals(t.taskType)) {Checks.conflict("ESCALATED".equals(t.status));Checks.require(p.doctorId!=null&&Checks.text(req.evidence()),"Record the hospital clinician's disposition and evidence before closing an alert");patientService.validateClinician(p.doctorId);}
+                if("ALERT".equals(t.taskType)) {Checks.conflict("ESCALATED".equals(t.status));Checks.require(p.doctorId!=null&&Checks.text(req.evidence()),"Record the hospital clinician's disposition and evidence before closing an alert");Checks.require(Checks.text(req.disposition()),"Select the disposition / 请选择处置去向");patientService.validateClinician(p.doctorId);patch.disposition=req.disposition();}
                 else if("REVISIT".equals(t.taskType)) Checks.conflict("ARRIVED".equals(t.status));
+                else if("OUTREACH".equals(t.taskType)) {Checks.conflict(List.of("PENDING","IN_PROGRESS").contains(t.status));Checks.require(Checks.text(req.evidence()),"Record the contact evidence / 请填写联系凭证");patch.contactResult="CONNECTED";}
                 else Checks.conflict("CONTACTED".equals(t.status));
                 patch.status="COMPLETED";patch.completedAt=LocalDateTime.now();
                 if("FOLLOWUP".equals(t.taskType))patch.handoverStatus="PENDING";
@@ -183,14 +190,14 @@ public class TaskService {
     @Transactional
     public TaskResponse attempt(RecordAttemptRequest req) {
         CareTask t=load(req.id(),req.version());Patient p=access.lock(t.patientId);
-        Checks.require(List.of("FOLLOWUP","CONSULTATION").contains(t.taskType),"Only follow-up and consultation tasks accept contact attempts");
+        Checks.require(ATTEMPT_TYPES.contains(t.taskType),"Only follow-up, consultation and outreach tasks accept contact attempts");
         Checks.conflict(!TERMINAL.contains(t.status)&&!"CONTACTED".equals(t.status));
         Checks.require(FAILED_CONTACT.contains(req.result()),"Invalid unsuccessful contact result");
         Checks.require(req.contactAt()!=null&&!req.contactAt().isAfter(LocalDateTime.now()),"Actual contact time required");
         Checks.require(req.nextContactAt()!=null&&req.nextContactAt().isAfter(req.contactAt())&&req.nextContactAt().isBefore(LocalDateTime.now().plusYears(1)),"Enter a later next action time within one year");
         Checks.require(Checks.text(req.reason())&&Checks.text(req.nextPlan())&&Checks.text(req.evidence()),"Reason, next plan and evidence are required");
         Checks.require(List.of("PHONE","IN_PERSON","MANUAL_OTHER").contains(req.method()),"Invalid method");
-        CareTask patch=new CareTask();patch.nextContactAt=req.nextContactAt();patch.contactResult=req.result();
+        CareTask patch=new CareTask();patch.nextContactAt=req.nextContactAt();patch.contactResult=req.result();if("OUTREACH".equals(t.taskType)&&"PENDING".equals(t.status))patch.status="IN_PROGRESS";
         CareTask saved=writer.save(t,patch,"CONTACT_ATTEMPT_RECORDED");
         ContactAttempt row=attemptBase(t,req.contactAt(),req.method(),req.result(),req.evidence());
         row.reason=req.reason();row.nextContactAt=req.nextContactAt();row.nextPlan=req.nextPlan();attempts.insertSelective(row);
@@ -241,7 +248,19 @@ public class TaskService {
         row.requestKey="contact-"+task.id+"-"+task.version;row.creator=row.actorId.toString();return row;
     }
     private static ContactAttemptResponse attemptView(ContactAttempt a) {
-        return new ContactAttemptResponse(a.id,a.actorId,a.contactAt,a.method,a.result,a.identityVerified,a.reportReviewed,a.recipientRole,a.reason,a.nextContactAt,a.nextPlan,a.medicationFeedback,a.patientQuestions,a.evidence);
+        return new ContactAttemptResponse(a.id,a.actorId,a.contactAt,a.method,a.result,a.identityVerified,a.reportReviewed,a.recipientRole,a.reason,a.nextContactAt,a.nextPlan,a.medicationFeedback,a.patientQuestions,a.evidence,a.satisfaction,a.complaint);
+    }
+    @Transactional
+    public TaskResponse reassign(ReassignTaskRequest req) {
+        log.info("reassign task taskId={} assigneeId={}",req.id(),req.assigneeId());access.manager();CareTask t=load(req.id(),req.version());Patient p=access.require(t.patientId);
+        Checks.conflict(!TERMINAL.contains(t.status));patientService.validateStaff(req.assigneeId(),"OPERATOR","MANAGER");
+        Checks.require(!req.assigneeId().equals(t.assigneeId),"Task already belongs to this staff member / 任务已在该人员名下");
+        CareTask patch=new CareTask();patch.assigneeId=req.assigneeId();CareTask saved=writer.save(t,patch,"TASK_HANDED_OVER");
+        audit.append(p.id,"TASK_HANDOVER_REASON",t.id,String.valueOf(t.assigneeId),String.valueOf(req.assigneeId()),req.reason().trim());return view(saved,p);
+    }
+    public static LocalDateTime slaFor(String priority,LocalDateTime dueAt) {
+        LocalDateTime now=LocalDateTime.now();LocalDateTime sla=switch(priority){case "P0"->now.plusHours(2);case "P1"->now.plusHours(24);case "P2"->now.plusHours(72);default->dueAt;};
+        return dueAt!=null&&dueAt.isBefore(sla)?dueAt:sla;
     }
     private CareTask load(Long id,Integer version) {
         access.staff();CareTask t=tasks.selectByPrimaryKey(id);Checks.found(t!=null&&CurrentAccount.get().hospitalId().equals(t.hospitalId));access.require(t.patientId);
@@ -265,6 +284,7 @@ public class TaskService {
     public static TaskResponse view(CareTask t,Patient patient) {
         String name=patient==null?"":patient.name.substring(0,1)+"*".repeat(Math.max(0,patient.name.length()-1));
         return new TaskResponse(t.id,t.patientId,name,t.taskType,t.title,t.priority,t.status,t.assigneeId,t.doctorId,t.dueAt,t.recordId,t.sopId==null||t.sopId==0?null:t.sopId,t.draftText,t.draftOrigin,t.approvedText,t.reviewNote,t.reviewerId,t.reviewedAt,t.reviewChannel,t.reviewEvidence,t.completedAt,t.outcome,t.evidence,t.version,!TERMINAL.contains(t.status)&&t.dueAt.isBefore(LocalDateTime.now()),t.followupStage,FAILED_CONTACT.contains(t.contactResult==null?"":t.contactResult)&&!TERMINAL.contains(t.status)?t.nextContactAt:null,
-            t.contactResult,t.identityVerified,t.handoverStatus,t.doctorFeedback,t.handoverChannel,t.handoverEvidence,t.acknowledgedAt);
+            t.contactResult,t.identityVerified,t.handoverStatus,t.doctorFeedback,t.handoverChannel,t.handoverEvidence,t.acknowledgedAt,
+            t.alertSource,t.slaDueAt,t.ackAt,t.disposition,t.appointmentId,t.enrollmentId,t.planNodeSeq,t.reminderSentAt,!TERMINAL.contains(t.status)&&t.slaDueAt!=null&&t.ackAt==null&&t.slaDueAt.isBefore(LocalDateTime.now()));
     }
 }
