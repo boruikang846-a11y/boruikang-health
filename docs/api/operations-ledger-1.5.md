@@ -87,4 +87,4 @@
 
 运营视角下，OUTREACH 与 ALERT 的 `sla_overdue` = 未终态、`sla_due_at` 已过且 `ack_at` 为空。指标字典版本 `1.5`，归档快照沿用周报结构；漏斗与指标均从台账实时计算，不落库。
 
-SQL：新库执行 `sql/DDL.sql` → `sql/DML.sql` → `sql/dev/DML.sql`；已有 1.4 库先备份，再执行 `sql/migrations/20260929-operations-ledger.sql`（新表、患者与任务新列、清空旧 `service_package_id`），然后执行两份 DML。本地 H2 由 `DDL-local.sql` 的 `ADD COLUMN IF NOT EXISTS` 自动补齐。
+SQL：全量发版，备份后清库，执行 `sql/DDL.sql` → `sql/DML.sql` → `sql/dev/DML.sql`；仓库只保留 DDL 与 DML，不维护增量迁移脚本。本地 H2 用 `*-local.sql` 自动初始化。
