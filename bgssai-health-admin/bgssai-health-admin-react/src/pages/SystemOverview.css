@@ -1,0 +1,27 @@
+.overview-page{background:#f8fafc;color:#233b57;min-height:100vh}
+.overview-header,.overview-main{max-width:1180px;margin:auto;padding:26px 32px}
+.overview-header{display:flex;align-items:center;justify-content:space-between;gap:18px;border-bottom:1px solid #e0e8f1}
+.overview-header .brand{text-decoration:none;color:#233b57}
+.overview-hero{display:grid;grid-template-columns:1.5fr 1fr;gap:65px;align-items:center;padding:48px 0 64px}
+.overview-kicker,.overview-section-title>span{font-size:12px;letter-spacing:1.6px;color:#40648b}
+.overview-hero h1{font-size:45px;line-height:1.5;margin:18px 0;letter-spacing:-1px}
+.overview-hero em{font-style:normal;color:#267866}
+.overview-hero p,.overview-card p,.overview-journey p{color:#526980;line-height:1.9;font-size:14px}
+.overview-hero nav{display:flex;gap:24px;flex-wrap:wrap;margin-top:26px;font-size:14px}
+.overview-summary{padding:42px 30px;background:linear-gradient(140deg,#e8f2ff,#ebf7f2);border:1px solid #d7e7ec;border-radius:28px;text-align:center}
+.overview-summary>.anticon{font-size:42px;color:#328277;margin-bottom:22px}
+.overview-summary h2{font-size:25px}.overview-summary p{line-height:2.3}
+.overview-section{padding:35px 0;scroll-margin-top:20px}
+.overview-section-title{margin-bottom:26px}.overview-section-title h2{font-size:28px;margin:8px 0 10px}.overview-section-title p{color:#526980;font-size:14px}
+.overview-ends,.overview-roles{display:grid;gap:20px}.overview-ends{grid-template-columns:1fr 1fr}.overview-roles{grid-template-columns:repeat(3,minmax(0,1fr))}
+.overview-card{background:#fff;padding:28px;border:1px solid #dce5ef;border-radius:18px;min-width:0}
+.overview-card-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:25px}.overview-card-top>.anticon,.overview-equation .overview-card>.anticon{font-size:27px;color:#3678c3}
+.overview-card small{display:block;font-size:12px;color:#45658b;margin:12px 0 8px}.overview-card h3{font-size:19px;line-height:1.6;margin:0 0 12px}
+.overview-card p:last-child{margin-bottom:0}.overview-planned{background:#fcfcf7;border-style:dashed}.overview-chips{display:flex;flex-wrap:wrap;gap:8px}.overview-chips span{background:#f0f5fa;border-radius:7px;padding:7px 11px;color:#3c5878;font-size:12px}
+.overview-card .overview-note{font-size:12px;margin-top:18px}.overview-role-number{font-size:26px;color:#3678c3}
+.overview-equation{display:grid;grid-template-columns:1fr 45px 1fr;align-items:stretch;gap:15px}.overview-plus{align-self:center;text-align:center;font-size:32px;color:#6883a4}.overview-equation ul{padding-left:20px;color:#526980;font-size:14px;line-height:2.1;margin-bottom:0}
+.overview-result{background:#eaf5ef;border:1px solid #d2e7da;border-radius:16px;text-align:center;padding:22px;margin-top:20px;color:#28694f}.overview-result>span{display:block;font-size:24px}.overview-result strong{display:block;line-height:1.9}.overview-result p{font-size:13px;margin:10px 0 0;color:#416650}
+.overview-journey{list-style:none;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:22px}.overview-journey li{border-top:2px solid #8eb3df;padding-top:18px}.overview-journey li>span{color:#3e70ac;font-size:24px}.overview-journey h3{font-size:18px;margin:10px 0}
+.overview-scope{background:#edf3fb;border-radius:18px;padding:30px;margin:20px 0 35px}.overview-scope h2{font-size:22px}.overview-scope p{font-size:14px;color:#48627f}.overview-scope p:last-child{margin-bottom:0}.overview-footer{text-align:center;padding:26px;font-size:12px;color:#536e8d;border-top:1px solid #e0e8f1}
+@media(max-width:850px){.overview-hero{gap:26px}.overview-hero h1{font-size:35px}.overview-roles{grid-template-columns:1fr}.overview-journey{grid-template-columns:1fr 1fr}.overview-roles .overview-card{position:relative;padding-left:78px}.overview-role-number{position:absolute;left:26px;top:35px}}
+@media(max-width:600px){.overview-header,.overview-main{padding:22px}.overview-header .brand{font-size:15px;gap:7px}.overview-header .brand>.anticon{font-size:20px}.overview-header .ant-btn{font-size:12px;padding:4px 10px}.overview-hero{grid-template-columns:1fr;padding:24px 0}.overview-hero h1{font-size:32px}.overview-summary{padding:26px}.overview-hero nav{gap:18px}.overview-ends,.overview-equation{grid-template-columns:1fr}.overview-plus{font-size:27px}.overview-card{padding:22px}.overview-section-title h2{font-size:25px}.overview-journey{gap:22px 16px}.overview-scope{padding:22px}.overview-section{padding:28px 0}}

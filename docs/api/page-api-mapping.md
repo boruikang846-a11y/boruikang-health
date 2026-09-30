@@ -1,0 +1,47 @@
+# HEALTH-MVP-1.2 页面与 API 映射
+
+前缀 A=/bgssai/admin。页面路径由各端 PAGE-FLOW.html 维护。
+
+| 页面 | API | 操作 |
+| --- | --- | --- |
+| 管理端 /overview | 无业务 API | 公开 HTML 系统关系图、角色、报告依据与流程；登录页和侧栏均可达 |
+| 管理登录 | A/login、A/me、A/logout | 账号登录、会话恢复、退出 |
+| workbench | A/dashboard、A/tasks/query | 汇总、优先待办、跳转处理 |
+| patients、patients/:id | A/patients/query、create、update、A/patients/{id}、A/staff | 建档、分派、医生分层 |
+| patients/:id 时间轴 | A/records/query、create、A/messages/query、A/audits/query | 原记录、人工沟通与审计 |
+| followups、alerts、revisits | A/tasks/query、A/tasks/{id}、create、claim、draft、submit-review、review、contact、transition | 版本保护的任务处理抽屉 |
+| knowledge | A/knowledge/query、save、publish | 运营团队制定/发布 SOP；医生只读 SOP，审核发布宣教/服务包 |
+| channels | A/channels、A/channels/create、toggle | 经理维护渠道，二维码本地生成 |
+| reports | A/reports/weekly | 日期范围统计、浏览器打印 |
+| hospital | A/hospital/status、mock/query、sync、A/staff | 经理预览/同步虚构医院数据、查看幂等结果 |
+| settings | A/integrations、A/integrations/save | 接入状态、平台管理员保存 AI 配置 |
+| 用户端 /、/join/:token | 无 | 系统全貌、角色、出院报告依据、三模式规划、页内导航与语言切换 |
+
+MANUAL/TEMPLATE/AI 均生成待审核草稿。列表隐藏内部 note，授权医护详情可查看。所有查询失败必须显示错误和重试，不用零值冒充统计结果。报告打印只包含当前已加载范围。
+
+## 1.6 医生、护士登录新增映射
+
+| 页面 | API | 操作 |
+| --- | --- | --- |
+| 登录、顶栏修改密码 | A/login、A/me、A/password | 医生进入 /doctor，其他角色进入 /workbench；改密后换发新登录 |
+| doctor（医生工作台） | A/doctor/workbench、A/tasks/query、A/records/reports | 四个待办数与三个短清单 |
+| doctor/reviews、doctor/results、doctor/alerts | A/tasks/query（status、handover_status、task_type）、A/tasks/{id}、A/tasks/review、acknowledge、transition | 审核通过或退回、查收反馈、异常处置 |
+| doctor/reports、patients/:id 就诊记录页签 | A/records/reports、A/records/review、A/records/query | 待阅 / 已阅筛选，确认已阅与写意见 |
+| patients、patients/:id（医生） | A/patients/query、A/patients/{id} 及各页签查询 | 只读；不显示建档、录入、邀约、预约、签约、转诊、联系按钮 |
+| knowledge（医生：宣教审核） | A/knowledge/query、A/knowledge/publish | 医生审核发布草稿 |
+| accounts（运营主管） | A/accounts/query、create、status、reset-password | 开通、停用 / 启用、重置密码 |
+
+## 1.5 运营台账新增映射
+
+| 页面 | API | 操作 |
+| --- | --- | --- |
+| workbench 队列 | A/reports/workbench | 八个队列计数与跳转 |
+| screening | A/screenings/query、create、import、judge、enroll、A/orgs、A/campaigns/query、A/staff、A/clinicians | 患者池录入、导入、判定、建档入组 |
+| invitations、patients/:id 邀约页签 | A/invitations/query、create、A/templates/query | 逐轮邀约登记与话术参考 |
+| appointments、patients/:id 预约页签、任务抽屉结构化预约 | A/appointments/query、create、transition | 预约、提醒、到院、爽约、取消、结果 |
+| packages | A/packages/query、save、status、A/plans/query、save、status、A/enrollments/query、create、transition | 服务包 SKU、随访方案节点、签约实例生命周期 |
+| referrals、patients/:id 转诊页签 | A/referrals/query、create、transition、A/orgs | 转诊四步与反馈 |
+| settings 机构/活动/SLA/模板 | A/orgs、orgs/save、A/campaigns/query、save、A/sla、sla/save、A/templates/query、save | 经理维护配置 |
+| patients/:id 扩展 | A/patients/timeline、consent、A/medications/query、save、A/message-logs/query、create、A/records/observation | 时间轴、同意、用药、已发消息、代录指标 |
+| followups、alerts、revisits 抽屉 | A/tasks/reassign、A/message-logs/create、A/appointments/create；transition 增加 disposition | 转交、短信登记、结构化预约、处置去向 |
+| reports 扩展 | A/reports/metrics、funnel、operators、daily、metric-dictionary | 十项指标、漏斗、按人绩效、日统计、字典 |

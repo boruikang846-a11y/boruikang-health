@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.bgssai.health.mapper.ExampleSql">
+ <sql id="where"><where><foreach collection="${prefix}criteria" item="c" separator=" ">AND ${c.column} ${c.operator}<choose><when test="c.operator == 'IS NULL' or c.operator == 'IS NOT NULL'"></when><when test="c.comparedColumn != null"> ${c.comparedColumn}</when><when test="c.list"><foreach collection="c.value" item="v" open="(" close=")" separator=",">#{v}</foreach></when><otherwise> #{c.value}</otherwise></choose></foreach></where></sql>
+ <sql id="auditColumns">id, del_flag, creator, modifier, gmt_create, gmt_modified</sql>
+ <sql id="auditValues">#{id}, COALESCE(#{delFlag},0), #{creator}, #{modifier}, COALESCE(#{gmtCreate},CURRENT_TIMESTAMP), COALESCE(#{gmtModified},CURRENT_TIMESTAMP)</sql>
+ <sql id="auditUpdate"><if test="row.delFlag != null">del_flag=#{row.delFlag},</if><if test="row.creator != null">creator=#{row.creator},</if><if test="row.modifier != null">modifier=#{row.modifier},</if><if test="row.gmtCreate != null">gmt_create=#{row.gmtCreate},</if>gmt_modified=CURRENT_TIMESTAMP,</sql>
+</mapper>

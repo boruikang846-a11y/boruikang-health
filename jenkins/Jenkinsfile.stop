@@ -1,0 +1,62 @@
+// bgssai-health 关停流水线（Jenkins）。
+//
+// 只 systemctl stop 两端服务，不构建、不推 jar；关停通道唯一，仅手动触发。
+// 凭据与主机清单口径与部署流水线完全一致（bgssai-<env>-ssh / bgssai-<env>-hosts）。
+//
+// **目标环境由 Job 名前缀决定**（内部名 dev-health-stop / prod-health-stop，界面显示名
+// bgssai-health stop(dev) / bgssai-health stop(prod)），不提供下拉框。
+//
+// 触发方式：仅手动，点 Build 即执行（无需填写任何确认串）。
+
+@Library('bgssai') _
+
+pipeline {
+  agent any
+
+  options {
+    skipDefaultCheckout()
+    disableConcurrentBuilds()
+    timestamps()
+    buildDiscarder(logRotator(numToKeepStr: '30'))
+    timeout(time: 15, unit: 'MINUTES')
+  }
+
+  parameters {
+    choice(name: 'target', choices: ['both', 'user', 'admin'], description: '关停目标（both=两端 / user=仅用户端 / admin=仅管理端），不改就是 both')
+  }
+
+  stages {
+    stage('Resolve environment') {
+      steps {
+        script {
+          env.BGSSAI_ENV = bgssaiResolveEnvironment(action: '关停', requireConfirm: false)
+          if (env.BGSSAI_ENV != 'dev') { error 'HEALTH 当前仅分配 dev 主机。' }
+        }
+      }
+    }
+
+    stage('Stop user') {
+      when { expression { params.target in ['both', 'user'] } }
+      steps {
+        bgssaiStopService(product: 'health', end: 'user', environment: env.BGSSAI_ENV)
+      }
+    }
+
+    stage('Stop admin') {
+      when { expression { params.target in ['both', 'admin'] } }
+      steps {
+        bgssaiStopService(product: 'health', end: 'admin', environment: env.BGSSAI_ENV)
+      }
+    }
+  }
+
+  post {
+    success {
+      echo "关停完成: bgssai-health environment=${env.BGSSAI_ENV} target=${params.target}"
+    }
+    failure {
+      echo "关停失败: bgssai-health environment=${env.BGSSAI_ENV} target=${params.target}"
+      echo '服务可能仍在运行。请登录目标主机确认 systemctl status 后人工处理。'
+    }
+  }
+}

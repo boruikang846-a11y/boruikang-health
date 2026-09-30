@@ -1,0 +1,5 @@
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.ico binary
+**/src/main/resources/static/assets/* linguist-generated=true -whitespace

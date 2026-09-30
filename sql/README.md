@@ -1,0 +1,28 @@
+# 数据库使用说明
+
+MySQL 8 为部署目标。`DDL.sql` 是新库的规范表结构，`DML.sql` 是演示知识和未启用的接入配置，`dev/DML.sql` 是虚构账号、患者和任务。dev 手工初始化顺序为 DDL → DML → dev/DML，执行前核对目标库 `bgssai_health`。应用 dev/prod 均 `spring.sql.init.mode=never`，不会启动时建表或灌入演示数据。
+
+`DDL-local.sql`、`DML-local.sql`、`dev/DML-local.sql` 是 H2 MySQL 模式适配，只用于 local/test 自动初始化。不得用于 MySQL 部署。H2 验证不能代替真实 MySQL 上的 DDL、唯一约束、锁并发与备份恢复验证。
+
+DDL 使用 IF NOT EXISTS，只能初始化空库。发版采用全量口径：备份后清库，按 DDL → DML → dev/DML 重建；仓库不维护增量迁移脚本。种子采用固定 id 与无覆盖的重复键处理，重启不覆盖业务修改，也不会把任务日期每天滚动重置。
+
+`prod/DML.sql` 当前没有真实医院初始化数据；禁止把 dev 账号或演示审批当作生产初始化。正式医院、医护账号、已审核知识与初始配置须另行交接。当前仓库不是生产数据迁移方案。
+
+`patient.account_id` 与任务 `(hospital_id, request_key)` 使用唯一约束。任务变更通过患者行锁及 version 条件更新保证并发一致性，审计和人工沟通记录同事务提交。
+
+
+## 1.3 演示数据
+
+新库铺底 87 位患者、182 份记录、371 个任务、17 个渠道、77 条结构化联系记录，覆盖 12 科室与各流程状态。全部虚构，来源标记 HOSPITAL_MOCK。账号见根 README。旧版基线与本轮扩展使用不同固定 ID；重复执行 DML 不覆盖用户业务修改。动态 Mock 同步另增加 2 患者 / 3 报告，与铺底数据区分。
+
+`tools/generate-demo-seed.py` 可复现本轮扩展块，日期按首次执行时间生成。临床审核与联系凭证均明确标记虚构，不代表真实医生审批。
+
+旧 SOP 类型的知识条目在全量 DML 中已按 EDUCATION/DRAFT 铺底，不再有 SOP 种类。
+
+## 1.6 医生、护士登录
+
+`health_account` 增加 `department`；删除 `hospital_clinician`，院方医生改为 `role_code=DOCTOR` 的账号并沿用原 id（2/5/10/11），所有 `doctor_id`、`reviewer_id`、`referrer_id`、`clinician_id`、`feedback_clinician_id` 指向医生账号。`care_record` 增加 `doctor_viewed_at / doctor_viewer_id / doctor_opinion`；`care_task` 删除 `review_channel / review_evidence / handover_channel / handover_evidence`；`knowledge_entry` 删除 `review_channel / review_evidence`。dev 种子新增医生账号 doctor、doctor_b、doctor_c、doctor_d 与护士账号 nurse（6）、nurse_b（23），部分虚构患者分给护士；`tools/generate-demo-seed.py` 可重生成 1.3 场景块（之后需以相同 `--date` 重跑 `tools/generate-ledger-seed.py`）。发版按全量口径：备份后清库重建。
+
+## 1.5 运营台账
+
+新增 14 张台账表与患者、任务、联系记录的新列，全部写在 `DDL.sql` / `DDL-local.sql` 的建表语句里；`patient.service_package_id` 现在指向 `service_package`。发版按全量口径：备份后清库重建，先核对服务器 env 覆盖的真实库地址。基础 DML 新增 14 条短信与话术模板、5 档 SLA 默认值；dev DML 新增机构、活动、方案、服务包、患者池、邀约、预约、签约、转诊、用药与已发消息的虚构种子（`tools/generate-ledger-seed.py --date YYYY-MM-DD` 可重生成，标记块可重复执行）。演示患者 1001/1002/2001 的阶段与服务包引用随台账一并调整。

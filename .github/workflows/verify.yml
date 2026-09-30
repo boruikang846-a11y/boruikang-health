@@ -1,0 +1,59 @@
+name: Verify Health MVP
+on:
+  pull_request:
+    branches: [develop]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      HEALTH_MYSQL_TEST: 'true'
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: health-ci-only
+          MYSQL_ROOT_HOST: '%'
+        ports:
+          - 3307:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -phealth-ci-only"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: |
+            bgssai-health-admin/bgssai-health-admin-react/package-lock.json
+            bgssai-health-user/bgssai-health-user-react/package-lock.json
+      - name: Build admin UI
+        working-directory: bgssai-health-admin/bgssai-health-admin-react
+        run: |
+          npm ci
+          npm run build:deploy
+      - name: Build introduction UI
+        working-directory: bgssai-health-user/bgssai-health-user-react
+        run: |
+          npm ci
+          npm run build:deploy
+      - name: Initialize isolated MySQL using complete DDL and DML
+        env:
+          MYSQL_CONTAINER: ${{ job.services.mysql.id }}
+        run: |
+          for sql in sql/DDL.sql sql/DML.sql sql/dev/DML.sql; do
+            docker exec -i "$MYSQL_CONTAINER" mysql --default-character-set=utf8mb4 -uroot -phealth-ci-only < "$sql"
+          done
+      - name: Verify Java modules and packaged resources
+        run: mvn -B verify
