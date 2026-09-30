@@ -1,18 +1,15 @@
-# HEALTH 开发环境发布
+# HEALTH 发布
 
-部署入口为 Jenkins `bgssai/dev-health-deploy`，关停入口为 `bgssai/dev-health-stop`；均来自中央生成器，不能手工新建 Job。两端从 `develop` 构建，以 `application-dev.properties` 启动。生产环境主机尚未分配，当前入口拒绝 prod；未来 prod 同样使用 develop。
+发布工具不在本仓，统一放在 [boruikang-workflows](https://github.com/boruikang846-a11y/boruikang-workflows)：
 
-## 首次准备
+- 使用说明：该仓 `README.md`；health 专属（运行时口令、数据库、Nginx、证书、目标机布局）：该仓 `docs/health.md`。
+- Jenkins 文件夹 `boruikang`：`dev-health-deploy` 发版、`dev-health-stop` 关停、`dev-health-init-database` 空库初始化。仅手动触发。
+- 两端都从 `develop` 构建，dev 用 `application-dev.properties` 启动；prod 尚未开通，开通后同样发 `develop`，只换 `application-prod.properties`。
 
-1. Jenkins 中配置用户名/密码凭据 `bgssai-dev-ssh`。主机清单 Secret file `bgssai-dev-hosts` 合并中央模板的 `HEALTH_*` 条目；不要替换其他产品已有配置。GitHub 读取使用 `bgssai-github`。
-2. 两端目标均为 `46.250.162.15`（私网 `192.168.0.173`）。通过 Jenkins 单独运行中央 `jenkins/install/provision-build-host.sh` 准备 Java 21、Maven、Node 20.19+、npm、git、ss；安装 Nginx 也属于首次装机步骤。部署任务本身不安装软件包。
-3. 在 Jenkins 的受控执行环境检出本仓 develop，绑定开发库凭据后以 `ENVIRONMENT=dev MYSQL_HOST=101.44.189.190 MYSQL_USER=<绑定用户名> MYSQL_PWD=<绑定密码>` 运行 `bash jenkins/initialize-dev.sh`。脚本仅接受空库，依次执行本仓 `sql/DDL.sql`、`sql/DML.sql`、`sql/dev/DML.sql`，绝不 DROP。已有表时按全量口径处理：先备份，再清库，重新执行同一初始化脚本；仓库不维护增量迁移脚本。
-4. 单独创建应用数据库用户 `bgssai_health`，仅授权 `bgssai_health.*` 所需的 SELECT/INSERT/UPDATE/DELETE，限制来源为 HEALTH 主机。数据库密码与至少 32 字节随机 JWT 密钥只放 Jenkins 凭据及服务器权限 0600 的 `/etc/bgssai/bgssai-health-{admin,user}.env`，不提交 Git。变量名以各端 properties 的 relaxed binding 为准。开发库 JDBC 要求 TLS（sslMode=REQUIRED），以支持 MySQL 的 caching_sha2_password 认证，禁止通过允许任意公钥获取来绕开握手。该开发环境尚未配置数据库 CA 身份校验，后续正式医院接入需配置受信任 CA。
-5. 两端都使用 8080：管理端绑定 `127.0.0.2`、用户端绑定 `127.0.0.3`。中央主机清单的 `BIND_ADDRESS` 负责对应的端口归属检查与健康探测，不会修改应用监听配置。不要把 8080 暴露到公网。
-6. 证书本地保管于 `C:\Users\lzhao3730\Desktop\github\ssl\letsencrypt_dev.user.bgssai-health.com`。同一 SAN 证书包含两个 dev 域名。通过 Jenkins 安装 `fullchain.pem` 和 `privkey.pem` 至 `/etc/nginx/ssl/bgssai-health/`（私钥 0600）；ACME 账户私钥不用上传至应用服务器。
-7. 手动触发 dev-health-deploy，先用户端、后管理端。分别确认 `http://127.0.0.3:8080/bgssai/health/readiness`、`http://127.0.0.2:8080/bgssai/health/readiness` 返回 200。随后安装 `deploy/nginx/health-dev.conf` 到适合本机发行版的 Nginx include 目录，执行 `nginx -t` 成功后 reload。
-8. 验证两个公网 HTTPS 域名、证书、管理端登录、角色权限及医院 Mock 同步。管理端 `manager` / `HealthDemo@2026!` 为演示账号；所有患者数据均为虚构。
+本仓对发布的约定只有三条：
 
-## 当前证据与限制
+1. 目录保持 `bgssai-health-<端>/bgssai-health-<端>`（Maven 模块）与 `bgssai-health-<端>/bgssai-health-<端>-react`（前端，`npm run build:deploy` 把产物同步进后端 `static/`）；改目录或模块名时同步改发布仓 `products.json`。
+2. 数据库口令、JWT 密钥不进 Git：properties 里留空，由目标机 `/etc/boruikang/boruikang-health-<端>.env` 注入。
+3. SQL 只保留全量 `sql/DDL.sql`、`sql/DML.sql`、`sql/<env>/DML.sql`，不写增量迁移；表结构变了按「备份 → 清库 → init database → deploy」发版。
 
-2026-09-28：MVP PR #1 已合并 develop，两条 A 记录已解析到目标 IP，Let's Encrypt SAN 证书已签发，有效期至 2026-12-27。此文档提供发布步骤，不代表部署成功。主机 SSH 认证已通过，证书已安装到服务器；续期尚未自动化，需在到期前运行 SSL 文件夹内的续期脚本并重新安装证书。
+2026-09-30 之前本应用由 bgssai-workflows 的 `bgssai/dev-health-deploy` 发布，初次部署的历史记录见 `docs/deploy/health-mvp.md`。

@@ -65,7 +65,7 @@ manager 可从侧栏“医院数据”预览并同步 Mock：2 位虚构患者�
 - [SQL 使用说明](sql/README.md)、[部署交接](docs/deploy/health-mvp.md)、[验证记录](docs/review/mvp-validation.md)
 - [开发试点边界](docs/security/health-mvp.md)
 
-GitHub 通过 draft PR 交付，目标 `develop`；明确获得合并授权后遵守检查合并。**dev 和 prod 均部署 develop**，分别使用 `application-dev.properties` 与 `application-prod.properties`。部署由中央 `bgssai-workflows` Jenkins 执行；HEALTH 两端通过各自 loopback 地址共用标准 8080 端口，Nginx 提供 HTTPS。部署状态以 Jenkins 记录与线上验收为准。
+GitHub 通过 draft PR 交付，目标 `develop`；明确获得合并授权后遵守检查合并。**dev 和 prod 均部署 develop**，分别使用 `application-dev.properties` 与 `application-prod.properties`。部署由 [boruikang-workflows](https://github.com/boruikang846-a11y/boruikang-workflows) 的 Jenkins 流水线执行（文件夹 `boruikang`：`dev-health-deploy` / `dev-health-stop` / `dev-health-init-database`）；HEALTH 两端通过各自 loopback 地址共用标准 8080 端口，Nginx 提供 HTTPS。部署状态以 Jenkins 记录与线上验收为准。
 
 ## 1.6 医生、护士登录
 
