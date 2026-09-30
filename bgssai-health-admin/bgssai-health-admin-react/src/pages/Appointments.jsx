@@ -4,7 +4,7 @@ import { Alert, Button, Card, DatePicker, Form, Input, Select, Space, Switch } f
 import { PlusOutlined, ReloadOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import { api, useLoad } from '../api'
-import { DataTable, dateText, FormDialog, LoadState, names, options, PageTitle, required, stamp, Status } from '../ui'
+import { DataTable, dateText, doctorOptions, FormDialog, LoadState, names, options, PageTitle, required, stamp, Status } from '../ui'
 
 const types = ['OUTPATIENT', 'EXAM', 'REVISIT', 'INPATIENT', 'SPECIALIST_CLINIC']
 const channels = ['GREEN_CHANNEL', 'STAFF_BOOKED', 'SELF_BOOKED', 'ONLINE']
@@ -20,7 +20,7 @@ export function AppointmentDialog({ open, patientId, taskId, onClose, onSaved })
     {taskId && <Form.Item name="task_id" hidden><Input /></Form.Item>}
     <div className="form-grid"><Form.Item name="appointment_type" label="预约类型" rules={required}><Select options={options(types)} /></Form.Item><Form.Item name="channel" label="预约渠道" rules={required}><Select options={options(channels)} /></Form.Item>
       <Form.Item name="appointment_at" label="预约时间" rules={required}><DatePicker showTime style={{ width: '100%' }} /></Form.Item><Form.Item name="department" label="科室" rules={required}><Input maxLength={80} /></Form.Item></div>
-    <LoadState state={clinicians}>{data => <Form.Item name="clinician_id" label="接诊医生"><Select allowClear options={data.map(x => ({ value: x.id, label: x.name + ' / ' + x.department }))} /></Form.Item>}</LoadState>
+    <LoadState state={clinicians}>{data => <Form.Item name="clinician_id" label="接诊医生"><Select allowClear options={doctorOptions(data)} /></Form.Item>}</LoadState>
     <Form.Item name="evidence" label="预约凭证" rules={required}><Input maxLength={1000} placeholder="号源编号、预约截图或绿色通道单号" /></Form.Item>
     <Alert type="info" message={taskId ? '将把当前复诊任务置为已预约。' : '未指定复诊任务时会自动创建一条复诊跟踪任务，到院、爽约、完成都同步更新。'} />
   </FormDialog>

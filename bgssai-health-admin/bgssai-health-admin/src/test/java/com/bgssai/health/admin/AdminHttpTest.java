@@ -44,14 +44,15 @@ class AdminHttpTest {
         return json.readTree(response.body()).path("result");
     }
     @Test void concurrentContactCommitsExactlyOneMessageAndAudit() throws Exception {
-        String nurse=login("operator_a"),manager=login("manager");
+        String nurse=login("operator_a"),doctor=login("doctor");
         JsonNode row=post("/tasks/create",Map.of("patient_id",1001,"task_type","FOLLOWUP","title","Concurrent contact test",
             "priority","P2","due_at",LocalDateTime.now().plusDays(1).withNano(0).toString(),"request_key",UUID.randomUUID().toString()),nurse);
         long id=row.path("id").asLong();
         row=post("/tasks/claim",Map.of("id",id,"version",row.path("version").asInt()),nurse);
         row=post("/tasks/draft",Map.of("id",id,"version",row.path("version").asInt(),"mode","TEMPLATE"),nurse);
         row=post("/tasks/submit-review",Map.of("id",id,"version",row.path("version").asInt()),nurse);
-        row=post("/tasks/review",Map.of("id",id,"version",row.path("version").asInt(),"approved",true,"approved_text","请核对原医嘱并记录问题。","review_channel","HOSPITAL_SYSTEM","review_evidence","虚构院方审核回执 TEST-HTTP","reviewed_at",LocalDateTime.now().withNano(0).toString()),manager);
+        assertEquals(403,request("/bgssai/admin/tasks/review",json.writeValueAsString(Map.of("id",id,"version",row.path("version").asInt(),"approved",true,"approved_text","运营代审核")),nurse).statusCode());
+        row=post("/tasks/review",Map.of("id",id,"version",row.path("version").asInt(),"approved",true,"approved_text","请核对原医嘱并记录问题。"),doctor);
         String body=json.writeValueAsString(Map.of("id",id,"version",row.path("version").asInt(),"evidence","测试人工电话核验，患者确认收到已审核建议","contact_at",LocalDateTime.now().minusSeconds(1).toString(),"method","PHONE","identity_verified",true,"recipient_role","PATIENT","report_reviewed",true,"medication_feedback","未调整用药","patient_questions","暂无问题"));
         var start=new CountDownLatch(1);
         try(var workers=Executors.newVirtualThreadPerTaskExecutor()) {
@@ -89,6 +90,8 @@ class AdminHttpTest {
         assertEquals(200,request("/bgssai/health/liveness",null,null).statusCode());
         assertEquals(200,request("/overview",null,null).statusCode());
         assertEquals(200,request("/hospital",null,null).statusCode());
+        for(String deepLink:List.of("/doctor","/doctor/reports","/doctor/reviews","/accounts","/screening","/invitations","/appointments","/packages","/referrals"))
+            assertEquals(200,request(deepLink,null,null).statusCode(),deepLink);
         assertEquals(401,request("/bgssai/admin/dashboard",null,null).statusCode());
         assertEquals(404,request("/bgssai/admin/unknown",null,null).statusCode());
     }
@@ -113,26 +116,55 @@ class AdminHttpTest {
         var result=request("/bgssai/admin/login","{\"identifier\":\"patient\",\"password\":\"HealthDemo@2026!\"}",null);
         assertTrue(result.statusCode()>=400);
     }
-    @Test void hospitalCliniciansHaveNoAdminLoginAndAreListedAsContacts() throws Exception {
-        for(String identifier:List.of("doctor","nurse")) {
-            var result=request("/bgssai/admin/login","{\"identifier\":\""+identifier+"\",\"password\":\"HealthDemo@2026!\"}",null);
-            assertTrue(result.statusCode()>=400);
-        }
-        String manager=login("manager");
-        var clinicians=request("/bgssai/admin/clinicians",null,manager);
-        assertEquals(200,clinicians.statusCode(),clinicians.body());
-        assertTrue(clinicians.body().contains("演示院方责任医生"));
+    @Test void doctorsAndNursesLogInWithTheirOwnScope() throws Exception {
+        String doctor=login("doctor"),nurse=login("nurse");
+        assertEquals("DOCTOR",json.readTree(request("/bgssai/admin/me",null,doctor).body()).path("result").path("role_code").asText());
+        assertEquals("NURSE",json.readTree(request("/bgssai/admin/me",null,nurse).body()).path("result").path("role_code").asText());
+        var workbench=request("/bgssai/admin/doctor/workbench",null,doctor);
+        assertEquals(200,workbench.statusCode(),workbench.body());assertTrue(json.readTree(workbench.body()).path("result").has("unread_report_count"));
+        assertEquals(403,request("/bgssai/admin/doctor/workbench",null,nurse).statusCode());
+        assertEquals(403,request("/bgssai/admin/screenings/query","{\"page\":0,\"size\":10}",doctor).statusCode());
+        assertEquals(403,request("/bgssai/admin/patients/create",json.writeValueAsString(Map.of("name","医生不能建档","gender","MALE","age",50,"phone","00000009999","department","测试","disease","测试")),doctor).statusCode());
+        assertEquals(200,request("/bgssai/admin/screenings/query","{\"page\":0,\"size\":10}",nurse).statusCode());
+        var reports=post("/records/reports",Map.of("page",0,"size",5,"viewed",false),doctor);
+        assertTrue(reports.has("total_size"));
+        var clinicians=request("/bgssai/admin/clinicians",null,nurse);
+        assertEquals(200,clinicians.statusCode(),clinicians.body());assertTrue(clinicians.body().contains("演示责任医生"));
     }
-    @Test void managerRegistersHospitalContactWithoutCreatingAnAccount() throws Exception {
+    @Test void managerOpensAccountsThatCanLogInAndBeDisabled() throws Exception {
         String manager=login("manager"),operator=login("operator_a");
-        String name="虚构院方联系人"+UUID.randomUUID().toString().substring(0,8);
-        String body=json.writeValueAsString(Map.of("name",name,"department","测试科室"));
-        assertEquals(403,request("/bgssai/admin/clinicians/create",body,operator).statusCode());
-        var created=request("/bgssai/admin/clinicians/create",body,manager);
-        assertEquals(200,created.statusCode(),created.body());
-        assertEquals(name,json.readTree(created.body()).path("result").path("name").asText());
-        assertEquals(400,request("/bgssai/admin/clinicians/create",body,manager).statusCode());
-        assertTrue(request("/bgssai/admin/login","{\"identifier\":\""+name+"\",\"password\":\"HealthDemo@2026!\"}",null).statusCode()>=400);
+        String username="doctor_"+UUID.randomUUID().toString().substring(0,8);
+        String body=json.writeValueAsString(Map.of("username",username,"real_name","新开通医生","role_code","DOCTOR","department","心血管内科","password","Initial@2026"));
+        assertEquals(403,request("/bgssai/admin/accounts/create",body,operator).statusCode());
+        assertEquals(400,request("/bgssai/admin/accounts/create",json.writeValueAsString(Map.of("username",username,"real_name","缺科室","role_code","NURSE","password","Initial@2026")),manager).statusCode());
+        var created=post("/accounts/create",Map.of("username",username,"real_name","新开通医生","role_code","DOCTOR","department","心血管内科","password","Initial@2026"),manager);
+        assertEquals("DOCTOR",created.path("role_code").asText());assertFalse(created.has("password"));
+        assertEquals(400,request("/bgssai/admin/accounts/create",body,manager).statusCode());
+        var login=request("/bgssai/admin/login",json.writeValueAsString(Map.of("identifier",username,"password","Initial@2026")),null);
+        assertEquals(200,login.statusCode(),login.body());String token=json.readTree(login.body()).path("result").path("jwt_token").asText();
+        long id=created.path("id").asLong();
+        post("/accounts/status",Map.of("id",id,"enabled",false),manager);
+        assertEquals(401,request("/bgssai/admin/me",null,token).statusCode());
+        assertTrue(request("/bgssai/admin/login",json.writeValueAsString(Map.of("identifier",username,"password","Initial@2026")),null).statusCode()>=400);
+        post("/accounts/status",Map.of("id",id,"enabled",true),manager);
+        post("/accounts/reset-password",Map.of("id",id,"password","Changed@2026"),manager);
+        assertTrue(request("/bgssai/admin/login",json.writeValueAsString(Map.of("identifier",username,"password","Initial@2026")),null).statusCode()>=400);
+        assertEquals(200,request("/bgssai/admin/login",json.writeValueAsString(Map.of("identifier",username,"password","Changed@2026")),null).statusCode());
+        assertEquals(403,request("/bgssai/admin/accounts/status",json.writeValueAsString(Map.of("id",1,"enabled",false)),manager).statusCode());
+        var list=post("/accounts/query",Map.of("page",0,"size",100,"role_code","DOCTOR"),manager);
+        assertTrue(list.path("total_size").asInt()>=5);
+    }
+    @Test void passwordChangeNeedsTheOldPasswordAndRenewsTheLogin() throws Exception {
+        String manager=login("manager");
+        String username="nurse_"+UUID.randomUUID().toString().substring(0,8);
+        post("/accounts/create",Map.of("username",username,"real_name","改密测试护士","role_code","NURSE","department","心血管内科","password","Initial@2026"),manager);
+        var first=json.readTree(request("/bgssai/admin/login",json.writeValueAsString(Map.of("identifier",username,"password","Initial@2026")),null).body()).path("result").path("jwt_token").asText();
+        assertEquals(400,request("/bgssai/admin/password",json.writeValueAsString(Map.of("old_password","Wrong@2026","new_password","Renewed@2026")),first).statusCode());
+        var renewed=post("/password",Map.of("old_password","Initial@2026","new_password","Renewed@2026"),first);
+        String token=renewed.path("jwt_token").asText();
+        assertEquals(401,request("/bgssai/admin/me",null,first).statusCode());
+        assertEquals(200,request("/bgssai/admin/me",null,token).statusCode());
+        assertEquals(200,request("/bgssai/admin/login",json.writeValueAsString(Map.of("identifier",username,"password","Renewed@2026")),null).statusCode());
     }
     @Test void platformHasOnlyConfigurationAccess() throws Exception {
         String token=login("platform");

@@ -4,13 +4,14 @@ import { Alert, Button, Card, DatePicker, Descriptions, Form, Input, InputNumber
 import { ArrowRightOutlined, PlusOutlined, ReloadOutlined, TeamOutlined, ScheduleOutlined, AlertOutlined, ClockCircleOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import { api, useLoad } from '../api'
-import { DataTable, dateText, day, dayText, FormDialog, LoadState, money, names, options, PageTitle, required, stamp, Status } from '../ui'
+import { DataTable, dateText, day, dayText, doctorOptions, FormDialog, LoadState, money, names, options, ownerOptions, PageTitle, required, stamp, Status } from '../ui'
 import Tasks from './Tasks'
 import { InvitationDialog } from './Invitations'
 import { AppointmentAction, AppointmentDialog, appointmentActions } from './Appointments'
 import { EnrollmentDialog, enrollmentColumns } from './Packages'
 import { ReferralAction, ReferralDialog, referralActions } from './Referrals'
 import { MessageLogDialog } from './Configuration'
+import { ReportReviewDialog, ReportStatus } from './ReportReview'
 
 const lifecycles = ['ENROLLED', 'CONTACTED', 'BOOKED', 'ARRIVED', 'MANAGING', 'REVISIT_DUE', 'PAUSED', 'TRANSFERRED', 'LOST', 'CLOSED']
 const scenes = ['ECG_NETWORK', 'EXAM', 'COMMUNITY_SCREENING', 'PRIMARY_REFERRAL', 'OUTPATIENT', 'INPATIENT', 'DISCHARGE', 'CAMPAIGN', 'MANUAL']
@@ -19,12 +20,12 @@ export function Dashboard() {
   const state = useLoad(() => api('/dashboard'))
   const queues = useLoad(() => api('/reports/workbench'))
   const pending = useLoad(() => api('/tasks/query', { page: 0, size: 6, status: 'PENDING' }))
-  return <><PageTitle title="运营工作台" subtitle={account.real_name + '，今天的每一项服务，从这里开始。'}
+  return <><PageTitle title={account.role_code === 'NURSE' ? '随访工作台' : '运营工作台'} subtitle={account.real_name + '，今天的每一项服务，从这里开始。'}
     extra={<Button icon={<ReloadOutlined />} onClick={() => { state.reload(); pending.reload(); queues.reload() }}>刷新数据</Button>} />
     <LoadState state={state}>{data => <><div className="stats-grid">
       {[
         ['在管患者', data.managing_count, '累计入组 ' + data.patient_count + ' 人', TeamOutlined, 'blue', '/patients'],
-        ['待执行任务', data.pending_task_count, '待医生审核 ' + data.review_count + ' 项', ScheduleOutlined, 'violet', '/followups'],
+        ['待执行任务', data.pending_task_count, '已提交医生审核 ' + data.review_count + ' 项', ScheduleOutlined, 'violet', '/followups'],
         ['待处理异常', data.open_alert_count, '高风险 / 重点关注 ' + data.high_risk_count + ' 人', AlertOutlined, 'orange', '/alerts'],
         ['逾期待办', data.overdue_count, '尚待完成的复诊 ' + data.revisit_count + ' 项', ClockCircleOutlined, 'teal', '/followups?overdue=1'],
       ].map(([label, value, detail, Icon, color, path]) => <Link to={path} key={label}><Card className="metric-card"><div className={'metric-icon ' + color}><Icon /></div><Statistic title={label} value={value} /><p>{detail}</p></Card></Link>)}
@@ -51,12 +52,12 @@ export function Dashboard() {
   </>
 }
 function StaffFields({ staff, clinicians, disabled }) {
-  return <div className="form-grid"><Form.Item name="doctor_id" label="院方责任医生（无需登录）" rules={required}><Select disabled={disabled} options={(clinicians || []).map(x => ({ value: x.id, label: x.name + ' / ' + x.department }))} /></Form.Item>
-    <Form.Item name="owner_id" label="我方运营负责人" rules={required}><Select disabled={disabled} options={(staff || []).filter(x => ['OPERATOR', 'MANAGER'].includes(x.role_code)).map(x => ({ value: x.user_id, label: x.real_name }))} /></Form.Item></div>
+  return <div className="form-grid"><Form.Item name="doctor_id" label="责任医生（看报告、审核随访意见）" rules={required}><Select disabled={disabled} options={doctorOptions(clinicians)} /></Form.Item>
+    <Form.Item name="owner_id" label="负责人（运营人员或护士）" rules={required}><Select disabled={disabled} options={ownerOptions(staff)} /></Form.Item></div>
 }
 function ProfileFields({ orgs, clinicians }) {
   return <><div className="form-grid"><Form.Item name="patient_type" label="患者类型"><Select options={options(['OUTPATIENT', 'INPATIENT', 'DISCHARGED', 'UNKNOWN'])} /></Form.Item><Form.Item name="source_scene" label="来源场景"><Select options={options(scenes)} /></Form.Item>
-    <Form.Item name="org_id" label="来源机构"><Select allowClear options={(orgs || []).filter(o => o.active).map(o => ({ value: o.id, label: o.name }))} /></Form.Item><Form.Item name="referrer_id" label="转介医生"><Select allowClear options={(clinicians || []).map(x => ({ value: x.id, label: x.name + ' / ' + x.department }))} /></Form.Item>
+    <Form.Item name="org_id" label="来源机构"><Select allowClear options={(orgs || []).filter(o => o.active).map(o => ({ value: o.id, label: o.name }))} /></Form.Item><Form.Item name="referrer_id" label="转介医生"><Select allowClear options={doctorOptions(clinicians)} /></Form.Item>
     <Form.Item name="id_card" label="证件号"><Input maxLength={18} /></Form.Item><Form.Item name="birth_date" label="出生日期"><DatePicker style={{ width: '100%' }} /></Form.Item>
     <Form.Item name="emergency_contact" label="紧急联系人"><Input maxLength={80} /></Form.Item><Form.Item name="emergency_phone" label="紧急联系电话"><Input maxLength={24} /></Form.Item>
     <Form.Item name="inpatient_no" label="住院号"><Input maxLength={60} /></Form.Item><Form.Item name="bed_no" label="床号"><Input maxLength={20} /></Form.Item></div>
@@ -69,13 +70,13 @@ export function Patients() {
   const [page, setPage] = useState(0)
   const [filters, setFilters] = useState({})
   const [create, setCreate] = useState(false)
-  const [createClinician, setCreateClinician] = useState(false)
   const state = useLoad(() => api('/patients/query', { page, size: 10, ...filters }), [page, JSON.stringify(filters)])
   const staff = useLoad(() => api('/staff'))
   const clinicians = useLoad(() => api('/clinicians'))
   const orgs = useLoad(() => api('/orgs'))
   const filter = (key, value) => { setFilters(previous => ({ ...previous, [key]: value === '' ? undefined : value })); setPage(0) }
-  return <><PageTitle title="患者中心" subtitle="医院提供资料和临床联系人，我方运营团队负责日常服务。" extra={<Space>{account.role_code === 'MANAGER' && <Button onClick={() => setCreateClinician(true)}>登记院方医生</Button>}<Button type="primary" icon={<PlusOutlined />} onClick={() => setCreate(true)}>新建患者</Button></Space>} />
+  const doctor = account.role_code === 'DOCTOR'
+  return <><PageTitle title={doctor ? '我的患者' : '患者中心'} subtitle={doctor ? '您作为责任医生的患者。档案只读，报告与随访意见在左侧对应页面处理。' : '医院提供资料，责任医生负责医学判断，运营人员和护士负责日常随访。'} extra={!doctor && <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreate(true)}>新建患者</Button>} />
     <Card><div className="toolbar"><Input.Search placeholder="搜索患者姓名" allowClear onSearch={value => filter('keyword', value)} style={{ width: 200 }} />
       <Select aria-label="风险筛选" placeholder="全部风险" allowClear style={{ width: 130 }} options={options(['UNKNOWN', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'])} onChange={value => filter('risk_level', value)} />
       <Select aria-label="阶段" placeholder="全部阶段" allowClear style={{ width: 130 }} options={options(lifecycles)} onChange={value => filter('lifecycle', value)} />
@@ -95,20 +96,17 @@ export function Patients() {
         { title: '操作', render: (_, row) => <Link to={'/patients/' + row.id}>查看档案</Link> },
       ]} />
     </Card>
-    <FormDialog title="登记院方医生（无需账号）" open={createClinician} onClose={() => setCreateClinician(false)} onSubmit={async values => { await api('/clinicians/create', values); clinicians.reload() }}>
-      <p className="muted">这里只登记院方审核联系人，不创建登录账号，也不代表已取得任何患者诊疗授权。</p><div className="form-grid"><Form.Item name="name" label="姓名" rules={required}><Input maxLength={80} /></Form.Item><Form.Item name="department" label="科室" rules={required}><Input maxLength={80} /></Form.Item></div>
-    </FormDialog>
-    <FormDialog title="新建患者档案" width={760} open={create} initialValues={{ gender: 'UNKNOWN', department: '综合服务', patient_type: 'UNKNOWN', source_scene: 'MANUAL', outreach: true, ...(account.role_code === 'OPERATOR' ? { owner_id: account.user_id } : {}) }} onClose={() => setCreate(false)}
+    <FormDialog title="新建患者档案" width={760} open={create} initialValues={{ gender: 'UNKNOWN', department: '综合服务', patient_type: 'UNKNOWN', source_scene: 'MANUAL', outreach: true, ...(['OPERATOR', 'NURSE'].includes(account.role_code) ? { owner_id: account.user_id } : {}) }} onClose={() => setCreate(false)}
       onSubmit={async values => { const result = await api('/patients/create', { ...values, birth_date: day(values.birth_date) }); navigate('/patients/' + result.id) }}>
       <div className="form-grid"><Form.Item name="name" label="姓名" rules={required}><Input maxLength={80} /></Form.Item><Form.Item name="phone" label="联系电话" rules={required}><Input maxLength={24} /></Form.Item>
         <Form.Item name="gender" label="性别" rules={required}><Select options={options(['MALE', 'FEMALE', 'UNKNOWN'])} /></Form.Item><Form.Item name="age" label="年龄" rules={required}><InputNumber min={0} max={130} /></Form.Item>
         <Form.Item name="department" label="科室" rules={required}><Input maxLength={80} /></Form.Item><Form.Item name="disease" label="病种 / 管理原因" rules={required}><Input maxLength={120} /></Form.Item></div>
       <LoadState state={staff}>{data => <StaffFields staff={data} clinicians={clinicians.data} />}</LoadState>
       <ProfileFields orgs={orgs.data} clinicians={clinicians.data} />
-      <div className="form-grid"><Form.Item name="risk_level" label="院方确认的风险分层"><Select options={options(['UNKNOWN', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'])} /></Form.Item><Form.Item name="risk_evidence" label="风险评估依据"><Input maxLength={400} /></Form.Item></div>
+      <div className="form-grid"><Form.Item name="risk_level" label="医生确认的风险分层"><Select options={options(['UNKNOWN', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'])} /></Form.Item><Form.Item name="risk_evidence" label="风险评估依据"><Input maxLength={400} /></Form.Item></div>
       <Form.Item name="outreach" label="建档后开出首次联系任务（按 SLA 计算截止）" valuePropName="checked"><Switch /></Form.Item>
       <Form.Item name="note" label="内部备注"><Input.TextArea rows={2} maxLength={2000} showCount /></Form.Item>
-      <Alert type="info" message="人工建档不会按手机号自动关联患者 Web 账号。风险分层需要院方依据。" />
+      <Alert type="info" message="人工建档不会按手机号自动关联患者 Web 账号。风险分层需要医生依据。" />
     </FormDialog>
   </>
 }
@@ -134,6 +132,8 @@ export function PatientDetail() {
   const [tab, setTab] = useState('timeline')
   const [page, setPage] = useState(0)
   const [revision, setRevision] = useState(0)
+  const [report, setReport] = useState(null)
+  const doctor = account.role_code === 'DOCTOR'
   const state = useLoad(() => api('/patients/' + id), [id, revision])
   const staff = useLoad(() => api('/staff'))
   const clinicians = useLoad(() => api('/clinicians'))
@@ -141,14 +141,14 @@ export function PatientDetail() {
   const listTabs = { records: '/records/query', messages: '/messages/query', audits: '/audits/query', invitations: '/invitations/query', appointments: '/appointments/query', enrollments: '/enrollments/query', referrals: '/referrals/query', 'message-logs': '/message-logs/query' }
   const history = useLoad(() => listTabs[tab] ? api(listTabs[tab], { page, size: 10, patient_id: Number(id) }) : tab === 'medications' ? api('/medications/query', { patient_id: Number(id) }).then(items => ({ items, total_size: items.length })) : Promise.resolve(null), [id, page, tab, revision])
   const refresh = () => setRevision(value => value + 1)
-  return <><Link to="/patients" className="back-link">返回患者中心</Link><LoadState state={state}>{patient => <>
-    <PageTitle title={patient.name + ' 的健康档案'} subtitle={patient.department + ' / ' + patient.disease} extra={<Space wrap><Button onClick={() => setEdit(true)}>管理档案</Button><Button onClick={() => setConsent(true)}>登记知情同意</Button><Button onClick={() => setInvite(true)}>记录邀约</Button><Button onClick={() => setBook(true)}>登记预约</Button><Button onClick={() => setEnroll(true)}>签约服务包</Button><Button onClick={() => setRefer(true)}>发起转诊</Button><Button onClick={() => setMessage(true)}>登记已发消息</Button><Button onClick={() => setObserve(true)}>代录指标</Button><Button type="primary" icon={<PlusOutlined />} onClick={() => setRecordOpen(true)}>添加就诊记录</Button></Space>} />
+  return <><Link to="/patients" className="back-link">{doctor ? '返回我的患者' : '返回患者中心'}</Link><LoadState state={state}>{patient => <>
+    <PageTitle title={patient.name + ' 的健康档案'} subtitle={patient.department + ' / ' + patient.disease} extra={!doctor && <Space wrap><Button onClick={() => setEdit(true)}>管理档案</Button><Button onClick={() => setConsent(true)}>登记知情同意</Button><Button onClick={() => setInvite(true)}>记录邀约</Button><Button onClick={() => setBook(true)}>登记预约</Button><Button onClick={() => setEnroll(true)}>签约服务包</Button><Button onClick={() => setRefer(true)}>发起转诊</Button><Button onClick={() => setMessage(true)}>登记已发消息</Button><Button onClick={() => setObserve(true)}>代录指标</Button><Button type="primary" icon={<PlusOutlined />} onClick={() => setRecordOpen(true)}>添加就诊记录</Button></Space>} />
     <Card className="mb"><Descriptions column={{ xs: 1, sm: 2, lg: 4 }} items={[
       { key: 'id', label: '档案编号', children: '#' + patient.id }, { key: 'age', label: '性别 / 年龄', children: (names[patient.gender] || '未填写') + ' / ' + patient.age + ' 岁' + (patient.birth_date ? ' / ' + patient.birth_date : '') },
       { key: 'phone', label: '联系电话', children: patient.phone }, { key: 'risk', label: '风险分层', children: <Status value={patient.risk_level} /> },
       { key: 'status', label: '阶段', children: <><Status value={patient.lifecycle} />{patient.lost_since && <span className="muted"> 失访自 {dayText(patient.lost_since)}</span>}</> },
-      { key: 'doctor', label: '院方责任医生', children: clinicians.data?.find(x => x.id === patient.doctor_id)?.name || '待关联' },
-      { key: 'owner', label: '我方运营负责人', children: staff.data?.find(x => x.user_id === patient.owner_id)?.real_name || '待分配' },
+      { key: 'doctor', label: '责任医生', children: clinicians.data?.find(x => x.id === patient.doctor_id)?.name || '待关联' },
+      { key: 'owner', label: '负责人', children: (x => x ? x.real_name + ' / ' + names[x.role_code] : '待分配')(staff.data?.find(x => x.user_id === patient.owner_id)) },
       { key: 'join', label: '入组时间', children: dateText(patient.gmt_create) },
       { key: 'scene', label: '来源', children: (names[patient.source_scene] || '—') + ' / ' + (orgs.data?.find(o => o.id === patient.org_id)?.name || '—') + (patient.referrer_id ? ' / 转介 ' + (clinicians.data?.find(x => x.id === patient.referrer_id)?.name || '') : '') },
       { key: 'type', label: '患者类型', children: (names[patient.patient_type] || '—') + (patient.inpatient_no ? ' / 住院号 ' + patient.inpatient_no + (patient.bed_no ? ' 床 ' + patient.bed_no : '') : '') },
@@ -161,12 +161,13 @@ export function PatientDetail() {
       { key: 'note', label: '内部备注', children: patient.note || '暂无', span: 2 },
     ]} /></Card>
     <Card><Tabs activeKey={tab} onChange={value => { setTab(value); setPage(0) }} items={[{ key: 'timeline', label: '时间轴' }, { key: 'records', label: '就诊与健康记录' }, { key: 'tasks', label: '服务任务' }, { key: 'invitations', label: '邀约' }, { key: 'appointments', label: '预约到诊' }, { key: 'enrollments', label: '服务实例' }, { key: 'medications', label: '用药' }, { key: 'referrals', label: '转诊' }, { key: 'message-logs', label: '已发消息' }, { key: 'messages', label: '沟通记录' }, { key: 'audits', label: '操作留痕' }]} />
-      {tab === 'timeline' ? <TimelineTab id={id} key={revision} /> : tab === 'tasks' ? <Tasks patientId={Number(id)} compact /> : <>{tab === 'medications' && <div className="toolbar"><Button icon={<PlusOutlined />} onClick={() => setMedication({ status: 'ACTIVE', source: 'HOSPITAL_RECORD', adherence: 'UNKNOWN' })}>登记用药</Button></div>}
+      {tab === 'timeline' ? <TimelineTab id={id} key={revision} /> : tab === 'tasks' ? <Tasks patientId={Number(id)} compact /> : <>{tab === 'medications' && !doctor && <div className="toolbar"><Button icon={<PlusOutlined />} onClick={() => setMedication({ status: 'ACTIVE', source: 'HOSPITAL_RECORD', adherence: 'UNKNOWN' })}>登记用药</Button></div>}
       <DataTable state={history} page={page} setPage={setPage} columns={
         tab === 'records' ? [
           { title: '记录类型', dataIndex: 'record_type', render: value => <Status value={value} /> }, { title: '发生时间', dataIndex: 'occurred_at', render: dateText },
           { title: '记录内容', render: (_, row) => <div className="record-content"><p>{row.content || '指标记录'}</p><Space wrap>{row.systolic != null && <Tag>血压 {row.systolic}/{row.diastolic} mmHg</Tag>}{row.heart_rate != null && <Tag>心率 {row.heart_rate} 次/分</Tag>}{row.weight != null && <Tag>体重 {row.weight} kg</Tag>}{row.glucose != null && <Tag>血糖 {row.glucose} mmol/L</Tag>}</Space>{row.next_visit_date && <p className="muted">原记录复诊日期：{row.next_visit_date}</p>}</div> },
           { title: '来源', render: (_, row) => <><Tag color={row.source_system === 'HOSPITAL_MOCK' ? 'gold' : 'default'}>{row.source_system === 'HOSPITAL_MOCK' ? '模拟医院接口' : row.source_system === 'MANUAL' ? '人工补充' : names[row.source_system] || row.source_system}</Tag><p className="muted">{row.external_id}</p></> },
+          { title: '医生查看', render: (_, row) => <><ReportStatus record={row} doctorName={clinicians.data?.find(x => x.id === row.doctor_viewer_id)?.name} />{doctor && row.record_type !== 'OBSERVATION' && <Button type="link" onClick={() => setReport({ ...row, patient_name: patient.name })}>{row.doctor_viewed_at ? '更新意见' : '确认已阅'}</Button>}</> },
         ] : tab === 'messages' ? [
           { title: '方向', dataIndex: 'direction', render: value => value === 'PATIENT_TO_STAFF' ? '患者咨询' : '已审核人工联系记录' },
           { title: '内容', dataIndex: 'content', render: value => <div className="pre-wrap">{value}</div> }, { title: '时间', dataIndex: 'gmt_create', render: dateText },
@@ -177,18 +178,18 @@ export function PatientDetail() {
         ] : tab === 'appointments' ? [
           { title: '预约', render: (_, row) => <><strong>{dateText(row.appointment_at)}</strong><div className="muted">{names[row.appointment_type]} / {row.department} / {names[row.channel]}</div></> },
           { title: '状态', render: (_, row) => <><Status value={row.status} />{row.no_show_reason && <div className="muted">{names[row.no_show_reason]}</div>}{row.outcome && <div className="muted">{names[row.outcome]}{row.effective === false ? ' / 非有效到诊' : ''}</div>}</> },
-          { title: '操作', render: (_, row) => <Space wrap>{appointmentActions(row, setAction)}</Space> },
-        ] : tab === 'enrollments' ? enrollmentColumns(false, refresh)
+          ...(doctor ? [] : [{ title: '操作', render: (_, row) => <Space wrap>{appointmentActions(row, setAction)}</Space> }]),
+        ] : tab === 'enrollments' ? enrollmentColumns(false, refresh).filter(column => !doctor || column.title !== '操作')
         : tab === 'medications' ? [
           { title: '药品', dataIndex: 'drug_name', render: (value, row) => <><strong>{value}</strong><div className="muted">{row.dosage} {row.frequency}</div></> },
           { title: '起止', render: (_, row) => dayText(row.start_date) + ' 至 ' + (row.end_date ? dayText(row.end_date) : '至今') },
           { title: '状态 / 依从', render: (_, row) => <><Status value={row.status} /> <Status value={row.adherence} /><div className="muted">{names[row.source]}</div></> },
-          { title: '备注', dataIndex: 'note' }, { title: '操作', render: (_, row) => <Button type="link" onClick={() => setMedication({ ...row, start_date: row.start_date ? dayjs(row.start_date) : null, end_date: row.end_date ? dayjs(row.end_date) : null })}>更新</Button> },
+          { title: '备注', dataIndex: 'note' }, ...(doctor ? [] : [{ title: '操作', render: (_, row) => <Button type="link" onClick={() => setMedication({ ...row, start_date: row.start_date ? dayjs(row.start_date) : null, end_date: row.end_date ? dayjs(row.end_date) : null })}>更新</Button> }]),
         ] : tab === 'referrals' ? [
           { title: '转诊', render: (_, row) => <><Tag>{names[row.direction]} / {names[row.referral_type]}</Tag><div className="muted">{orgs.data?.find(o => o.id === row.from_org_id)?.name || '—'} → {orgs.data?.find(o => o.id === row.to_org_id)?.name || '—'}</div></> },
           { title: '原因', dataIndex: 'reason', render: (value, row) => <>{value}<div className="muted">{dateText(row.initiated_at)}</div></> },
           { title: '状态', render: (_, row) => <><Status value={row.status} />{row.overdue && <Tag color="red">超 SLA</Tag>}{row.feedback_diagnosis && <div className="muted">{row.feedback_diagnosis} / {row.feedback_disposition}</div>}</> },
-          { title: '操作', render: (_, row) => <Space wrap>{referralActions(row, r => setAction({ ...r, kind: 'referral' }))}</Space> },
+          ...(doctor ? [] : [{ title: '操作', render: (_, row) => <Space wrap>{referralActions(row, r => setAction({ ...r, kind: 'referral' }))}</Space> }]),
         ] : tab === 'message-logs' ? [
           { title: '渠道', dataIndex: 'channel', render: value => names[value] }, { title: '模板', dataIndex: 'template_code' }, { title: '内容', dataIndex: 'content', render: value => <div className="pre-wrap">{value}</div> }, { title: '发送时间', dataIndex: 'sent_at', render: dateText }, { title: '凭证', dataIndex: 'evidence' },
         ] : [{ title: '动作', dataIndex: 'action' }, { title: '操作人编号', dataIndex: 'actor_id' }, { title: '变更后状态', dataIndex: 'after_state', render: value => <Status value={value} /> }, { title: '说明', dataIndex: 'detail' }, { title: '时间', dataIndex: 'gmt_create', render: dateText }]
@@ -197,7 +198,7 @@ export function PatientDetail() {
       <LoadState state={staff}>{data => <StaffFields staff={data} clinicians={clinicians.data} disabled={account.role_code !== 'MANAGER'} />}</LoadState>
       <div className="form-grid"><Form.Item name="name" label="姓名"><Input maxLength={80} /></Form.Item><Form.Item name="phone" label="联系电话"><Input maxLength={24} /></Form.Item><Form.Item name="department" label="科室"><Input maxLength={80} /></Form.Item><Form.Item name="disease" label="病种"><Input maxLength={120} /></Form.Item>
         <Form.Item name="lifecycle" label="阶段"><Select options={options(lifecycles)} /></Form.Item><Form.Item name="lifecycle_reason" label="暂停 / 转出 / 失访 / 结案原因"><Input maxLength={400} /></Form.Item>
-        <Form.Item name="risk_level" label="院方确认的风险分层"><Select options={options(['UNKNOWN', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'])} /></Form.Item><Form.Item name="risk_evidence" label="风险变更时的院方评估依据"><Input maxLength={400} /></Form.Item></div>
+        <Form.Item name="risk_level" label="医生确认的风险分层"><Select options={options(['UNKNOWN', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'])} /></Form.Item><Form.Item name="risk_evidence" label="风险变更时的院方评估依据"><Input maxLength={400} /></Form.Item></div>
       <ProfileFields orgs={orgs.data} clinicians={clinicians.data} />
       <Form.Item name="note" label="内部备注"><Input.TextArea rows={3} maxLength={2000} /></Form.Item>
     </FormDialog>
@@ -230,6 +231,7 @@ export function PatientDetail() {
     <EnrollmentDialog open={enroll} patientId={patient.id} onClose={() => setEnroll(false)} onSaved={refresh} />
     <ReferralDialog open={refer} patientId={patient.id} onClose={() => setRefer(false)} onSaved={refresh} />
     <MessageLogDialog open={message} patientId={patient.id} onClose={() => setMessage(false)} onSaved={refresh} />
+    <ReportReviewDialog record={report} onClose={() => setReport(null)} onSaved={refresh} />
     <AppointmentAction row={action?.kind === 'referral' ? null : action} onClose={() => setAction(null)} onSaved={refresh} />
     <ReferralAction row={action?.kind === 'referral' ? action : null} onClose={() => setAction(null)} onSaved={refresh} />
   </>}</LoadState></>

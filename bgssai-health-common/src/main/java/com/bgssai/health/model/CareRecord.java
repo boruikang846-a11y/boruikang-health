@@ -18,4 +18,7 @@ public class CareRecord extends BaseRow {
     public Boolean needsContact;
     public String sourceSystem;
     public String externalId;
+    public java.time.LocalDateTime doctorViewedAt;
+    public Long doctorViewerId;
+    public String doctorOpinion;
 }

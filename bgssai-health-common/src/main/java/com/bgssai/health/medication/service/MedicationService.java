@@ -24,7 +24,7 @@ public class MedicationService {
     }
     @Transactional
     public MedicationResponse save(SaveMedicationRequest req){
-        log.info("save medication patientId={} id={}",req.patientId(),req.id());access.staff();Patient p=access.lock(req.patientId());
+        log.info("save medication patientId={} id={}",req.patientId(),req.id());access.operations();Patient p=access.lock(req.patientId());
         Checks.require(req.startDate()==null||req.endDate()==null||!req.endDate().isBefore(req.startDate()),"End date must not precede start / 停药日期不能早于开始日期");
         Medication row=new Medication();row.drugName=req.drugName().trim();row.dosage=req.dosage();row.frequency=req.frequency();row.startDate=req.startDate();row.endDate=req.endDate();row.status=req.status()==null?"ACTIVE":req.status();row.source=req.source();row.adherence=req.adherence()==null?"UNKNOWN":req.adherence();row.note=req.note();
         if(req.id()==null){row.hospitalId=p.hospitalId;row.patientId=p.id;row.version=0;row.creator=CurrentAccount.get().userId().toString();medications.insertSelective(row);}

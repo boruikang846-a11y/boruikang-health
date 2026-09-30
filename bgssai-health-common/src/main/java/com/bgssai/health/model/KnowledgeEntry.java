@@ -11,8 +11,6 @@ public class KnowledgeEntry extends BaseRow {
     public String status;
     public Long reviewerId;
     public LocalDateTime reviewedAt;
-    public String reviewChannel;
-    public String reviewEvidence;
     public Integer serviceDays;
     public Integer followupCount;
 }

@@ -42,7 +42,7 @@ public class MetricService {
             new MetricDefinition("LOST_RATE","失访率","区间内置为失访的患者数","应管理人数","无",5.0,true));
     }
     public MetricReportResponse metrics(MetricQueryRequest req){
-        log.info("metrics from={} to={} ownerId={}",req.fromDate(),req.toDate(),req.ownerId());access.staff();range(req);Window w=new Window(req);
+        log.info("metrics from={} to={} ownerId={}",req.fromDate(),req.toDate(),req.ownerId());access.operations();range(req);Window w=new Window(req);
         List<MetricValue> out=new ArrayList<>();
         PatientExample managed=access.scope();managed.in("lifecycle",ACTIVE_LIFECYCLES);if(req.ownerId()!=null)managed.eq("owner_id",req.ownerId());long managedCount=patients.countByExample(managed);
         out.add(metric("MANAGED",managedCount,null));
@@ -67,7 +67,7 @@ public class MetricService {
         return new MetricReportResponse(req.fromDate(),req.toDate(),out,DICTIONARY_VERSION,LocalDateTime.now());
     }
     public FunnelResponse funnel(MetricQueryRequest req){
-        log.info("funnel from={} to={}",req.fromDate(),req.toDate());access.staff();range(req);Window w=new Window(req);
+        log.info("funnel from={} to={}",req.fromDate(),req.toDate());access.operations();range(req);Window w=new Window(req);
         List<ScreeningRecord> screened=screeningRows(w,req.campaignId());
         List<Invitation> invited=invitationRows(w,req.ownerId(),req.campaignId());
         List<Appointment> booked=appointmentRows(w,"gmt_create",req.ownerId());List<Appointment> arrived=appointmentRows(w,"arrived_at",req.ownerId());
@@ -88,10 +88,10 @@ public class MetricService {
             enrollmentRows(w,req.ownerId()).stream().map(e->e.patientId).distinct().count(),followups.stream().filter(t->"COMPLETED".equals(t.status)).count(),revisits.stream().filter(t->List.of("ARRIVED","COMPLETED").contains(t.status)).count(),campaigns);
     }
     public List<OperatorMetric> operators(MetricQueryRequest req){
-        log.info("operator metrics from={} to={}",req.fromDate(),req.toDate());access.staff();range(req);Window w=new Window(req);List<OperatorMetric> out=new ArrayList<>();
+        log.info("operator metrics from={} to={}",req.fromDate(),req.toDate());access.operations();range(req);Window w=new Window(req);List<OperatorMetric> out=new ArrayList<>();
         for(var staff:patientService.staff()){
             if(req.ownerId()!=null&&!req.ownerId().equals(staff.userId()))continue;
-            if("OPERATOR".equals(CurrentAccount.get().roleCode())&&!staff.userId().equals(CurrentAccount.get().userId()))continue;
+            if(access.executor()&&!staff.userId().equals(CurrentAccount.get().userId()))continue;
             PatientExample mine=access.scope();mine.eq("owner_id",staff.userId()).in("lifecycle",ACTIVE_LIFECYCLES);long managed=patients.countByExample(mine);
             PatientExample high=access.scope();high.eq("owner_id",staff.userId()).in("lifecycle",ACTIVE_LIFECYCLES).in("risk_level",List.of("HIGH","CRITICAL"));
             PatientExample lost=access.scope();lost.eq("owner_id",staff.userId()).eq("lifecycle","LOST").ge("lost_since",w.from).lt("lost_since",w.to);
@@ -108,12 +108,12 @@ public class MetricService {
         return out;
     }
     public DailySummaryResponse daily(DailyQueryRequest req){
-        log.info("daily summary date={}",req.date());access.staff();Window w=new Window(req.date(),req.date());
+        log.info("daily summary date={}",req.date());access.operations();Window w=new Window(req.date(),req.date());
         PatientExample np=access.scope();np.ge("gmt_create",w.from).lt("gmt_create",w.to);
         List<Invitation> inv=invitationRows(w,null,null);List<CareTask> followups=taskRows(w,"FOLLOWUP",null);
         CareTaskExample opened=access.taskScope();opened.eq("task_type","ALERT").ge("gmt_create",w.from).lt("gmt_create",w.to);
         CareTaskExample closed=access.taskScope();closed.eq("task_type","ALERT").eq("status","COMPLETED").ge("completed_at",w.from).lt("completed_at",w.to);
-        MessageLogExample ml=new MessageLogExample();ml.eq("hospital_id",CurrentAccount.get().hospitalId()).ge("sent_at",w.from).lt("sent_at",w.to);if("OPERATOR".equals(CurrentAccount.get().roleCode()))ml.eq("actor_id",CurrentAccount.get().userId());
+        MessageLogExample ml=new MessageLogExample();ml.eq("hospital_id",CurrentAccount.get().hospitalId()).ge("sent_at",w.from).lt("sent_at",w.to);if(access.executor())ml.eq("actor_id",CurrentAccount.get().userId());
         CareTaskExample overdue=access.taskScope();overdue.ne("status","COMPLETED").ne("status","CANCELLED").lt("due_at",w.to);
         ScreeningRecordExample sx=new ScreeningRecordExample();sx.eq("hospital_id",CurrentAccount.get().hospitalId()).ge("gmt_create",w.from).lt("gmt_create",w.to);
         return new DailySummaryResponse(req.date(),screenings.countByExample(sx),patients.countByExample(np),inv.size(),inv.stream().filter(i->!InvitationService.UNREACHED.contains(i.result)).count(),
@@ -121,7 +121,7 @@ public class MetricService {
             tasks.countByExample(opened),tasks.countByExample(closed),messages.countByExample(ml),enrollmentRows(w,null).size(),tasks.countByExample(overdue));
     }
     public WorkbenchResponse workbench(){
-        log.info("workbench accountId={}",CurrentAccount.get().userId());access.staff();LocalDateTime now=LocalDateTime.now();LocalDateTime dayStart=LocalDate.now().atStartOfDay(),dayEnd=dayStart.plusDays(1);
+        log.info("workbench accountId={}",CurrentAccount.get().userId());access.operations();LocalDateTime now=LocalDateTime.now();LocalDateTime dayStart=LocalDate.now().atStartOfDay(),dayEnd=dayStart.plusDays(1);
         List<QueueItem> q=new ArrayList<>();
         CareTaskExample outreach=open();outreach.eq("task_type","OUTREACH").lt("due_at",dayEnd);q.add(new QueueItem("OUTREACH_TODAY","今日待触达",tasks.countByExample(outreach),"/followups?task_type=OUTREACH"));
         CareTaskExample sla=open();sla.in("priority",List.of("P0","P1")).lt("sla_due_at",now).isNull("ack_at");q.add(new QueueItem("SLA_OVERDUE","超 SLA 高危",tasks.countByExample(sla),"/alerts?sla_overdue=true"));
@@ -134,11 +134,11 @@ public class MetricService {
         return new WorkbenchResponse(now,q);
     }
     private CareTaskExample open(){CareTaskExample ex=access.taskScope();ex.ne("status","COMPLETED").ne("status","CANCELLED");return ex;}
-    private void scopeAppointments(AppointmentExample ex){if("OPERATOR".equals(CurrentAccount.get().roleCode())){PatientExample scope=access.scope();scope.selectColumns("id");PageHelper.startPage(1,SAMPLE,false);ex.in("patient_id",patients.selectByExample(scope).stream().map(p->p.id).toList());}}
+    private void scopeAppointments(AppointmentExample ex){if(access.executor()){PatientExample scope=access.scope();scope.selectColumns("id");PageHelper.startPage(1,SAMPLE,false);ex.in("patient_id",patients.selectByExample(scope).stream().map(p->p.id).toList());}}
     private static void range(MetricQueryRequest req){Checks.require(!req.toDate().isBefore(req.fromDate())&&ChronoUnit.DAYS.between(req.fromDate(),req.toDate())<=366,"Choose up to one year / 请选择不超过一年的区间");}
     private record Window(LocalDateTime from,LocalDateTime to){Window(MetricQueryRequest r){this(r.fromDate(),r.toDate());}Window(LocalDate f,LocalDate t){this(f.atStartOfDay(),t.plusDays(1).atStartOfDay());}}
     private List<CareTask> taskRows(Window w,String type,Long assigneeId){CareTaskExample ex=access.taskScope();ex.eq("task_type",type).ge("due_at",w.from).lt("due_at",w.to).ne("status","CANCELLED");if(assigneeId!=null)ex.eq("assignee_id",assigneeId);ex.selectColumns("id","patient_id","status","priority","completed_at","sla_due_at");PageHelper.startPage(1,SAMPLE,false);return tasks.selectByExample(ex);}
-    private List<Invitation> invitationRows(Window w,Long actorId,Long campaignId){InvitationExample ex=new InvitationExample();ex.eq("hospital_id",CurrentAccount.get().hospitalId()).ge("invited_at",w.from).lt("invited_at",w.to);if(actorId!=null)ex.eq("actor_id",actorId);else if("OPERATOR".equals(CurrentAccount.get().roleCode()))ex.eq("actor_id",CurrentAccount.get().userId());if(campaignId!=null)ex.eq("campaign_id",campaignId);ex.selectColumns("id","patient_id","result","campaign_id","actor_id");PageHelper.startPage(1,SAMPLE,false);return invitations.selectByExample(ex);}
+    private List<Invitation> invitationRows(Window w,Long actorId,Long campaignId){InvitationExample ex=new InvitationExample();ex.eq("hospital_id",CurrentAccount.get().hospitalId()).ge("invited_at",w.from).lt("invited_at",w.to);if(actorId!=null)ex.eq("actor_id",actorId);else if(access.executor())ex.eq("actor_id",CurrentAccount.get().userId());if(campaignId!=null)ex.eq("campaign_id",campaignId);ex.selectColumns("id","patient_id","result","campaign_id","actor_id");PageHelper.startPage(1,SAMPLE,false);return invitations.selectByExample(ex);}
     private List<Appointment> appointmentRows(Window w,String column,Long actorId){AppointmentExample ex=new AppointmentExample();ex.eq("hospital_id",CurrentAccount.get().hospitalId()).ge(column,w.from).lt(column,w.to);if(actorId!=null)ex.eq("actor_id",actorId);else scopeAppointments(ex);ex.selectColumns("id","patient_id","status","is_effective","actor_id");PageHelper.startPage(1,SAMPLE,false);return appointments.selectByExample(ex);}
     private List<ServiceEnrollment> enrollmentRows(Window w,Long actorId){ServiceEnrollmentExample ex=new ServiceEnrollmentExample();ex.eq("hospital_id",CurrentAccount.get().hospitalId()).ge("activated_at",w.from).lt("activated_at",w.to);if(actorId!=null)ex.eq("activated_by",actorId);ex.selectColumns("id","patient_id");PageHelper.startPage(1,SAMPLE,false);return enrollments.selectByExample(ex);}
     private List<ScreeningRecord> screeningRows(Window w,Long campaignId){ScreeningRecordExample ex=new ScreeningRecordExample();ex.eq("hospital_id",CurrentAccount.get().hospitalId()).ge("screened_at",w.from).lt("screened_at",w.to);if(campaignId!=null)ex.eq("campaign_id",campaignId);ex.selectColumns("id","pool_status","risk_level","campaign_id");PageHelper.startPage(1,SAMPLE,false);return screenings.selectByExample(ex);}

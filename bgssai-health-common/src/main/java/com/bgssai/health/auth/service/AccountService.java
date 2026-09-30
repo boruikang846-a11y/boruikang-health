@@ -72,7 +72,19 @@ public class AccountService {
         HealthAccount patch=new HealthAccount(); patch.currentSessionId=UUID.randomUUID().toString();
         HealthAccountExample ex=new HealthAccountExample(); ex.eq("id",actor.userId()); accounts.updateByExampleSelective(patch,ex);
     }
+    /** Any logged-in account changes its own password; the old login ends and a fresh one is returned. */
+    @Transactional
+    public LoginResponse changePassword(ChangePasswordRequest request) {
+        AccountInfo actor=CurrentAccount.get(); log.info("change password accountId={}",actor.userId());
+        HealthAccount row=accounts.selectByPrimaryKey(actor.userId());
+        Checks.found(row != null && Boolean.TRUE.equals(row.enabled));
+        Checks.require(request.oldPassword().equals(row.password), "Current password is incorrect / 原密码不正确");
+        Checks.require(!request.newPassword().equals(request.oldPassword()), "New password must differ from the current one / 新密码不能与原密码相同");
+        HealthAccount patch=new HealthAccount(); patch.password=request.newPassword(); patch.modifier=actor.userId().toString();
+        HealthAccountExample ex=new HealthAccountExample(); ex.eq("id",row.id); accounts.updateByExampleSelective(patch,ex);
+        return issue(row);
+    }
     private boolean allowed(String role) {
-        return "user".equals(portal) ? "USER".equals(role) : List.of("MANAGER","OPERATOR","PLATFORM_ADMIN").contains(role);
+        return "user".equals(portal) ? "USER".equals(role) : List.of("MANAGER","OPERATOR","NURSE","DOCTOR","PLATFORM_ADMIN").contains(role);
     }
 }

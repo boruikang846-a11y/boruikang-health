@@ -18,8 +18,6 @@ public class CareTask extends BaseRow {
     public String reviewNote;
     public Long reviewerId;
     public LocalDateTime reviewedAt;
-    public String reviewChannel;
-    public String reviewEvidence;
     public LocalDateTime completedAt;
     public String outcome;
     public String evidence;
@@ -30,8 +28,6 @@ public class CareTask extends BaseRow {
     public Boolean identityVerified;
     public String handoverStatus;
     public String doctorFeedback;
-    public String handoverChannel;
-    public String handoverEvidence;
     public LocalDateTime acknowledgedAt;
     public String alertSource;
     public LocalDateTime slaDueAt;

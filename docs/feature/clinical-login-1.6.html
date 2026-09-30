@@ -1,0 +1,23 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>1.6 医生护士登录 · BGSSAI Health</title><style>
+body{font:16px/1.7 system-ui,"Microsoft YaHei",sans-serif;margin:0;background:#f3f7fa;color:#173443}main{max-width:1100px;margin:auto;padding:48px 24px}h1{font-size:34px;line-height:1.25}p{max-width:780px}.badge{display:inline-block;padding:5px 12px;background:#dfe9ff;color:#1f55b8;border-radius:99px;font-size:13px}.flow{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin:35px 0}.step{background:#fff;border:1px solid #dae6eb;border-radius:18px;padding:18px;box-shadow:0 8px 25px #1542570d}.step b{display:block;color:#2364db;font-size:22px}.step h2{font-size:16px;margin:8px 0}.step small{color:#56707b;display:block}.who{display:inline-block;font-size:12px;border-radius:6px;padding:1px 8px;margin-top:8px}.doctor{background:#e8f0ff;color:#2358c9}.team{background:#e3f6ef;color:#1f7a5d}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.box{border-radius:18px;padding:22px;background:#fff;border:1px solid #dae6eb}.box.dark{background:#123e52;color:#fff}.note{border-left:4px solid #dc9946;padding:12px 18px;background:#fff8e9;margin-top:22px}table{width:100%;border-collapse:collapse;font-size:14px;background:#fff;margin-top:24px}td,th{padding:10px;border:1px solid #dae6eb;text-align:left}@media(max-width:900px){.flow{grid-template-columns:1fr 1fr}.grid{grid-template-columns:1fr}}@media(max-width:560px){.flow{grid-template-columns:1fr}h1{font-size:26px}}
+</style></head><body><main><span class="badge">1.6 医生、护士登录协作</span><h1>医生亲自看报告、审核随访意见，<br>护士和运营团队负责随访执行</h1><p>1.4 起院方医生和护士不登录，审核与查收由运营人员登记线下凭证。1.6 改回院方本人在系统里操作：每位医生只看到自己负责的患者，报告已阅、审核通过或退回、随访结果查收、异常处置都由医生本人完成并留痕。</p>
+<div class="flow">
+<div class="step"><b>1</b><h2>报告进入</h2><small>医院同步或人工录入出院、门诊、体检报告</small><span class="who team">系统 / 运营</span></div>
+<div class="step"><b>2</b><h2>医生看报告</h2><small>待阅报告确认已阅，可写意见给起草人参考</small><span class="who doctor">责任医生</span></div>
+<div class="step"><b>3</b><h2>起草并提交</h2><small>按报告与医生意见起草随访意见，提交医生审核</small><span class="who team">运营人员 / 护士</span></div>
+<div class="step"><b>4</b><h2>医生审核</h2><small>通过（可改写正文）或退回（写原因）；审核即视为已阅关联报告</small><span class="who doctor">责任医生</span></div>
+<div class="step"><b>5</b><h2>联系与查收</h2><small>按通过正文联系患者、登记反馈；完成后医生查收并反馈</small><span class="who team">运营 / 护士</span> <span class="who doctor">医生查收</span></div>
+</div>
+<div class="grid">
+<div class="box dark"><h2>医生登录后</h2><ul><li>医生工作台：四个待办数</li><li>随访意见审核：通过 / 退回</li><li>患者报告：确认已阅、写意见</li><li>随访结果查收：写反馈</li><li>异常处置：选去向、写结果</li><li>宣教审核发布</li><li>我的患者：只读档案</li></ul></div>
+<div class="box"><h2>护士登录后</h2><ul><li>和运营人员同一套页面</li><li>只处理分配给自己的患者</li><li>起草随访意见、提交医生审核</li><li>联系患者、登记反馈与下次计划</li><li>预约、到院核实、升级异常</li><li>不能审核、不能关闭临床异常</li></ul></div>
+<div class="box"><h2>运营主管</h2><ul><li>在“医护账号”开通医生、护士、运营账号</li><li>停用、启用、重置密码，立即生效</li><li>为患者指定责任医生和负责人（运营或护士）</li><li>医院数据同步、配置、周报</li></ul></div>
+</div>
+<table><tr><th>以前（1.4–1.5）</th><th>现在（1.6）</th></tr>
+<tr><td>运营人员“登记院方审核凭证”（渠道、时间、回执号）</td><td>医生在系统里点“审核通过 / 退回修改”，审核人和时间自动记录</td></tr>
+<tr><td>运营人员“登记院方已确认”随访结果</td><td>医生在“随访结果查收”写反馈并查收</td></tr>
+<tr><td>运营人员登记医生处置去向后关闭异常</td><td>升级后的异常进入医生“异常处置”，医生记录去向与结果；失联异常由团队核实后直接关闭</td></tr>
+<tr><td>运营主管登记院方宣教审核凭证后发布</td><td>运营主管保存草稿，医生审核发布</td></tr>
+<tr><td>院方医生只是联系人名单</td><td>医生、护士都有登录账号，由运营主管开通</td></tr></table>
+<p class="note">演示账号：doctor（责任医生）、doctor_b、doctor_c、doctor_d；nurse、nurse_b（护士）；manager、operator_a…d。开发期口令按规范明文存储，只用于虚构数据环境，真实医院上线前须先定口令方案。</p>
+</main></body></html>

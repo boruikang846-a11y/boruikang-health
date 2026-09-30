@@ -31,7 +31,7 @@ public class InvitationService {
         log.info("query invitations patientId={} result={}",req.patientId(),req.result());access.staff();var actor=CurrentAccount.get();
         InvitationExample ex=new InvitationExample();ex.eq("hospital_id",actor.hospitalId());
         if(req.patientId()!=null){access.require(req.patientId());ex.eq("patient_id",req.patientId());}
-        else if("OPERATOR".equals(actor.roleCode()))ex.eq("actor_id",actor.userId());
+        else {access.operations();if(access.executor())ex.eq("actor_id",actor.userId());}
         if(req.screeningId()!=null)ex.eq("screening_id",req.screeningId());
         if(req.campaignId()!=null)ex.eq("campaign_id",req.campaignId());
         if(Checks.text(req.result()))ex.eq("result",req.result());
@@ -48,7 +48,7 @@ public class InvitationService {
     }
     @Transactional
     public InvitationResponse create(CreateInvitationRequest req){
-        log.info("record invitation patientId={} result={}",req.patientId(),req.result());access.staff();Patient p=access.lock(req.patientId());
+        log.info("record invitation patientId={} result={}",req.patientId(),req.result());access.operations();Patient p=access.lock(req.patientId());
         Invitation existing=byKey(p.hospitalId,req.requestKey());if(existing!=null){Checks.conflict(p.id.equals(existing.patientId));return view(existing,p);}
         Checks.require(!List.of("CLOSED","TRANSFERRED").contains(p.lifecycle),"Patient is closed or transferred / 患者已结案或转出");
         orgs.requireCampaign(req.campaignId());

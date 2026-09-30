@@ -27,9 +27,9 @@ public class ScreeningService {
     public ScreeningService(ScreeningRecordMapper screenings,PatientAccess access,AuditService audit,OrgService orgs,PatientService patients,OutreachService outreach){
         this.screenings=screenings;this.access=access;this.audit=audit;this.orgs=orgs;this.patients=patients;this.outreach=outreach;}
     public Paged<ScreeningResponse> query(ScreeningQueryRequest req){
-        log.info("query screenings status={} source={}",req.poolStatus(),req.sourceType());access.staff();var actor=CurrentAccount.get();
+        log.info("query screenings status={} source={}",req.poolStatus(),req.sourceType());access.operations();var actor=CurrentAccount.get();
         ScreeningRecordExample ex=new ScreeningRecordExample();ex.eq("hospital_id",actor.hospitalId());
-        if("OPERATOR".equals(actor.roleCode()))ex.eq("owner_id",actor.userId());
+        if(access.executor())ex.eq("owner_id",actor.userId());
         if(Checks.text(req.keyword()))ex.like("name","%"+req.keyword().trim()+"%");
         if(Checks.text(req.sourceType()))ex.eq("source_type",req.sourceType());
         if(Checks.text(req.poolStatus()))ex.eq("pool_status",req.poolStatus());
@@ -46,7 +46,7 @@ public class ScreeningService {
     }
     @Transactional
     public ScreeningResponse create(CreateScreeningRequest req){
-        log.info("create screening source={}",req.sourceType());access.staff();var actor=CurrentAccount.get();
+        log.info("create screening source={}",req.sourceType());access.operations();var actor=CurrentAccount.get();
         Long ownerId=owner(req.ownerId());orgs.requireOrg(req.orgId());orgs.requireCampaign(req.campaignId());
         if(Checks.text(req.externalId())){ScreeningRecord dup=byExternal(actor.hospitalId(),req.sourceType(),req.externalId());if(dup!=null)return view(dup,false);}
         ScreeningRecord r=new ScreeningRecord();r.hospitalId=actor.hospitalId();r.orgId=req.orgId();r.campaignId=req.campaignId();r.ownerId=ownerId;r.sourceType=req.sourceType();
@@ -56,7 +56,7 @@ public class ScreeningService {
     }
     @Transactional
     public ImportScreeningResponse importRows(ImportScreeningRequest req){
-        log.info("import screenings batch={} rows={}",req.importBatch(),req.rows().size());access.staff();var actor=CurrentAccount.get();
+        log.info("import screenings batch={} rows={}",req.importBatch(),req.rows().size());access.operations();var actor=CurrentAccount.get();
         Long ownerId=owner(req.ownerId());orgs.requireOrg(req.orgId());orgs.requireCampaign(req.campaignId());
         ScreeningRecordExample batch=new ScreeningRecordExample();batch.eq("hospital_id",actor.hospitalId()).eq("import_batch",req.importBatch());
         Checks.require(screenings.countByExample(batch)==0,"Import batch already used / 该导入批次号已使用，请换一个批次号");
@@ -74,7 +74,7 @@ public class ScreeningService {
     }
     @Transactional
     public ScreeningResponse judge(JudgeScreeningRequest req){
-        log.info("judge screening id={} status={}",req.id(),req.poolStatus());access.staff();ScreeningRecord r=load(req.id(),req.version());
+        log.info("judge screening id={} status={}",req.id(),req.poolStatus());access.operations();ScreeningRecord r=load(req.id(),req.version());
         Checks.conflict(!"ENROLLED".equals(r.poolStatus));
         ScreeningRecord patch=new ScreeningRecord();patch.poolStatus=req.poolStatus();patch.judgedBy=CurrentAccount.get().userId();patch.judgedAt=LocalDateTime.now();patch.note=req.note();
         switch(req.poolStatus()){
@@ -82,12 +82,12 @@ public class ScreeningService {
             case "NON_HIGH_RISK"->{Checks.require(Checks.text(req.nonHighRiskReason()),"Reason required / 请填写非高危原因");patch.riskLevel=req.riskLevel()==null?"LOW":req.riskLevel();patch.riskEvidence=req.riskEvidence();patch.nonHighRiskReason=req.nonHighRiskReason().trim();}
             default->{Checks.require(Checks.text(req.note()),"Discard reason required / 请填写作废原因");}
         }
-        if(req.ownerId()!=null){patients.validateStaff(req.ownerId(),"OPERATOR","MANAGER");patch.ownerId=req.ownerId();}
+        if(req.ownerId()!=null){patients.validateStaff(req.ownerId(),"OPERATOR","NURSE","MANAGER");patch.ownerId=req.ownerId();}
         save(r,patch,"SCREENING_JUDGED",req.poolStatus());return view(screenings.selectByPrimaryKey(r.id),false);
     }
     @Transactional
     public ScreeningResponse enroll(EnrollScreeningRequest req){
-        log.info("enroll screening id={} existingPatientId={}",req.id(),req.existingPatientId());access.staff();ScreeningRecord r=load(req.id(),req.version());
+        log.info("enroll screening id={} existingPatientId={}",req.id(),req.existingPatientId());access.operations();ScreeningRecord r=load(req.id(),req.version());
         Checks.conflict(!"ENROLLED".equals(r.poolStatus)&&!"DISCARDED".equals(r.poolStatus));
         Checks.require(!"NEW".equals(r.poolStatus),"Judge the record before enrolling / 请先完成高危判定再建档");
         Patient p;
@@ -105,8 +105,8 @@ public class ScreeningService {
         return view(screenings.selectByPrimaryKey(r.id),false);
     }
     private static String scene(String sourceType){return switch(sourceType){case "ECG_NETWORK"->"ECG_NETWORK";case "EXAM"->"EXAM";case "OUTPATIENT"->"OUTPATIENT";case "INPATIENT"->"INPATIENT";case "CAMPAIGN"->"CAMPAIGN";default->"COMMUNITY_SCREENING";};}
-    private Long owner(Long requested){var actor=CurrentAccount.get();if("OPERATOR".equals(actor.roleCode())){Checks.permit(requested==null||actor.userId().equals(requested));return actor.userId();}
-        if(requested==null)return actor.userId();patients.validateStaff(requested,"OPERATOR","MANAGER");return requested;}
+    private Long owner(Long requested){var actor=CurrentAccount.get();if(access.executor()){Checks.permit(requested==null||actor.userId().equals(requested));return actor.userId();}
+        if(requested==null)return actor.userId();patients.validateStaff(requested,"OPERATOR","NURSE","MANAGER");return requested;}
     private ScreeningRecord byExternal(Long hospitalId,String sourceType,String externalId){
         ScreeningRecordExample ex=new ScreeningRecordExample();ex.eq("hospital_id",hospitalId).eq("source_type",sourceType).eq("external_id",externalId);PageHelper.startPage(1,1,false);
         List<ScreeningRecord> rows=screenings.selectByExample(ex);return rows.isEmpty()?null:rows.getFirst();

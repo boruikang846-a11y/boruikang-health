@@ -47,7 +47,7 @@ public class OrgService {
     @Transactional
     public CampaignResponse saveCampaign(SaveCampaignRequest req){
         log.info("save campaign id={} name={}",req.id(),req.name());access.manager();Long hospitalId=CurrentAccount.get().hospitalId();
-        requireOrg(req.orgId());patients.validateStaff(req.ownerId(),"OPERATOR","MANAGER");
+        requireOrg(req.orgId());patients.validateStaff(req.ownerId(),"OPERATOR","NURSE","MANAGER");
         Checks.require(req.startsOn()==null||req.endsOn()==null||!req.endsOn().isBefore(req.startsOn()),"Campaign end must not precede start / 结束日期不能早于开始日期");
         CampaignExample duplicate=new CampaignExample();duplicate.eq("hospital_id",hospitalId).eq("name",req.name().trim());if(req.id()!=null)duplicate.ne("id",req.id());
         Checks.require(campaigns.countByExample(duplicate)==0,"Campaign name already exists / 活动名称重复");

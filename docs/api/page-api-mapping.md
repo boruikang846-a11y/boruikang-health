@@ -19,6 +19,18 @@
 
 MANUAL/TEMPLATE/AI 均生成待审核草稿。列表隐藏内部 note，授权医护详情可查看。所有查询失败必须显示错误和重试，不用零值冒充统计结果。报告打印只包含当前已加载范围。
 
+## 1.6 医生、护士登录新增映射
+
+| 页面 | API | 操作 |
+| --- | --- | --- |
+| 登录、顶栏修改密码 | A/login、A/me、A/password | 医生进入 /doctor，其他角色进入 /workbench；改密后换发新登录 |
+| doctor（医生工作台） | A/doctor/workbench、A/tasks/query、A/records/reports | 四个待办数与三个短清单 |
+| doctor/reviews、doctor/results、doctor/alerts | A/tasks/query（status、handover_status、task_type）、A/tasks/{id}、A/tasks/review、acknowledge、transition | 审核通过或退回、查收反馈、异常处置 |
+| doctor/reports、patients/:id 就诊记录页签 | A/records/reports、A/records/review、A/records/query | 待阅 / 已阅筛选，确认已阅与写意见 |
+| patients、patients/:id（医生） | A/patients/query、A/patients/{id} 及各页签查询 | 只读；不显示建档、录入、邀约、预约、签约、转诊、联系按钮 |
+| knowledge（医生：宣教审核） | A/knowledge/query、A/knowledge/publish | 医生审核发布草稿 |
+| accounts（运营主管） | A/accounts/query、create、status、reset-password | 开通、停用 / 启用、重置密码 |
+
 ## 1.5 运营台账新增映射
 
 | 页面 | API | 操作 |

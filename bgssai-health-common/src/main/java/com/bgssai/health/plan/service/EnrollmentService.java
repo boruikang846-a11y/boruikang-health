@@ -31,7 +31,7 @@ public class EnrollmentService {
         log.info("query enrollments status={} patientId={}",req.status(),req.patientId());access.staff();var actor=CurrentAccount.get();
         ServiceEnrollmentExample ex=new ServiceEnrollmentExample();ex.eq("hospital_id",actor.hospitalId());
         if(req.patientId()!=null){access.require(req.patientId());ex.eq("patient_id",req.patientId());}
-        else if("OPERATOR".equals(actor.roleCode())){PatientExample scope=access.scope();scope.selectColumns("id");PageHelper.startPage(1,2000,false);ex.in("patient_id",patients.selectByExample(scope).stream().map(p->p.id).toList());}
+        else {access.operations();if(access.executor())ex.in("patient_id",access.scopedPatientIds(2000));}
         if(req.packageId()!=null)ex.eq("package_id",req.packageId());if(Checks.text(req.status()))ex.eq("status",req.status());
         if(req.endFrom()!=null)ex.ge("end_date",req.endFrom());if(req.endTo()!=null)ex.le("end_date",req.endTo());
         if(Boolean.TRUE.equals(req.expiringSoon()))ex.eq("status","ACTIVE").le("end_date",LocalDate.now().plusDays(14));
@@ -41,7 +41,7 @@ public class EnrollmentService {
     }
     @Transactional
     public EnrollmentResponse create(CreateEnrollmentRequest req){
-        log.info("create enrollment patientId={} packageId={}",req.patientId(),req.packageId());access.staff();Patient p=access.lock(req.patientId());
+        log.info("create enrollment patientId={} packageId={}",req.patientId(),req.packageId());access.operations();Patient p=access.lock(req.patientId());
         ServiceEnrollment existing=byKey(p.hospitalId,req.requestKey());if(existing!=null){Checks.conflict(p.id.equals(existing.patientId));return view(existing,p);}
         Checks.require(!List.of("CLOSED","TRANSFERRED").contains(p.lifecycle),"Patient is closed or transferred / 患者已结案或转出");
         ServicePackage k=packageService.requireActive(req.packageId());
@@ -55,7 +55,7 @@ public class EnrollmentService {
     }
     @Transactional
     public EnrollmentResponse transition(TransitionEnrollmentRequest req){
-        log.info("transition enrollment id={} action={}",req.id(),req.action());access.staff();ServiceEnrollment e=enrollments.selectByPrimaryKey(req.id());
+        log.info("transition enrollment id={} action={}",req.id(),req.action());access.operations();ServiceEnrollment e=enrollments.selectByPrimaryKey(req.id());
         Checks.found(e!=null&&CurrentAccount.get().hospitalId().equals(e.hospitalId));Patient p=access.lock(e.patientId);Checks.conflict(req.version().equals(e.version));
         ServicePackage k=packages.selectByPrimaryKey(e.packageId);
         switch(req.action()){

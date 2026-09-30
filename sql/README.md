@@ -19,6 +19,10 @@ DDL 使用 IF NOT EXISTS，只能初始化空库。发版采用全量口径：�
 
 旧 SOP 类型的知识条目在全量 DML 中已按 EDUCATION/DRAFT 铺底，不再有 SOP 种类。
 
+## 1.6 医生、护士登录
+
+`health_account` 增加 `department`；删除 `hospital_clinician`，院方医生改为 `role_code=DOCTOR` 的账号并沿用原 id（2/5/10/11），所有 `doctor_id`、`reviewer_id`、`referrer_id`、`clinician_id`、`feedback_clinician_id` 指向医生账号。`care_record` 增加 `doctor_viewed_at / doctor_viewer_id / doctor_opinion`；`care_task` 删除 `review_channel / review_evidence / handover_channel / handover_evidence`；`knowledge_entry` 删除 `review_channel / review_evidence`。dev 种子新增医生账号 doctor、doctor_b、doctor_c、doctor_d 与护士账号 nurse（6）、nurse_b（23），部分虚构患者分给护士；`tools/generate-demo-seed.py` 可重生成 1.3 场景块（之后需以相同 `--date` 重跑 `tools/generate-ledger-seed.py`）。发版按全量口径：备份后清库重建。
+
 ## 1.5 运营台账
 
 新增 14 张台账表与患者、任务、联系记录的新列，全部写在 `DDL.sql` / `DDL-local.sql` 的建表语句里；`patient.service_package_id` 现在指向 `service_package`。发版按全量口径：备份后清库重建，先核对服务器 env 覆盖的真实库地址。基础 DML 新增 14 条短信与话术模板、5 档 SLA 默认值；dev DML 新增机构、活动、方案、服务包、患者池、邀约、预约、签约、转诊、用药与已发消息的虚构种子（`tools/generate-ledger-seed.py --date YYYY-MM-DD` 可重生成，标记块可重复执行）。演示患者 1001/1002/2001 的阶段与服务包引用随台账一并调整。

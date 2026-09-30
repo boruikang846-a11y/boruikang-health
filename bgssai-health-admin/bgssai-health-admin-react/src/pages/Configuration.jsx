@@ -4,7 +4,7 @@ import { Alert, Button, Card, DatePicker, Form, Input, InputNumber, Select, Spac
 import { PlusOutlined, ReloadOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import { api, useLoad } from '../api'
-import { DataTable, day, dayText, FormDialog, LoadState, names, options, required, Status } from '../ui'
+import { DataTable, day, dayText, FormDialog, LoadState, names, options, ownerOptions, required, Status } from '../ui'
 
 const templateScenes = ['FIRST_CONTACT', 'HIGH_RISK', 'URGENT', 'FAMILY', 'ARRIVAL_REMINDER', 'FOLLOWUP_REMINDER', 'REVISIT_REMINDER', 'NO_SHOW', 'HESITANT', 'REFUSED', 'COMPLAINT', 'OTHER']
 export function Orgs() {
@@ -47,7 +47,7 @@ export function Campaigns() {
       <div className="form-grid"><Form.Item name="name" label="名称" rules={required}><Input maxLength={120} /></Form.Item><Form.Item name="campaign_type" label="类型" rules={required}><Select options={options(['DAILY_INVITATION', 'EARLY_INTERVENTION', 'CLINIC_EVENT', 'SCREENING'])} /></Form.Item>
         <LoadState state={orgs}>{data => <Form.Item name="org_id" label="机构"><Select allowClear options={data.map(o => ({ value: o.id, label: o.name }))} /></Form.Item>}</LoadState><Form.Item name="location" label="地点"><Input maxLength={200} /></Form.Item>
         <Form.Item name="starts_on" label="开始"><DatePicker style={{ width: '100%' }} /></Form.Item><Form.Item name="ends_on" label="结束"><DatePicker style={{ width: '100%' }} /></Form.Item>
-        <LoadState state={staff}>{data => <Form.Item name="owner_id" label="负责人"><Select allowClear options={data.map(x => ({ value: x.user_id, label: x.real_name }))} /></Form.Item>}</LoadState><Form.Item name="target_count" label="目标人数"><InputNumber min={0} /></Form.Item>
+        <LoadState state={staff}>{data => <Form.Item name="owner_id" label="负责人"><Select allowClear options={ownerOptions(data)} /></Form.Item>}</LoadState><Form.Item name="target_count" label="目标人数"><InputNumber min={0} /></Form.Item>
         <Form.Item name="status" label="状态" rules={required}><Select options={options(['PLANNED', 'ACTIVE', 'CLOSED'])} /></Form.Item></div>
       <Form.Item name="note" label="备注"><Input.TextArea rows={2} maxLength={1000} /></Form.Item>
     </FormDialog>
