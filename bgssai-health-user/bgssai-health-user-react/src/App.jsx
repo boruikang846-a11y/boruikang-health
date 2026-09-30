@@ -45,15 +45,15 @@ export default function App() {
   </section>
   <section id="journey" className="journey-section"><div className="section-intro"><div className="eyebrow">CARE WITH CONTINUITY</div><h2>{t('围绕患者，形成连续的服务', 'A continuous journey around the patient')}</h2><p>{t('受托运营后台先行建设，逐步连接患者服务入口。', 'Building the managed operations workspace first, then connecting patient channels.')}</p></div>
     <div className="journey-grid">{[
-      [t('建立健康档案','Create a care profile'), t('医院提供原始资料，我们核对信息并明确院方联系人和运营负责人。','The hospital provides source records; our team verifies them and assigns clinical and operational contacts.')],
+      [t('建立健康档案','Create a care profile'), t('医院提供原始资料，我们核对信息并明确责任医生和随访负责人。','The hospital provides source records; our team verifies them and assigns a responsible doctor and a follow-up owner.')],
       [t('准备随访服务','Prepare follow-up care'), t('根据出院报告等原始记录，准备个体随访问询内容。','The team prepares individual follow-up questions using discharge or other clinical records.')],
-      [t('院方审核，人工联系','Review and personal contact'), t('院方医生审核个案建议，我们取得回执后人工联系并记录凭证。','Hospital doctors review patient-specific guidance; our team records the response and then contacts patients.')],
+      [t('医生审核，人工联系','Review and personal contact'), t('责任医生在系统里查看报告、审核个案随访意见，通过后我们人工联系并记录。','The responsible doctor reads the reports and reviews patient-specific guidance in the system; once approved, our team contacts the patient and records it.')],
       [t('跟踪反馈与复诊','Track outcomes and visits'), t('记录处理结果，核实复诊安排，让服务有始有终。','The team records outcomes and verifies return visits to complete the care process.')],
     ].map(([title,description],index) => <article key={title}><span className="step-number">0{index+1}</span><h3>{title}</h3><p>{description}</p></article>)}</div>
   </section>
   <section id="roadmap" className="section roadmap"><div className="roadmap-heading"><div className="eyebrow">STEP BY STEP</div><h2>{t('把每一步', 'Each step,')}<br />{t('都做清楚', 'clearly defined.')}</h2><p>{t('当前聚焦受托运营团队的工作闭环。患者端功能，将在需求和医院流程确认后逐步建设。', 'The current focus is the managed operations workflow. Patient features will follow confirmed needs and hospital processes.')}</p><a href="#faq">{t('还有疑问？', 'Questions?')} <ArrowRightOutlined /></a></div>
     <div className="roadmap-list">{[
-      [t('当前阶段','Current phase'),t('受托运营后台与患者服务介绍','Managed operations and patient introduction'),t('运营团队完成后台随访、院方审核凭证、异常与复诊跟踪；患者端公开展示整体模式。','Our team uses the workspace for follow-ups, hospital review evidence, alerts and return-visit tracking, with this public introduction for patients.')],
+      [t('当前阶段','Current phase'),t('受托运营后台与患者服务介绍','Managed operations and patient introduction'),t('医生、护士与运营团队在后台协作完成报告查看、随访审核、异常与复诊跟踪；患者端公开展示整体模式。','Doctors, nurses and our team work together in the workspace on reports, reviewed follow-ups, alerts and return visits, with this public introduction for patients.')],
       [t('下一阶段','Next phase'),t('确认患者需求与医院流程','Confirm patient needs and hospital workflows'),t('明确患者使用场景、授权说明、医院联系人与服务范围，确认各渠道的接入条件。','Define patient scenarios, consent, hospital contacts and service scope, then confirm integration requirements.')],
       [t('后续规划','Later phases'),t('分阶段开放患者服务','Open patient services in phases'),t('按确认的需求建设企业微信、小程序和 Web 功能，完成医院接口联调后再开放。','Develop the agreed WeCom, Mini Program and web features, and launch after hospital integrations are validated.')],
     ].map(([phase,title,description],index) => <article key={phase}><div className={'phase-mark ' + (index === 0 ? 'current' : '')}>{index === 0 ? <CheckOutlined /> : index+1}</div><div><small>{phase}</small><h3>{title}</h3><p>{description}</p></div></article>)}</div>

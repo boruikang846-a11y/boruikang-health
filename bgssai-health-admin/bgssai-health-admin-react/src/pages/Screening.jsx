@@ -4,7 +4,7 @@ import { Alert, Button, Card, DatePicker, Form, Input, InputNumber, Select, Spac
 import { ImportOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import { api, useLoad } from '../api'
-import { DataTable, dateText, FormDialog, LoadState, names, options, PageTitle, required, stamp, Status } from '../ui'
+import { DataTable, dateText, doctorOptions, FormDialog, LoadState, names, options, ownerOptions, PageTitle, required, stamp, Status } from '../ui'
 
 const sources = ['ECG_NETWORK', 'EXAM', 'HEALTH_SCREENING', 'STROKE_SCREENING', 'OUTPATIENT', 'INPATIENT', 'CAMPAIGN']
 const pool = ['NEW', 'HIGH_RISK', 'NON_HIGH_RISK', 'ENROLLED', 'DISCARDED']
@@ -60,7 +60,7 @@ export default function Screening() {
       <div className="form-grid"><Form.Item name="category" label="分类"><Input maxLength={80} /></Form.Item><Form.Item name="external_id" label="来源编号（用于去重）"><Input maxLength={80} /></Form.Item>
         <LoadState state={orgs}>{data => <Form.Item name="org_id" label="来源机构"><Select allowClear options={data.filter(o => o.active).map(o => ({ value: o.id, label: o.name }))} /></Form.Item>}</LoadState>
         <LoadState state={campaigns}>{data => <Form.Item name="campaign_id" label="所属活动"><Select allowClear options={data.items.filter(c => c.status !== 'CLOSED').map(c => ({ value: c.id, label: c.name }))} /></Form.Item>}</LoadState>
-        {account.role_code === 'MANAGER' && <LoadState state={staff}>{data => <Form.Item name="owner_id" label="负责人"><Select options={data.map(x => ({ value: x.user_id, label: x.real_name }))} /></Form.Item>}</LoadState>}</div>
+        {account.role_code === 'MANAGER' && <LoadState state={staff}>{data => <Form.Item name="owner_id" label="负责人"><Select options={ownerOptions(data)} /></Form.Item>}</LoadState>}</div>
       <Form.Item name="note" label="备注"><Input.TextArea rows={2} maxLength={1000} /></Form.Item>
     </FormDialog>
     <FormDialog title="粘贴导入筛查名单" width={760} open={importOpen} initialValues={{ source_type: 'ECG_NETWORK', owner_id: account.user_id }} onClose={() => setImportOpen(false)} okText="导入" onSubmit={async values => {
@@ -73,7 +73,7 @@ export default function Screening() {
       <div className="form-grid"><Form.Item name="source_type" label="来源" rules={required}><Select options={options(sources)} /></Form.Item>
         <LoadState state={orgs}>{data => <Form.Item name="org_id" label="来源机构"><Select allowClear options={data.filter(o => o.active).map(o => ({ value: o.id, label: o.name }))} /></Form.Item>}</LoadState>
         <LoadState state={campaigns}>{data => <Form.Item name="campaign_id" label="所属活动"><Select allowClear options={data.items.filter(c => c.status !== 'CLOSED').map(c => ({ value: c.id, label: c.name }))} /></Form.Item>}</LoadState>
-        {account.role_code === 'MANAGER' && <LoadState state={staff}>{data => <Form.Item name="owner_id" label="负责人"><Select options={data.map(x => ({ value: x.user_id, label: x.real_name }))} /></Form.Item>}</LoadState>}</div>
+        {account.role_code === 'MANAGER' && <LoadState state={staff}>{data => <Form.Item name="owner_id" label="负责人"><Select options={ownerOptions(data)} /></Form.Item>}</LoadState>}</div>
       <Form.Item name="text" label="粘贴内容" rules={required}><Input.TextArea rows={10} placeholder={'张某\t男\t66\t13800000000\t2026-09-28 08:30\t房颤波形\t心律失常\tECG-0001'} /></Form.Item>
     </FormDialog>
     <FormDialog title={'判定：' + (judge?.name || '')} open={Boolean(judge)} initialValues={{ pool_status: 'HIGH_RISK', risk_level: judge?.risk_level === 'UNKNOWN' ? 'HIGH' : judge?.risk_level, risk_evidence: judge?.risk_evidence }} onClose={() => setJudge(null)} onSubmit={async values => { await api('/screenings/judge', { id: judge.id, version: judge.version, ...values }); state.reload() }}>
@@ -86,15 +86,15 @@ export default function Screening() {
           {s === 'NON_HIGH_RISK' && <Form.Item name="non_high_risk_reason" label="非高危原因" rules={required}><Input maxLength={200} /></Form.Item>}
           {s === 'DISCARDED' && <Form.Item name="note" label="作废原因" rules={required}><Input maxLength={1000} /></Form.Item>}</>
       }}</Form.Item>
-      {account.role_code === 'MANAGER' && <LoadState state={staff}>{data => <Form.Item name="owner_id" label="改派负责人"><Select allowClear options={data.map(x => ({ value: x.user_id, label: x.real_name }))} /></Form.Item>}</LoadState>}
+      {account.role_code === 'MANAGER' && <LoadState state={staff}>{data => <Form.Item name="owner_id" label="改派负责人"><Select allowClear options={ownerOptions(data)} /></Form.Item>}</LoadState>}
       <Alert type="info" message="判定只记录院方或筛查医生的结论，系统不做医学判断。高危对象建档后按 SLA 自动开出首次联系任务。" />
     </FormDialog>
     <FormDialog title={'建档入组：' + (enroll?.name || '')} open={Boolean(enroll)} initialValues={{ department: '心血管内科', disease: enroll?.category || enroll?.finding, patient_type: 'OUTPATIENT', outreach: true, owner_id: enroll?.owner_id }} onClose={() => setEnroll(null)} onSubmit={async values => { const saved = await api('/screenings/enroll', { id: enroll.id, version: enroll.version, ...values }); state.reload(); if (saved.patient_id) navigate('/patients/' + saved.patient_id) }}>
       <Alert className="mb" type="warning" message={'风险 ' + (names[enroll?.risk_level] || '') + '，来源 ' + (names[enroll?.source_type] || '')} description="建档后患者进入患者中心，首次联系任务的截止时间按风险等级的 SLA 计算。" />
       <div className="form-grid"><Form.Item name="department" label="科室" rules={required}><Input maxLength={80} /></Form.Item><Form.Item name="disease" label="病种 / 管理原因" rules={required}><Input maxLength={120} /></Form.Item>
         <Form.Item name="patient_type" label="患者类型"><Select options={options(['OUTPATIENT', 'INPATIENT', 'DISCHARGED', 'UNKNOWN'])} /></Form.Item>
-        <LoadState state={clinicians}>{data => <Form.Item name="doctor_id" label="院方责任医生"><Select allowClear options={data.map(x => ({ value: x.id, label: x.name + ' / ' + x.department }))} /></Form.Item>}</LoadState>
-        {account.role_code === 'MANAGER' && <LoadState state={staff}>{data => <Form.Item name="owner_id" label="运营负责人"><Select options={data.map(x => ({ value: x.user_id, label: x.real_name }))} /></Form.Item>}</LoadState>}
+        <LoadState state={clinicians}>{data => <Form.Item name="doctor_id" label="责任医生"><Select allowClear options={doctorOptions(data)} /></Form.Item>}</LoadState>
+        {account.role_code === 'MANAGER' && <LoadState state={staff}>{data => <Form.Item name="owner_id" label="负责人"><Select options={ownerOptions(data)} /></Form.Item>}</LoadState>}
         <Form.Item name="existing_patient_id" label="已有档案编号（关联而非新建）"><InputNumber min={1} style={{ width: '100%' }} /></Form.Item></div>
       <Form.Item name="outreach" label="同时开出首次联系任务" valuePropName="checked"><Switch /></Form.Item>
       <Form.Item name="note" label="内部备注"><Input.TextArea rows={2} maxLength={2000} /></Form.Item>

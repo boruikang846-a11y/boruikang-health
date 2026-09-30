@@ -30,7 +30,7 @@ public class ReferralService {
         log.info("query referrals direction={} status={}",req.direction(),req.status());access.staff();var actor=CurrentAccount.get();
         ReferralExample ex=new ReferralExample();ex.eq("hospital_id",actor.hospitalId());
         if(req.patientId()!=null){access.require(req.patientId());ex.eq("patient_id",req.patientId());}
-        else if("OPERATOR".equals(actor.roleCode())){PatientExample scope=access.scope();scope.selectColumns("id");PageHelper.startPage(1,2000,false);ex.in("patient_id",patients.selectByExample(scope).stream().map(p->p.id).toList());}
+        else {access.operations();if(access.executor())ex.in("patient_id",access.scopedPatientIds(2000));}
         if(Checks.text(req.direction()))ex.eq("direction",req.direction());if(Checks.text(req.referralType()))ex.eq("referral_type",req.referralType());if(Checks.text(req.status()))ex.eq("status",req.status());
         if(req.fromOrgId()!=null)ex.eq("from_org_id",req.fromOrgId());if(req.toOrgId()!=null)ex.eq("to_org_id",req.toOrgId());
         if(Boolean.TRUE.equals(req.open()))ex.in("status",OPEN);
@@ -42,7 +42,7 @@ public class ReferralService {
     }
     @Transactional
     public ReferralResponse create(CreateReferralRequest req){
-        log.info("create referral patientId={} direction={}",req.patientId(),req.direction());access.staff();Patient p=access.lock(req.patientId());
+        log.info("create referral patientId={} direction={}",req.patientId(),req.direction());access.operations();Patient p=access.lock(req.patientId());
         Referral existing=byKey(p.hospitalId,req.requestKey());if(existing!=null){Checks.conflict(p.id.equals(existing.patientId));return view(existing,p);}
         Checks.require(req.fromOrgId()!=null||req.toOrgId()!=null,"Name the sending or receiving organisation / 请填写转出或接收机构");
         orgs.requireOrg(req.fromOrgId());orgs.requireOrg(req.toOrgId());
@@ -57,7 +57,7 @@ public class ReferralService {
     }
     @Transactional
     public ReferralResponse transition(TransitionReferralRequest req){
-        log.info("transition referral id={} action={}",req.id(),req.action());access.staff();Referral r=referrals.selectByPrimaryKey(req.id());
+        log.info("transition referral id={} action={}",req.id(),req.action());access.operations();Referral r=referrals.selectByPrimaryKey(req.id());
         Checks.found(r!=null&&CurrentAccount.get().hospitalId().equals(r.hospitalId));Patient p=access.lock(r.patientId);Checks.conflict(req.version().equals(r.version));
         LocalDateTime at=req.at()==null?LocalDateTime.now():req.at();Referral patch=new Referral();
         switch(req.action()){

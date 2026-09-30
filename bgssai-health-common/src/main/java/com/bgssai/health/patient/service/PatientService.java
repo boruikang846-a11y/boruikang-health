@@ -23,11 +23,11 @@ import java.util.Objects;
 public class PatientService {
     private static final Logger log=LoggerFactory.getLogger(PatientService.class);
     public static final List<String> LIFECYCLES=List.of("ENROLLED","CONTACTED","BOOKED","ARRIVED","MANAGING","REVISIT_DUE","PAUSED","TRANSFERRED","LOST","CLOSED");
-    private final PatientMapper patients; private final HealthAccountMapper accounts; private final HospitalClinicianMapper clinicians; private final CareTaskMapper tasks;
+    private final PatientMapper patients; private final HealthAccountMapper accounts; private final CareTaskMapper tasks;
     private final IntakeChannelMapper channels; private final ServicePackageMapper packages; private final CareOrgMapper orgs; private final PatientAccess access; private final AuditService audit; private final OutreachService outreach;
-    public PatientService(PatientMapper patients,HealthAccountMapper accounts,HospitalClinicianMapper clinicians,CareTaskMapper tasks,IntakeChannelMapper channels,
+    public PatientService(PatientMapper patients,HealthAccountMapper accounts,CareTaskMapper tasks,IntakeChannelMapper channels,
         ServicePackageMapper packages,CareOrgMapper orgs,PatientAccess access,AuditService audit,OutreachService outreach) {
-        this.patients=patients;this.accounts=accounts;this.clinicians=clinicians;this.tasks=tasks;this.channels=channels;this.packages=packages;this.orgs=orgs;this.access=access;this.audit=audit;this.outreach=outreach;
+        this.patients=patients;this.accounts=accounts;this.tasks=tasks;this.channels=channels;this.packages=packages;this.orgs=orgs;this.access=access;this.audit=audit;this.outreach=outreach;
     }
     public Paged<PatientResponse> query(PatientQueryRequest req) {
         log.info("query patients page={} lifecycle={} scene={}",req.page(),req.lifecycle(),req.sourceScene());PatientExample ex=access.scope();
@@ -70,10 +70,10 @@ public class PatientService {
         return create(req,sourceSystem,externalId);
     }
     private PatientResponse create(CreatePatientRequest req,String sourceSystem,String externalId) {
-        log.info("create patient actorId={} scene={}",CurrentAccount.get().userId(),req.sourceScene());access.staff();var actor=CurrentAccount.get();
+        log.info("create patient actorId={} scene={}",CurrentAccount.get().userId(),req.sourceScene());access.operations();var actor=CurrentAccount.get();
         Long doctorId=req.doctorId(), ownerId=req.ownerId();
-        if ("OPERATOR".equals(actor.roleCode())) { Checks.permit(ownerId==null||actor.userId().equals(ownerId));ownerId=actor.userId(); }
-        validateClinician(doctorId); validateStaff(ownerId,"OPERATOR","MANAGER"); validateClinician(req.referrerId()); validateOrg(req.orgId()); validateChannel(req.channelId());
+        if (access.executor()) { Checks.permit(ownerId==null||actor.userId().equals(ownerId));ownerId=actor.userId(); }
+        validateClinician(doctorId); validateStaff(ownerId,"OPERATOR","NURSE","MANAGER"); validateClinician(req.referrerId()); validateOrg(req.orgId()); validateChannel(req.channelId());
         Checks.require(req.riskLevel()==null||"UNKNOWN".equals(req.riskLevel())||Checks.text(req.riskEvidence()),"Record hospital clinical assessment evidence / 请记录院方风险评估依据");
         Patient p=new Patient();p.hospitalId=actor.hospitalId();p.name=req.name().trim();p.gender=req.gender();p.age=req.age();p.phone=req.phone();
         p.department=req.department();p.disease=req.disease();p.doctorId=doctorId;p.ownerId=ownerId;p.note=req.note();p.creator=actor.userId().toString();
@@ -89,11 +89,11 @@ public class PatientService {
     }
     @Transactional
     public PatientResponse update(UpdatePatientRequest req) {
-        log.info("update patient patientId={} lifecycle={}",req.id(),req.lifecycle());access.staff();Patient p=access.lock(req.id());Checks.conflict(req.version().equals(p.version));
+        log.info("update patient patientId={} lifecycle={}",req.id(),req.lifecycle());access.operations();Patient p=access.lock(req.id());Checks.conflict(req.version().equals(p.version));
         if ((req.doctorId()!=null&&!Objects.equals(req.doctorId(),p.doctorId))||(req.ownerId()!=null&&!Objects.equals(req.ownerId(),p.ownerId))) access.manager();
         if (req.riskLevel()!=null&&!req.riskLevel().equals(p.riskLevel)) Checks.require(Checks.text(req.riskEvidence()),"Record hospital clinical assessment evidence / 请记录院方风险评估依据");
         if (req.lifecycle()!=null&&!req.lifecycle().equals(p.lifecycle)&&List.of("PAUSED","TRANSFERRED","LOST","CLOSED").contains(req.lifecycle())) Checks.require(Checks.text(req.lifecycleReason()),"Record why the patient leaves active management / 请填写暂缓、转出、失访或结案原因");
-        validateClinician(req.doctorId()); validateStaff(req.ownerId(),"OPERATOR","MANAGER"); validateClinician(req.referrerId()); validateOrg(req.orgId());
+        validateClinician(req.doctorId()); validateStaff(req.ownerId(),"OPERATOR","NURSE","MANAGER"); validateClinician(req.referrerId()); validateOrg(req.orgId());
         if (req.servicePackageId()!=null) {
             ServicePackage k=packages.selectByPrimaryKey(req.servicePackageId());
             Checks.require(k!=null&&p.hospitalId.equals(k.hospitalId)&&"ACTIVE".equals(k.status),"Active service package required / 请选择启用中的服务包");
@@ -135,7 +135,7 @@ public class PatientService {
     }
     @Transactional
     public PatientResponse consent(ConsentRequest req) {
-        log.info("record consent patientId={} version={}",req.id(),req.consentVersion());access.staff();Patient p=access.lock(req.id());Checks.conflict(req.version().equals(p.version));
+        log.info("record consent patientId={} version={}",req.id(),req.consentVersion());access.operations();Patient p=access.lock(req.id());Checks.conflict(req.version().equals(p.version));
         Patient patch=new Patient();patch.consentAt=req.consentAt();patch.consentVersion=req.consentVersion().trim();patch.consentEvidence=req.consentEvidence().trim();patch.version=p.version+1;patch.modifier=CurrentAccount.get().userId().toString();
         PatientExample ex=new PatientExample();ex.eq("id",p.id).eq("hospital_id",p.hospitalId).eq("version",p.version);Checks.conflict(patients.updateByExampleSelective(patch,ex)==1);
         audit.append(p.id,"CONSENT_RECORDED",p.id,null,"CONSENTED","version="+req.consentVersion());return view(patients.selectByPrimaryKey(p.id),false);
@@ -181,14 +181,14 @@ public class PatientService {
     public List<AccountInfo> staff() {
         log.info("list staff hospitalId={}",CurrentAccount.get().hospitalId());access.staff();
         HealthAccountExample ex=new HealthAccountExample();ex.eq("hospital_id",CurrentAccount.get().hospitalId()).eq("is_enabled",true)
-            .in("role_code",List.of("MANAGER","OPERATOR"));ex.selectColumns("id","real_name","role_code","hospital_id");
+            .in("role_code",PatientAccess.OWNERS);ex.selectColumns("id","real_name","role_code","hospital_id");
         PageHelper.startPage(1,100,false);
         List<HealthAccount> rows=accounts.selectByExample(ex);
         return rows.stream().map(r->new AccountInfo(r.id,r.realName,r.roleCode,r.hospitalId)).toList();
     }
     public void validateStaff(Long id,String... roles) {
         if(id==null)return;HealthAccount a=accounts.selectByPrimaryKey(id);
-        Checks.require(a!=null&&CurrentAccount.get().hospitalId().equals(a.hospitalId)&&Boolean.TRUE.equals(a.enabled)&&List.of(roles).contains(a.roleCode),"Invalid staff assignment / 请选择本院有效医护人员");
+        Checks.require(a!=null&&CurrentAccount.get().hospitalId().equals(a.hospitalId)&&Boolean.TRUE.equals(a.enabled)&&List.of(roles).contains(a.roleCode),"Invalid staff assignment / 请选择本院启用中的运营人员或护士");
     }
     public void validateOrg(Long id) {
         if(id==null)return;CareOrg o=orgs.selectByPrimaryKey(id);
@@ -198,24 +198,18 @@ public class PatientService {
         if(id==null)return;IntakeChannel c=channels.selectByPrimaryKey(id);
         Checks.require(c!=null&&CurrentAccount.get().hospitalId().equals(c.hospitalId),"Select a channel of this hospital / 请选择本院渠道");
     }
+    /** Doctor accounts of this hospital, including disabled ones so historical names still resolve. */
     public List<ClinicianInfo> clinicians() {
-        access.staff();HospitalClinicianExample ex=new HospitalClinicianExample();ex.eq("hospital_id",CurrentAccount.get().hospitalId()).eq("is_active",true);
-        PageHelper.startPage(1,100,false);
-        return clinicians.selectByExample(ex).stream().map(r->new ClinicianInfo(r.id,r.name,r.department)).toList();
+        access.staff();HealthAccountExample ex=new HealthAccountExample();ex.eq("hospital_id",CurrentAccount.get().hospitalId()).eq("role_code","DOCTOR");
+        ex.selectColumns("id","real_name","department","is_enabled");ex.setOrderByClause("id ASC");
+        PageHelper.startPage(1,200,false);
+        return accounts.selectByExample(ex).stream().map(r->new ClinicianInfo(r.id,r.realName,r.department,Boolean.TRUE.equals(r.enabled))).toList();
     }
-    @Transactional
-    public ClinicianInfo createClinician(CreateClinicianRequest req) {
-        access.manager();String name=req.name().trim(), department=req.department().trim();
-        HospitalClinicianExample duplicate=new HospitalClinicianExample();duplicate.eq("hospital_id",CurrentAccount.get().hospitalId()).eq("name",name).eq("department",department);
-        Checks.require(clinicians.countByExample(duplicate)==0,"This hospital clinician is already recorded / 院方医生已存在");
-        HospitalClinician row=new HospitalClinician();row.hospitalId=CurrentAccount.get().hospitalId();row.name=name;row.department=department;row.active=true;row.creator=CurrentAccount.get().userId().toString();
-        clinicians.insertSelective(row);audit.append(null,"HOSPITAL_CLINICIAN_CONTACT_ADDED",row.id,null,"ACTIVE","Non-login hospital contact");
-        return new ClinicianInfo(row.id,row.name,row.department);
-    }
-    public HospitalClinician validateClinician(Long id) {
+    /** A responsible, referring or feedback doctor must be an enabled DOCTOR account of this hospital. */
+    public HealthAccount validateClinician(Long id) {
         if(id==null)return null;
-        HospitalClinician row=clinicians.selectByPrimaryKey(id);
-        Checks.require(row!=null&&CurrentAccount.get().hospitalId().equals(row.hospitalId)&&Boolean.TRUE.equals(row.active),"Select an active hospital clinician / 请选择本院有效的审核医生");
+        HealthAccount row=accounts.selectByPrimaryKey(id);
+        Checks.require(row!=null&&CurrentAccount.get().hospitalId().equals(row.hospitalId)&&"DOCTOR".equals(row.roleCode)&&Boolean.TRUE.equals(row.enabled),"Select an enabled doctor account of this hospital / 请选择本院启用中的医生账号");
         return row;
     }
     public static String tagsColumn(List<String> tags) {

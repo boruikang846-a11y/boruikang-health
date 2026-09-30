@@ -181,9 +181,12 @@ class OperationsLedgerTest {
         assertEquals("OBSERVATION",alert.alertSource());assertNotNull(alert.slaDueAt());
         var claimed=tasks.claim(new ClaimTaskRequest(alert.id(),alert.version()));assertNotNull(claimed.ackAt());
         var escalated=tasks.transition(new TransitionTaskRequest(alert.id(),claimed.version(),"ESCALATE",null,null));
-        assertThrows(BizException.class,()->tasks.transition(new TransitionTaskRequest(alert.id(),escalated.version(),"COMPLETE","医生已处置","虚构处置凭证",null)));
-        var closed=tasks.transition(new TransitionTaskRequest(alert.id(),escalated.version(),"COMPLETE","医生已处置","虚构处置凭证","OUTPATIENT"));
+        assertThrows(BizException.class,()->tasks.transition(new TransitionTaskRequest(alert.id(),escalated.version(),"COMPLETE","运营代登记处置","虚构处置凭证","OUTPATIENT")));
+        actor(2L,"DOCTOR");
+        assertThrows(BizException.class,()->tasks.transition(new TransitionTaskRequest(alert.id(),escalated.version(),"COMPLETE","医生已处置",null,null)));
+        var closed=tasks.transition(new TransitionTaskRequest(alert.id(),escalated.version(),"COMPLETE","医生已处置",null,"OUTPATIENT"));
         assertEquals("COMPLETED",closed.status());assertEquals("OUTPATIENT",closed.disposition());
+        actor(1L,"MANAGER");
         var handed=tasks.reassign(new ReassignTaskRequest(tasksOf(1001L,"FOLLOWUP").getFirst().id(),tasksOf(1001L,"FOLLOWUP").getFirst().version(),20L,"人员调整"));
         assertEquals(20L,handed.assigneeId());
         actor(3L,"OPERATOR");assertThrows(BizException.class,()->tasks.reassign(new ReassignTaskRequest(handed.id(),handed.version(),3L,"抢回")));

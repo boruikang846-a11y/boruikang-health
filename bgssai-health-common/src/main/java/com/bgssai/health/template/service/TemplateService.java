@@ -38,7 +38,7 @@ public class TemplateService {
     }
     @Transactional
     public MessageLogResponse logMessage(LogMessageRequest req){
-        log.info("log sent message patientId={} channel={}",req.patientId(),req.channel());access.staff();Patient p=access.lock(req.patientId());
+        log.info("log sent message patientId={} channel={}",req.patientId(),req.channel());access.operations();Patient p=access.lock(req.patientId());
         MessageLogExample dup=new MessageLogExample();dup.eq("hospital_id",p.hospitalId).eq("request_key",req.requestKey());PageHelper.startPage(1,1,false);List<MessageLog> existing=logs.selectByExample(dup);
         if(!existing.isEmpty()){Checks.conflict(p.id.equals(existing.getFirst().patientId));return view(existing.getFirst());}
         if(req.taskId()!=null){CareTask t=tasks.selectByPrimaryKey(req.taskId());Checks.require(t!=null&&p.id.equals(t.patientId),"Task must belong to this patient / 任务与患者不符");}
@@ -50,7 +50,7 @@ public class TemplateService {
     }
     public Paged<MessageLogResponse> logs(MessageLogQueryRequest req){
         log.info("query message logs patientId={}",req.patientId());access.staff();MessageLogExample ex=new MessageLogExample();ex.eq("hospital_id",CurrentAccount.get().hospitalId());
-        if(req.patientId()!=null){access.require(req.patientId());ex.eq("patient_id",req.patientId());}else if("OPERATOR".equals(CurrentAccount.get().roleCode()))ex.eq("actor_id",CurrentAccount.get().userId());
+        if(req.patientId()!=null){access.require(req.patientId());ex.eq("patient_id",req.patientId());}else {access.operations();if(access.executor())ex.eq("actor_id",CurrentAccount.get().userId());}
         if(req.taskId()!=null)ex.eq("task_id",req.taskId());if(Checks.text(req.channel()))ex.eq("channel",req.channel());
         if(req.from()!=null)ex.ge("sent_at",req.from().atStartOfDay());if(req.to()!=null)ex.lt("sent_at",req.to().plusDays(1).atStartOfDay());
         ex.setOrderByClause("sent_at DESC,id DESC");PageHelper.startPage(Paged.number(req.page()),Paged.size(req.size()));

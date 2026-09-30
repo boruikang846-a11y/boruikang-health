@@ -37,7 +37,7 @@ public class ReportService {
         return new DashboardResponse(patientCount,patients.countByExample(managing),patients.countByExample(risk),tasks.countByExample(pending),tasks.countByExample(overdue),tasks.countByExample(review),tasks.countByExample(alert),tasks.countByExample(revisit),daily,LocalDateTime.now());
     }
     public WeeklyReportResponse weekly(WeeklyReportRequest req){
-        log.info("weekly report from={} to={}",req.fromDate(),req.toDate());access.staff();
+        log.info("weekly report from={} to={}",req.fromDate(),req.toDate());access.operations();
         Checks.require(!req.toDate().isBefore(req.fromDate())&&ChronoUnit.DAYS.between(req.fromDate(),req.toDate())<=92,"Choose up to 93 days / 请选择不超过93天的时间范围");
         CareTaskExample due=cohort(req.fromDate(),req.toDate(),"FOLLOWUP"),done=cohort(req.fromDate(),req.toDate(),"FOLLOWUP"),onTime=cohort(req.fromDate(),req.toDate(),"FOLLOWUP");
         done.eq("status","COMPLETED");onTime.eq("status","COMPLETED").leColumn("completed_at","due_at");
@@ -51,7 +51,7 @@ public class ReportService {
             long count=patients.countByExample(px);if(count>0)doctors.add(new DoctorMetric(doctor.id(),doctor.name(),count,tasks.countByExample(dx),tasks.countByExample(cx),tasks.countByExample(ax)));
         }
         List<NurseMetric> nurses=new ArrayList<>();
-        for(var nurse:patientService.staff())if(List.of("OPERATOR","MANAGER").contains(nurse.roleCode())) {
+        for(var nurse:patientService.staff())if(PatientAccess.OWNERS.contains(nurse.roleCode())) {
             CareTaskExample nd=cohort(req.fromDate(),req.toDate(),"FOLLOWUP");nd.eq("assignee_id",nurse.userId());
             CareTaskExample nc=cohort(req.fromDate(),req.toDate(),"FOLLOWUP");nc.eq("assignee_id",nurse.userId()).eq("status","COMPLETED");
             CareTaskExample no=cohort(req.fromDate(),req.toDate(),"FOLLOWUP");no.eq("assignee_id",nurse.userId()).eq("status","COMPLETED").leColumn("completed_at","due_at");
@@ -66,7 +66,7 @@ public class ReportService {
     private CareTaskExample contactPending(){CareTaskExample ex=active();ex.eq("task_type","FOLLOWUP").in("contact_result",List.of("NO_ANSWER","BUSY","WRONG_NUMBER","REFUSED","IDENTITY_UNVERIFIED"));return ex;}
     @Transactional
     public ArchivedReportResponse archive(ArchiveReportRequest req) {
-        access.staff();Checks.require(List.of("DAILY","WEEKLY").contains(req.reportType()),"Invalid archive type");
+        access.operations();Checks.require(List.of("DAILY","WEEKLY").contains(req.reportType()),"Invalid archive type");
         Checks.require(!req.toDate().isAfter(LocalDate.now()),"Only archive periods ending today or earlier");
         Checks.require("DAILY".equals(req.reportType())?req.fromDate().equals(req.toDate()):ChronoUnit.DAYS.between(req.fromDate(),req.toDate())<=6,"Daily archive covers one day; weekly review covers up to seven days");
         WeeklyReportResponse snapshot=weekly(new WeeklyReportRequest(req.fromDate(),req.toDate()));
@@ -78,13 +78,13 @@ public class ReportService {
         archives.insertSelective(row);audit.append(null,"REPORT_ARCHIVED",row.id,null,req.reportType(),"Immutable report snapshot");return archivedView(archives.selectByPrimaryKey(row.id));
     }
     public Paged<ArchivedReportResponse> archives(PageRequest req) {
-        access.staff();OperationsReportExample ex=new OperationsReportExample();ex.eq("hospital_id",CurrentAccount.get().hospitalId());
+        access.operations();OperationsReportExample ex=new OperationsReportExample();ex.eq("hospital_id",CurrentAccount.get().hospitalId());
         if(!"MANAGER".equals(CurrentAccount.get().roleCode()))ex.eq("owner_id",CurrentAccount.get().userId());
         PageHelper.startPage(Paged.number(req.page()),Paged.size(req.size()));List<OperationsReport> rows=archives.selectByExample(ex);return Paged.of(rows,this::archivedView);
     }
     @Transactional
     public ArchivedReportResponse deliver(DeliverReportRequest req) {
-        access.staff();OperationsReport row=archives.selectByPrimaryKey(req.id());Checks.found(row!=null&&row.hospitalId.equals(CurrentAccount.get().hospitalId()));
+        access.operations();OperationsReport row=archives.selectByPrimaryKey(req.id());Checks.found(row!=null&&row.hospitalId.equals(CurrentAccount.get().hospitalId()));
         Checks.found("MANAGER".equals(CurrentAccount.get().roleCode())||row.ownerId.equals(CurrentAccount.get().userId()));
         Checks.conflict(row.version.equals(req.version())&&row.deliveredAt==null);
         Checks.require(req.deliveredAt()!=null&&!req.deliveredAt().isAfter(LocalDateTime.now())&&!req.deliveredAt().isBefore(row.gmtCreate),"Enter actual delivery time after this archive was created");

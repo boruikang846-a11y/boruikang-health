@@ -4,7 +4,7 @@ import { Alert, Button, Card, DatePicker, Form, Input, Select, Space, Switch, Ta
 import { PlusOutlined, ReloadOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import { api, useLoad } from '../api'
-import { DataTable, dateText, FormDialog, LoadState, names, options, PageTitle, required, stamp, Status } from '../ui'
+import { DataTable, dateText, doctorOptions, FormDialog, LoadState, names, options, PageTitle, required, stamp, Status } from '../ui'
 
 export function ReferralDialog({ open, patientId, onClose, onSaved }) {
   const key = useRef('')
@@ -28,7 +28,7 @@ export function ReferralAction({ row, onClose, onSaved }) {
   const clinicians = useLoad(() => action === 'FEEDBACK' ? api('/clinicians') : Promise.resolve([]), [action])
   return <FormDialog title={label} open={Boolean(row)} initialValues={{ at: dayjs() }} onClose={onClose} onSubmit={async values => { await api('/referrals/transition', { id: row.id, version: row.version, action, ...values, at: stamp(values.at) }); onSaved() }}>
     <Form.Item name="at" label="实际时间" rules={required}><DatePicker showTime style={{ width: '100%' }} /></Form.Item>
-    {action === 'FEEDBACK' && <><div className="form-grid"><Form.Item name="feedback_department" label="接诊科室"><Input maxLength={80} /></Form.Item><LoadState state={clinicians}>{data => <Form.Item name="feedback_clinician_id" label="接诊医生"><Select allowClear options={data.map(x => ({ value: x.id, label: x.name + ' / ' + x.department }))} /></Form.Item>}</LoadState></div>
+    {action === 'FEEDBACK' && <><div className="form-grid"><Form.Item name="feedback_department" label="接诊科室"><Input maxLength={80} /></Form.Item><LoadState state={clinicians}>{data => <Form.Item name="feedback_clinician_id" label="接诊医生"><Select allowClear options={doctorOptions(data)} /></Form.Item>}</LoadState></div>
       <Form.Item name="feedback_diagnosis" label="诊断" rules={required}><Input maxLength={400} /></Form.Item><Form.Item name="feedback_disposition" label="处置" rules={required}><Input.TextArea rows={2} maxLength={1000} /></Form.Item></>}
     {action === 'REJECT' && <Form.Item name="reason" label="退回原因" rules={required}><Input.TextArea rows={2} maxLength={1000} /></Form.Item>}
     {action === 'CLOSE' && <Form.Item name="reason" label="关闭说明（填 TRANSFERRED 表示患者已整体转出）"><Input maxLength={1000} /></Form.Item>}

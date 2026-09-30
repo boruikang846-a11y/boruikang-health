@@ -23,12 +23,14 @@ def insert(table, **fields):
     fields.setdefault('gmt_create', ago(45))
     rows.append(f"INSERT INTO {table} ({','.join(fields)}) VALUES ({','.join(value(v) for v in fields.values())}) ON DUPLICATE KEY UPDATE id=id;")
 
-for id, username, role, name in [
-    (20, 'operator_b', 'OPERATOR', '演示运营专员乙'), (21, 'operator_c', 'OPERATOR', '演示运营专员丙'),
-    (22, 'operator_d', 'OPERATOR', '演示服务协调员')]:
-    insert('health_account', id=id, username=username, password='HealthDemo@2026!', real_name=name, role_code=role, is_enabled=1)
-for id, name, department in [(10,'演示院方内科医生','内科'),(11,'演示院方综合科医生','综合科')]:
-    insert('hospital_clinician', id=id, name=name, department=department, is_active=1)
+# Operators are our team; doctors and nurses are hospital staff who log in (1.6). Ids 2/5 (doctors) and 6 (nurse) live in the head section.
+for id, username, role, name, department in [
+    (20, 'operator_b', 'OPERATOR', '演示运营专员乙', None), (21, 'operator_c', 'OPERATOR', '演示运营专员丙', None),
+    (22, 'operator_d', 'OPERATOR', '演示服务协调员', None),
+    (10, 'doctor_c', 'DOCTOR', '演示内科医生', '内科'), (11, 'doctor_d', 'DOCTOR', '演示综合科医生', '综合科'),
+    (23, 'nurse_b', 'NURSE', '演示护士乙', '内分泌科')]:
+    insert('health_account', id=id, username=username, password='HealthDemo@2026!', real_name=name, role_code=role, department=department, is_enabled=1)
+roles = {3: 'OPERATOR', 20: 'OPERATOR', 21: 'OPERATOR', 22: 'OPERATOR', 6: 'NURSE', 23: 'NURSE'}
 departments = ['心血管内科','内分泌科','呼吸内科','神经内科','肾内科','消化内科','康复医学科','老年医学科','骨科','普通外科','全科','健康管理中心']
 sources = ['PRIMARY_CARE','EXAM','OUTPATIENT','DISCHARGE','CAMPAIGN']
 for i, dept in enumerate(departments):
@@ -37,9 +39,7 @@ for i, dept in enumerate(departments):
     insert('knowledge_entry', id=100+i, kind='EDUCATION', department=dept, title=f'{dept}复诊资料准备（演示）',
            content='请按医院要求准备原报告和当前问题清单。请向服务团队核实时间、地点和所需资料。本条不提供诊断、处方或用药调整。',
            source='虚构演示宣教；不代表该科室知识覆盖或医院临床批准', version=1, status='PUBLISHED' if i%2==0 else 'DRAFT',
-           reviewer_id=[2,5,10,11][i%4] if i%2==0 else None, reviewed_at=ago(30) if i%2==0 else None,
-           review_channel='SIGNED_DOCUMENT' if i%2==0 else None,
-           review_evidence='虚构院方审核凭证 EDU-DEMO；仅用于演示。' if i%2==0 else None)
+           reviewer_id=[2,5,10,11][i%4] if i%2==0 else None, reviewed_at=ago(30) if i%2==0 else None)
 
 states = ['PENDING','IN_PROGRESS','PENDING_REVIEW','APPROVED','CONTACTED','COMPLETED','REJECTED','CANCELLED']
 revisits = ['PENDING','BOOKED','ARRIVED','COMPLETED','NO_SHOW','CANCELLED']
@@ -47,7 +47,7 @@ failed = ['NO_ANSWER','BUSY','WRONG_NUMBER','REFUSED','IDENTITY_UNVERIFIED']
 for i in range(72):
     patient = 10001+i
     doctor = [2,5,10,11][i%4]
-    owner = [3,20,21,22][(i//4)%4]
+    owner = [3,20,21,22,6,23][(i//4)%6]
     dept = departments[i%12]
     lifecycle = 'PAUSED' if i%17==0 else 'CLOSED' if i%19==0 else 'ENROLLED' if i%7==0 else 'MANAGING'
     insert('patient', id=patient, source_system='HOSPITAL_MOCK', hospital_patient_id=f'DEMO-FULL-{i+1:03d}',
@@ -56,21 +56,25 @@ for i in range(72):
            lifecycle=lifecycle, doctor_id=doctor, owner_id=owner, channel_id=100+i%12, service_package_id=3 if i%3 else None,
            consent_at=ago(40), note='完全虚构的功能演示。风险由演示数据预设，不是系统诊断；联系电话不可用于真实联系。')
     record = 20000+i*3
+    statuses = [('CANCELLED' if node>0 else 'COMPLETED') if lifecycle in ['PAUSED','CLOSED'] else states[(i+node)%8] for node in range(3)]
+    seen = i%2==0 or any(s in ['APPROVED','CONTACTED','COMPLETED'] for s in statuses)
     days = 4+i%28
     insert('care_record', id=record, patient_id=patient, record_type='DISCHARGE', occurred_at=ago(days),
            content=f'【虚构出院小结 {i+1:03d}】服务团队需核对原报告、患者当前反馈和复诊安排。原医嘱中的具体用法须向责任医生确认。本示例无真实处方、临床阈值或诊断结论。',
            medication_cycle_days=None if i%4==0 else [7,14,30][i%3],
-           next_visit_date=Sql(f"CURRENT_DATE + INTERVAL '{i%9-3}' DAY"), source_system='HOSPITAL_MOCK', external_id=f'DEMO-FULL-DC-{i+1:03d}')
+           next_visit_date=Sql(f"CURRENT_DATE + INTERVAL '{i%9-3}' DAY"), source_system='HOSPITAL_MOCK', external_id=f'DEMO-FULL-DC-{i+1:03d}',
+           doctor_viewed_at=ago(days-1) if seen else None, doctor_viewer_id=doctor if seen else None,
+           doctor_opinion='演示意见：已阅原报告，随访请重点核对复诊安排与执行原医嘱时的困难。' if i%4==0 else None)
     insert('care_record', id=record+1, patient_id=patient, record_type='OUTPATIENT' if i%2 else 'EXAM', occurred_at=ago(days+2),
-           content='【虚构记录】用于检查病程时间线与关联原报告。请勿据此作医疗决策。', source_system='HOSPITAL_MOCK', external_id=f'DEMO-FULL-OP-{i+1:03d}')
+           content='【虚构记录】用于检查病程时间线与关联原报告。请勿据此作医疗决策。', source_system='HOSPITAL_MOCK', external_id=f'DEMO-FULL-OP-{i+1:03d}',
+           doctor_viewed_at=ago(days) if i%3 else None, doctor_viewer_id=doctor if i%3 else None)
     if i%3==0:
         insert('care_record', id=record+2, patient_id=patient, record_type='OBSERVATION', occurred_at=ago(1),
                content='虚构人工录入体征，系统不据此自动判断风险。', systolic=120+i%14, diastolic=70+i%10, heart_rate=65+i%15,
                weight=60+i%20, source_system='DEMO')
     for node, offset in enumerate([3,7,30]):
         task=30000+i*10+node
-        status=states[(i+node)%8]
-        if lifecycle in ['PAUSED','CLOSED']: status='CANCELLED' if node>0 else 'COMPLETED'
+        status=statuses[node]
         reviewed=status in ['APPROVED','CONTACTED','COMPLETED']
         connected=status in ['CONTACTED','COMPLETED']
         retry=status in ['PENDING','IN_PROGRESS','APPROVED'] and i%3==0
@@ -81,14 +85,10 @@ for i in range(72):
                due_at=ago(days-offset), record_id=record, followup_stage=f'D{offset}',
                draft_text=None if status=='PENDING' else text, draft_origin=None if status=='PENDING' else 'MANUAL',
                approved_text=text if reviewed else None, reviewer_id=doctor if reviewed else None, reviewed_at=ago(2,3) if reviewed else None,
-               review_channel='HOSPITAL_SYSTEM' if reviewed else None,
-               review_evidence=f'虚构院方审核记录 REVIEW-DEMO-{i+1:03d}-{node}；运营人员登记。' if reviewed else None,
                review_note='演示审核：已核对关联报告。' if reviewed else '演示退回：请补充患者需要核实的问题。' if status=='REJECTED' else None,
                contact_result=result, identity_verified=1 if connected else 0, next_contact_at=future(1) if retry else None,
                handover_status=('ACKNOWLEDGED' if i%2 else 'PENDING') if status=='COMPLETED' else None,
                doctor_feedback='演示接收：已查看随访记录，请团队按记录安排继续跟进。' if status=='COMPLETED' and i%2 else None,
-               handover_channel='HOSPITAL_SYSTEM' if status=='COMPLETED' and i%2 else None,
-               handover_evidence=f'虚构院方查收记录 HANDOVER-DEMO-{i+1:03d}-{node}。' if status=='COMPLETED' and i%2 else None,
                acknowledged_at=ago(0,1) if status=='COMPLETED' and i%2 else None,
                completed_at=ago(1) if status=='COMPLETED' else None,
                outcome='演示完成：反馈已记录，需要医生处理的问题已交接。' if status=='COMPLETED' else '演示暂停或取消，保留历史记录。' if status=='CANCELLED' else None,
@@ -103,7 +103,7 @@ for i in range(72):
                    patient_questions='演示问题：希望确认复诊需携带的资料。' if connected else None,
                    evidence='虚构电话演示凭证，无真实外呼。', request_key=f'demo-full-contact-{task}')
         if connected:
-            insert('care_message', id=task, patient_id=patient, task_id=task, sender_id=owner, sender_role='OPERATOR',
+            insert('care_message', id=task, patient_id=patient, task_id=task, sender_id=owner, sender_role=roles[owner],
                    direction='STAFF_TO_PATIENT', content=text, gmt_create=ago(1,1))
     revisit=30000+i*10+3
     state=revisits[i%6]

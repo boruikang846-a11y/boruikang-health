@@ -6,7 +6,7 @@ import dayjs from 'dayjs'
 import ReportArchives from './ReportArchives'
 import { Campaigns, Orgs, Sla, Templates } from './Configuration'
 import { api, useLoad } from '../api'
-import { DataTable, dateText, FormDialog, LoadState, names, options, PageTitle, required, Status } from '../ui'
+import { DataTable, dateText, doctorOptions, FormDialog, LoadState, names, options, ownerOptions, PageTitle, required, Status } from '../ui'
 import { Tabs } from 'antd'
 
 export function Knowledge() {
@@ -17,13 +17,14 @@ export function Knowledge() {
   const [keyword, setKeyword] = useState('')
   const [editor, setEditor] = useState(null)
   const [detail, setDetail] = useState(null)
-  const [publish, setPublish] = useState(null)
   const state = useLoad(() => api('/knowledge/query', { page, size: 10, kind, keyword }), [page, kind, keyword])
   const clinicians = useLoad(() => api('/clinicians'))
   const canEdit = account.role_code === 'MANAGER'
-  const isManager = account.role_code === 'MANAGER'
+  const isDoctor = account.role_code === 'DOCTOR'
+  const publish = row => modal.confirm({ title: '审核发布「' + row.title + '」？', width: 560, content: <><p className="pre-wrap">{row.content}</p><p className="muted">来源：{row.source}</p><p>发布后团队可以在起草随访意见时引用。发布人记为您本人。</p></>, okText: '审核发布', cancelText: '取消',
+    onOk: async () => { try { await api('/knowledge/publish', { id: row.id, version: row.version }); state.reload(); message.success('已发布') } catch (e) { message.error(e.message); throw e } } })
   const editableKinds = ['EDUCATION', 'PACKAGE']
-  return <><PageTitle title="宣教与服务内容" subtitle="运营团队整理内容；取得院方医生审核回执后登记凭证并发布。" extra={canEdit && <Button type="primary" icon={<PlusOutlined />} onClick={() => setEditor({ kind: 'EDUCATION', department: '综合服务' })}>新建内容</Button>} />
+  return <><PageTitle title={isDoctor ? '宣教审核' : '宣教与服务内容'} subtitle={isDoctor ? '运营团队整理的宣教与服务说明，经您审核后发布，团队才能在随访中引用。' : '运营团队整理内容，保存草稿后由医生在系统里审核发布。'} extra={canEdit && <Button type="primary" icon={<PlusOutlined />} onClick={() => setEditor({ kind: 'EDUCATION', department: '综合服务' })}>新建内容</Button>} />
     <Card><div className="toolbar"><Select aria-label="知识类型" placeholder="全部类型" allowClear style={{ width: 160 }} options={options(['EDUCATION', 'PACKAGE'])} onChange={value => { setKind(value); setPage(0) }} />
       <Input.Search placeholder="搜索标题" allowClear style={{ width: 280 }} onSearch={value => { setKeyword(value); setPage(0) }} /><Button onClick={state.reload} icon={<ReloadOutlined />}>刷新</Button></div>
       <DataTable state={state} page={page} setPage={setPage} columns={[
@@ -31,25 +32,20 @@ export function Knowledge() {
         { title: '类型', dataIndex: 'kind', render: value => names[value] }, { title: '科室', dataIndex: 'department' },
         { title: '版本', dataIndex: 'version', render: value => 'v' + value }, { title: '状态', dataIndex: 'status', render: value => <Status value={value} /> },
         { title: '操作', render: (_, row) => <Space>{canEdit && <Button type="link" onClick={() => setEditor(row)}>编辑</Button>}
-          {isManager && row.status === 'DRAFT' && <Button type="link" onClick={() => setPublish(row)}>登记院方审核</Button>}</Space> },
+          {isDoctor && row.status === 'DRAFT' && <Button type="link" onClick={() => publish(row)}>审核发布</Button>}
+          {row.status === 'PUBLISHED' && row.reviewer_id && <span className="muted">{clinicians.data?.find(x => x.id === row.reviewer_id)?.name || ''} 审核</span>}</Space> },
       ]} /></Card>
-    <Modal title={detail?.title} open={Boolean(detail)} footer={<Button onClick={() => setDetail(null)}>关闭</Button>} onCancel={() => setDetail(null)}><Tag>{names[detail?.kind]}</Tag><Tag>v{detail?.version}</Tag><p className="pre-wrap">{detail?.content}</p><p className="muted">来源：{detail?.source}</p>{detail?.review_evidence && <p>院方审核凭证：{detail.review_evidence}</p>}{detail?.kind === 'PACKAGE' && <p>服务周期 {detail.service_days} 天 / 随访 {detail.followup_count} 次</p>}</Modal>
-    <FormDialog title="登记院方内容审核" open={Boolean(publish)} initialValues={{ review_channel: 'SIGNED_DOCUMENT', reviewed_at: dayjs() }} onClose={() => setPublish(null)} onSubmit={async values => { await api('/knowledge/publish', { id: publish.id, version: publish.version, ...values, reviewed_at: values.reviewed_at.format('YYYY-MM-DDTHH:mm:ss') }); state.reload() }}>
-      <p>请先将“{publish?.title}”交院方医生核对。运营人员只能记录实际取得的审核结果，本操作不会自动发送文件。</p>
-      <LoadState state={clinicians}>{data => <Form.Item name="reviewer_id" label="院方审核医生" rules={required}><Select options={data.map(x => ({ value: x.id, label: x.name + ' / ' + x.department }))} /></Form.Item>}</LoadState>
-      <div className="form-grid"><Form.Item name="review_channel" label="审核渠道" rules={required}><Select options={[['PHONE','电话'],['IN_PERSON','当面'],['HOSPITAL_SYSTEM','医院系统'],['SIGNED_DOCUMENT','签字文件'],['MANUAL_OTHER','其他已核实方式']].map(([value,label]) => ({value,label}))} /></Form.Item><Form.Item name="reviewed_at" label="实际审核时间" rules={required}><DatePicker showTime style={{ width: '100%' }} /></Form.Item></div>
-      <Form.Item name="review_evidence" label="审核凭证 / 记录编号" rules={required}><Input.TextArea maxLength={1000} rows={3} /></Form.Item>
-    </FormDialog>
+    <Modal title={detail?.title} open={Boolean(detail)} footer={<Button onClick={() => setDetail(null)}>关闭</Button>} onCancel={() => setDetail(null)}><Tag>{names[detail?.kind]}</Tag><Tag>v{detail?.version}</Tag><p className="pre-wrap">{detail?.content}</p><p className="muted">来源：{detail?.source}</p>{detail?.reviewed_at && <p>审核发布：{clinicians.data?.find(x => x.id === detail.reviewer_id)?.name || ''} {dateText(detail.reviewed_at)}</p>}{detail?.kind === 'PACKAGE' && <p>服务周期 {detail.service_days} 天 / 随访 {detail.followup_count} 次</p>}</Modal>
     <FormDialog title={editor?.id ? '编辑并保存为草稿' : '新建知识内容'} open={Boolean(editor)} initialValues={editor} onClose={() => setEditor(null)} onSubmit={async values => {
       await api('/knowledge/save', { ...values, id: editor.id, version: editor.version }); state.reload()
     }}>
       <Form.Item name="title" label="标题" rules={required}><Input maxLength={160} /></Form.Item><div className="form-grid">
         <Form.Item name="kind" label="类型" rules={required}><Select disabled={Boolean(editor?.id)} options={options(editableKinds)} /></Form.Item><Form.Item name="department" label="适用科室" rules={required}><Input maxLength={80} /></Form.Item></div>
       <Form.Item name="content" label="内容" rules={required}><Input.TextArea rows={8} maxLength={5000} showCount /></Form.Item>
-      <Form.Item name="source" label="来源 / 审批依据" rules={required}><Input maxLength={300} placeholder="记录资料名称或医院审核依据" /></Form.Item>
+      <Form.Item name="source" label="来源" rules={required}><Input maxLength={300} placeholder="记录资料名称或出处" /></Form.Item>
       <Form.Item noStyle shouldUpdate={(a, c) => a.kind !== c.kind}>{({ getFieldValue }) => getFieldValue('kind') === 'PACKAGE' && <div className="form-grid">
         <Form.Item name="service_days" label="服务周期（天）" rules={required}><InputNumber min={1} max={730} /></Form.Item><Form.Item name="followup_count" label="约定随访次数" rules={required}><InputNumber min={1} max={365} /></Form.Item></div>}</Form.Item>
-      <Alert type="info" message="先保存草稿，再取得院方审核回执并登记凭证。资料是随访问询的可选参考，历史任务保留正文快照。" />
+      <Alert type="info" message="保存后为草稿，医生在系统里审核发布后才能被随访引用；再次编辑会回到草稿。历史任务保留正文快照。" />
     </FormDialog>
   </>
 }
@@ -81,8 +77,8 @@ export function Channels() {
       <Form.Item name="title" label="渠道名称" rules={required}><Input maxLength={120} /></Form.Item><div className="form-grid">
         <Form.Item name="source" label="患者来源" rules={required}><Select options={options(['PRIMARY_CARE', 'EXAM', 'OUTPATIENT', 'DISCHARGE', 'CAMPAIGN'])} /></Form.Item>
         <Form.Item name="department" label="科室" rules={required}><Input maxLength={80} /></Form.Item></div>
-      <LoadState state={staff}>{data => <div className="form-grid"><Form.Item name="doctor_id" label="院方责任医生（无需登录）" rules={required}><Select options={(clinicians.data || []).map(x => ({ value: x.id, label: x.name + ' / ' + x.department }))} /></Form.Item>
-        <Form.Item name="owner_id" label="我方运营负责人" rules={required}><Select options={data.filter(x => ['OPERATOR', 'MANAGER'].includes(x.role_code)).map(x => ({ value: x.user_id, label: x.real_name }))} /></Form.Item></div>}</LoadState>
+      <LoadState state={staff}>{data => <div className="form-grid"><Form.Item name="doctor_id" label="责任医生" rules={required}><Select options={doctorOptions(clinicians.data)} /></Form.Item>
+        <Form.Item name="owner_id" label="负责人（运营人员或护士）" rules={required}><Select options={ownerOptions(data)} /></Form.Item></div>}</LoadState>
     </FormDialog>
   </>
 }
@@ -117,7 +113,7 @@ export function Reports() {
   const [range, setRange] = useState([dayjs().subtract(6, 'day'), dayjs()])
   const [query, setQuery] = useState({ from_date: range[0].format('YYYY-MM-DD'), to_date: range[1].format('YYYY-MM-DD') })
   const state = useLoad(() => api('/reports/weekly', query), [JSON.stringify(query)])
-  return <><PageTitle title="随访统计与运营复盘" subtitle="十项运营指标、漏斗、按人绩效与日统计都从台账计算；周报交付给院方。" extra={<Button icon={<PrinterOutlined />} disabled={!state.data} onClick={() => window.print()}>打印周报</Button>} />
+  return <><PageTitle title="随访统计与运营复盘" subtitle="十项运营指标、漏斗、按人绩效与日统计都从台账计算；周报可打印交付院方。" extra={<Button icon={<PrinterOutlined />} disabled={!state.data} onClick={() => window.print()}>打印周报</Button>} />
     <Card className="mb no-print"><div className="toolbar"><DatePicker.RangePicker value={range} onChange={setRange} allowClear={false} /><Button type="primary" disabled={!range?.[0] || !range?.[1]} onClick={() => setQuery({ from_date: range[0].format('YYYY-MM-DD'), to_date: range[1].format('YYYY-MM-DD') })}>生成报表</Button><span className="muted">周报最长 93 天，指标最长一年，以北京时间统计</span></div></Card>
     <Card className="mb"><Tabs items={[{ key: 'metrics', label: '十项指标', children: <Metrics query={query} /> }, { key: 'funnel', label: '漏斗与活动', children: <Funnel query={query} /> }, { key: 'operators', label: '按人绩效', children: <Operators query={query} /> }, { key: 'daily', label: '日统计', children: <Daily /> }]} /></Card>
     <LoadState state={state}>{data => <section className="print-report"><h2>{data.from_date} 至 {data.to_date}</h2><div className="stats-grid">
@@ -125,14 +121,14 @@ export function Reports() {
         ['按时完成率', percentage(data.on_time_rate), data.on_time_count + ' / ' + data.due_count + ' 项'],
         ['异常闭环率', percentage(data.alert_close_rate), data.closed_alert_count + ' / ' + data.alert_count + ' 项'],
         ['复诊到院率', percentage(data.arrival_rate), data.arrived_count + ' / ' + data.revisit_count + ' 项']].map(([title, value, description]) => <Card key={title}><Statistic title={title} value={value} /><p className="muted">{description}</p></Card>)}
-    </div><Card className="mt" title="我方运营执行情况"><Table rowKey="owner_id" pagination={false} dataSource={data.nurses || []} scroll={{ x: 900 }} columns={[
+    </div><Card className="mt" title="运营人员与护士执行情况"><Table rowKey="owner_id" pagination={false} dataSource={data.nurses || []} scroll={{ x: 900 }} columns={[
       { title: '执行人', dataIndex: 'owner_name' }, { title: '应随访', dataIndex: 'due_count' }, { title: '已完成', dataIndex: 'completed_count' },
       { title: '随访完成率', dataIndex: 'completion_rate', render: percentage }, { title: '按时完成率', dataIndex: 'on_time_rate', render: percentage },
       { title: '当前逾期', dataIndex: 'overdue_count' }, { title: '待再次联系', dataIndex: 'contact_pending_count' },
       { title: '操作', render: (_,n) => <Link to={'/followups?assignee=' + n.owner_id + '&due_from=' + data.from_date + '&due_to=' + data.to_date}>查看任务</Link> },
     ]} /><p className="muted">完成率按所选截止日期区间计算；逾期和待再次联系显示当前待办。拨号失败不会增加完成数量。</p></Card>
-    <Card className="mt no-print" title="接下来要处理"><Space wrap><Link to="/followups?contact=1">待再次联系 {data.contact_pending_count || 0} 项</Link><Link to="/followups?handover=1">查看待院方确认的随访记录</Link><Link to={'/revisits?pending=1&due_from=' + dayjs().subtract(1,'day').format('YYYY-MM-DD') + '&due_to=' + dayjs().subtract(1,'day').format('YYYY-MM-DD')}>昨日复诊待核实 {data.yesterday_revisit_pending_count || 0} 项</Link></Space></Card>
-    <Card className="mt" title="院方医生关联患者概览"><Table rowKey="doctor_id" pagination={false} dataSource={data.doctors} scroll={{ x: 600 }} columns={[
+    <Card className="mt no-print" title="接下来要处理"><Space wrap><Link to="/followups?contact=1">待再次联系 {data.contact_pending_count || 0} 项</Link><Link to="/followups?handover=1">查看待医生查收的随访记录</Link><Link to={'/revisits?pending=1&due_from=' + dayjs().subtract(1,'day').format('YYYY-MM-DD') + '&due_to=' + dayjs().subtract(1,'day').format('YYYY-MM-DD')}>昨日复诊待核实 {data.yesterday_revisit_pending_count || 0} 项</Link></Space></Card>
+    <Card className="mt" title="责任医生患者概览"><Table rowKey="doctor_id" pagination={false} dataSource={data.doctors} scroll={{ x: 600 }} columns={[
       { title: '医生', dataIndex: 'doctor_name' }, { title: '在册患者', dataIndex: 'patient_count' }, { title: '应随访', dataIndex: 'due_count' }, { title: '已完成', dataIndex: 'completed_count' }, { title: '当前待处理异常', dataIndex: 'open_alert_count' },
     ]} /></Card><Card className="mt" title="报表口径"><p>应随访为区间内到期且未取消的随访任务，完成率与按时完成率使用同一任务集合。到院需有核验证据，无分母显示 --。</p><p>生成时间：{dateText(data.as_of)} / 外部投递：未发送</p><p className="muted">当前可见患者 {data.patient_count} 人。周报仅在系统内生成，未接通邮件或企业微信自动投递。</p></Card></section>}</LoadState>
     <ReportArchives query={query} />

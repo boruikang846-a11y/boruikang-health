@@ -31,10 +31,7 @@ public class AppointmentService {
         log.info("query appointments status={} from={}",req.status(),req.from());access.staff();var actor=CurrentAccount.get();
         AppointmentExample ex=new AppointmentExample();ex.eq("hospital_id",actor.hospitalId());
         if(req.patientId()!=null){access.require(req.patientId());ex.eq("patient_id",req.patientId());}
-        else if("OPERATOR".equals(actor.roleCode())){
-            PatientExample scope=access.scope();scope.selectColumns("id");PageHelper.startPage(1,2000,false);
-            ex.in("patient_id",patients.selectByExample(scope).stream().map(p->p.id).toList());
-        }
+        else {access.operations();if(access.executor())ex.in("patient_id",access.scopedPatientIds(2000));}
         if(Checks.text(req.status()))ex.eq("status",req.status());
         if(Boolean.TRUE.equals(req.open()))ex.in("status",OPEN);
         if(Checks.text(req.appointmentType()))ex.eq("appointment_type",req.appointmentType());
@@ -50,7 +47,7 @@ public class AppointmentService {
     }
     @Transactional
     public AppointmentResponse create(CreateAppointmentRequest req){
-        log.info("create appointment patientId={} type={}",req.patientId(),req.appointmentType());access.staff();Patient p=access.lock(req.patientId());
+        log.info("create appointment patientId={} type={}",req.patientId(),req.appointmentType());access.operations();Patient p=access.lock(req.patientId());
         Appointment existing=byKey(p.hospitalId,req.requestKey());if(existing!=null){Checks.conflict(p.id.equals(existing.patientId));return view(existing,p);}
         Checks.require(!List.of("CLOSED","TRANSFERRED","PAUSED").contains(p.lifecycle),"Patient is not under active management / 患者已暂停、转出或结案");
         Checks.require(req.appointmentAt().isAfter(LocalDateTime.now().minusDays(1))&&req.appointmentAt().isBefore(LocalDateTime.now().plusYears(1)),"Appointment time must be within the coming year / 预约时间需在未来一年内");
@@ -76,7 +73,7 @@ public class AppointmentService {
     }
     @Transactional
     public AppointmentResponse transition(TransitionAppointmentRequest req){
-        log.info("transition appointment id={} action={}",req.id(),req.action());access.staff();Appointment a=appointments.selectByPrimaryKey(req.id());
+        log.info("transition appointment id={} action={}",req.id(),req.action());access.operations();Appointment a=appointments.selectByPrimaryKey(req.id());
         Checks.found(a!=null&&CurrentAccount.get().hospitalId().equals(a.hospitalId));Patient p=access.lock(a.patientId);Checks.conflict(req.version().equals(a.version));
         LocalDateTime at=req.at()==null?LocalDateTime.now():req.at();CareTask task=a.taskId==null?null:tasks.selectByPrimaryKey(a.taskId);CareTask taskPatch=new CareTask();
         Appointment patch=new Appointment();String taskAction=null;

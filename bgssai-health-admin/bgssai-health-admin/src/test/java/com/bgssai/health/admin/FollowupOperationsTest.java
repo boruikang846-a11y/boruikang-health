@@ -36,7 +36,8 @@ class FollowupOperationsTest {
         row=tasks.claim(new ClaimTaskRequest(row.id(),row.version()));
         row=tasks.draft(new DraftTaskRequest(row.id(),row.version(),null,"TEMPLATE",null));
         row=tasks.submit(new SubmitReviewRequest(row.id(),row.version()));
-        return tasks.review(new ReviewTaskRequest(row.id(),row.version(),true,"仅核对原报告与问题，不调整用药。","已核对","HOSPITAL_SYSTEM","虚构院方审核回执 TEST-REVIEW",LocalDateTime.now()));
+        var submitted=row;actor(2L,"DOCTOR");
+        try { return tasks.review(new ReviewTaskRequest(submitted.id(),submitted.version(),true,"仅核对原报告与问题，不调整用药。","已核对")); } finally { actor(1L,"MANAGER"); }
     }
     private RecordContactRequest contact(TaskResponse row,boolean identity,boolean report){return new RecordContactRequest(row.id(),row.version(),"虚构电话记录 TEST-CONNECTED",LocalDateTime.now().minusSeconds(1),"PHONE",identity,"PATIENT",report,"无新增困难，按原医嘱执行","暂无问题");}
     private WeeklyReportResponse today(){return reports.weekly(new WeeklyReportRequest(LocalDate.now(),LocalDate.now()));}
@@ -66,10 +67,11 @@ class FollowupOperationsTest {
         actor(3L,"OPERATOR");var connected=tasks.contact(contact(approved,true,true));
         var done=tasks.transition(new TransitionTaskRequest(connected.id(),connected.version(),"COMPLETE","已记录反馈并交接",null));
         assertEquals("PENDING",done.handoverStatus());assertNull(done.nextContactAt());
-        assertThrows(BizException.class,()->tasks.acknowledge(new AcknowledgeTaskRequest(done.id(),done.version(),"尚无凭证","PHONE","",LocalDateTime.now())));
-        actor(20L,"OPERATOR");assertThrows(BizException.class,()->tasks.acknowledge(new AcknowledgeTaskRequest(done.id(),done.version(),"其他组不能登记","PHONE","虚构回执",LocalDateTime.now())));
-        actor(3L,"OPERATOR");assertEquals("ACKNOWLEDGED",tasks.acknowledge(new AcknowledgeTaskRequest(done.id(),done.version(),"院方已查收，按原计划跟进","HOSPITAL_SYSTEM","虚构院方回执 TEST-HANDOVER",LocalDateTime.now())).handoverStatus());
-        assertThrows(BizException.class,()->tasks.acknowledge(new AcknowledgeTaskRequest(done.id(),done.version(),"重复","PHONE","虚构回执",LocalDateTime.now())));
+        assertEquals("4003",assertThrows(BizException.class,()->tasks.acknowledge(new AcknowledgeTaskRequest(done.id(),done.version(),"运营不能代医生查收"))).getCode());
+        actor(5L,"DOCTOR");assertEquals("404000",assertThrows(BizException.class,()->tasks.acknowledge(new AcknowledgeTaskRequest(done.id(),done.version(),"非责任医生"))).getCode());
+        actor(2L,"DOCTOR");var received=tasks.acknowledge(new AcknowledgeTaskRequest(done.id(),done.version(),"已查收，按原计划跟进"));
+        assertEquals("ACKNOWLEDGED",received.handoverStatus());assertNotNull(received.acknowledgedAt());assertEquals("已查收，按原计划跟进",received.doctorFeedback());
+        assertThrows(BizException.class,()->tasks.acknowledge(new AcknowledgeTaskRequest(done.id(),done.version(),"重复")));
     }
     @Test void explicitNodeSchedulingIsIdempotentAndCannotReuseAnotherPatientsRecord(){
         var record=records.create(new CreateRecordRequest(1001L,"DISCHARGE",LocalDateTime.now().minusDays(2),"Fictional report",null,null));

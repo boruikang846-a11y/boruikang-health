@@ -10,6 +10,9 @@ import com.bgssai.health.model.*;
 import com.bgssai.health.patient.dto.*;
 import com.bgssai.health.patient.service.PatientService;
 import com.bgssai.health.record.dto.CreateRecordRequest;
+import com.bgssai.health.record.dto.ReportQueryRequest;
+import com.bgssai.health.record.dto.ReviewRecordRequest;
+import com.bgssai.health.record.dto.RecordQueryRequest;
 import com.bgssai.health.record.service.RecordService;
 import com.bgssai.health.report.dto.WeeklyReportRequest;
 import com.bgssai.health.report.service.ReportService;
@@ -40,6 +43,7 @@ class HealthWorkflowTest {
     @Autowired CareTaskMapper taskMapper;
     @Autowired CareMessageMapper messageMapper;
     @Autowired AuditEventMapper auditMapper;
+    @Autowired CareRecordMapper recordMapper;
 
     @BeforeEach void setup() { actor(1L,"MANAGER"); }
     @AfterEach void cleanup() { CurrentAccount.clear(); }
@@ -59,13 +63,18 @@ class HealthWorkflowTest {
     }
     private TaskResponse approved() {
         TaskResponse row=awaitingReview();
-        return tasks.review(review(row,true,"请核对原医嘱并记录需要医生解答的问题。","已核对"));
+        return asDoctor(()->tasks.review(review(row,true,"请核对原医嘱并记录需要医生解答的问题。","已核对")));
+    }
+    /** Patient 1001's responsible doctor is the seeded doctor account 2; the caller is restored to the manager afterwards. */
+    private <T> T asDoctor(java.util.function.Supplier<T> action) {
+        actor(2L,"DOCTOR");
+        try { return action.get(); } finally { actor(1L,"MANAGER"); }
     }
     private ReviewTaskRequest review(TaskResponse row,boolean approved,String text,String note) {
-        return new ReviewTaskRequest(row.id(),row.version(),approved,text,note,"HOSPITAL_SYSTEM","虚构院方审核回执 TEST-REVIEW",LocalDateTime.now());
+        return new ReviewTaskRequest(row.id(),row.version(),approved,text,note);
     }
-    private PublishKnowledgeRequest publish(Long id,Integer version) {
-        return new PublishKnowledgeRequest(id,version,2L,"SIGNED_DOCUMENT","虚构院方内容审核凭证 TEST-KNOWLEDGE",LocalDateTime.now());
+    private KnowledgeResponse publish(Long id,Integer version) {
+        return asDoctor(()->knowledge.publish(new PublishKnowledgeRequest(id,version)));
     }
     private void rejects(String code,org.junit.jupiter.api.function.Executable action) {
         assertEquals(code,assertThrows(BizException.class,action).getCode());
@@ -78,14 +87,77 @@ class HealthWorkflowTest {
         assertNull(page.items().getFirst().note());
         rejects("404000",()->patients.detail(10005L));
     }
-    @Test void approvalRequiresExternalHospitalEvidence() {
+    @Test void onlyTheResponsibleDoctorReviewsAdvice() {
         TaskResponse row=awaitingReview();
-        rejects("50000001",()->tasks.review(new ReviewTaskRequest(row.id(),row.version(),true,"x",null,"PHONE","",LocalDateTime.now())));
+        rejects("4003",()->tasks.review(review(row,true,"运营代审核",null)));
+        actor(3L,"OPERATOR");rejects("4003",()->tasks.review(review(row,true,"运营代审核",null)));
+        actor(5L,"DOCTOR");rejects("404000",()->tasks.review(review(row,true,"非责任医生",null)));
+        actor(2L,"DOCTOR");rejects("50000001",()->tasks.review(review(row,true," ",null)));
+        rejects("50000001",()->tasks.review(review(row,false,null," ")));
+        TaskResponse approved=tasks.review(review(row,true,"医生修改后的正文","已核对原报告"));
+        assertEquals("APPROVED",approved.status());assertEquals("医生修改后的正文",approved.approvedText());
+        assertEquals(2L,approved.reviewerId());assertNotNull(approved.reviewedAt());
+        AuditEventExample audits=new AuditEventExample();audits.eq("resource_id",row.id()).eq("action","DOCTOR_APPROVED").eq("actor_id",2L);
+        assertEquals(1,auditMapper.countByExample(audits));
     }
     @Test void anotherOperatorCannotReadOrRecordReview() {
         TaskResponse row=awaitingReview();actor(20L,"OPERATOR");
         rejects("404000",()->tasks.context(row.id()));
-        rejects("404000",()->tasks.review(review(row,true,"x",null)));
+        rejects("4003",()->tasks.review(review(row,true,"x",null)));
+    }
+    @Test void doctorSeesOwnPatientsReadOnly() {
+        actor(2L,"DOCTOR");
+        var page=patients.query(new PatientQueryRequest(0,100,null,null,null));
+        assertTrue(page.totalSize()>0);assertTrue(page.items().stream().allMatch(p->Long.valueOf(2L).equals(p.doctorId())));
+        rejects("404000",()->patients.detail(1002L));
+        assertEquals(1001L,patients.detail(1001L).id());
+        rejects("4003",()->tasks.create(new CreateTaskRequest(1001L,"FOLLOWUP","医生不建任务","P2",LocalDateTime.now().plusDays(1),null,null,UUID.randomUUID().toString())));
+        rejects("4003",()->records.create(new CreateRecordRequest(1001L,"OUTPATIENT",LocalDateTime.now(),"医生不录入",null,null)));
+        rejects("4003",()->patients.update(new UpdatePatientRequest(1001L,0,null,null,"PAUSED",null,null,null,null)));
+        assertTrue(tasks.query(new TaskQueryRequest(0,100,null,null,"PENDING_REVIEW",null,false)).items().stream().allMatch(t->Long.valueOf(2L).equals(t.doctorId())));
+    }
+    @Test void nurseWorksOnAssignedPatientsButCannotReview() {
+        actor(6L,"NURSE");
+        var page=patients.query(new PatientQueryRequest(0,100,null,null,null));
+        assertTrue(page.totalSize()>0);assertTrue(page.items().stream().allMatch(p->Long.valueOf(6L).equals(p.ownerId())));
+        rejects("404000",()->patients.detail(1001L));
+        Long patientId=page.items().getFirst().id();
+        TaskResponse row=tasks.create(new CreateTaskRequest(patientId,"FOLLOWUP","护士随访","P2",LocalDateTime.now().plusDays(1).withNano(0),null,null,UUID.randomUUID().toString()));
+        assertEquals(6L,row.assigneeId());
+        row=tasks.claim(new ClaimTaskRequest(row.id(),row.version()));
+        row=tasks.draft(new DraftTaskRequest(row.id(),row.version(),null,"MANUAL","护士起草的随访意见"));
+        row=tasks.submit(new SubmitReviewRequest(row.id(),row.version()));
+        assertEquals("PENDING_REVIEW",row.status());
+        TaskResponse pending=row;
+        rejects("4003",()->tasks.review(review(pending,true,"护士不能审核",null)));
+    }
+    @Test void doctorConfirmsReportsAndTeamSeesTheOpinion() {
+        var record=records.create(new CreateRecordRequest(1001L,"DISCHARGE",LocalDateTime.now().minusHours(3),"待医生查看的出院报告",14,null));
+        actor(2L,"DOCTOR");
+        var unread=records.reports(new ReportQueryRequest(0,100,false,null,null));
+        assertTrue(unread.items().stream().anyMatch(r->r.id().equals(record.id())));
+        rejects("50000001",()->records.review(new ReviewRecordRequest(2L,"体征记录不是报告")));
+        var viewed=records.review(new ReviewRecordRequest(record.id(),"随访时重点核对服药与复诊安排"));
+        assertNotNull(viewed.doctorViewedAt());assertEquals(2L,viewed.doctorViewerId());
+        assertFalse(records.reports(new ReportQueryRequest(0,100,false,null,null)).items().stream().anyMatch(r->r.id().equals(record.id())));
+        rejects("50000001",()->records.review(new ReviewRecordRequest(record.id()," ")));
+        assertEquals("更新后的意见",records.review(new ReviewRecordRequest(record.id(),"更新后的意见")).doctorOpinion());
+        assertEquals(viewed.doctorViewedAt(),recordMapper.selectByPrimaryKey(record.id()).doctorViewedAt);
+        actor(5L,"DOCTOR");rejects("404000",()->records.review(new ReviewRecordRequest(record.id(),"非责任医生")));
+        actor(3L,"OPERATOR");rejects("4003",()->records.reports(new ReportQueryRequest(0,10,null,null,null)));
+        var seen=records.query(new RecordQueryRequest(0,100,1001L,"DISCHARGE")).items().stream().filter(r->r.id().equals(record.id())).findFirst().orElseThrow();
+        assertEquals("更新后的意见",seen.doctorOpinion());assertNotNull(seen.doctorViewedAt());
+    }
+    @Test void reviewingAdviceMarksItsReportAsRead() {
+        var record=records.create(new CreateRecordRequest(1001L,"DISCHARGE",LocalDateTime.now().minusHours(2),"审核时一并阅读的报告",null,null));
+        TaskResponse row=tasks.create(new CreateTaskRequest(1001L,"FOLLOWUP","按报告随访","P2",LocalDateTime.now().plusDays(1).withNano(0),record.id(),null,UUID.randomUUID().toString()));
+        row=tasks.claim(new ClaimTaskRequest(row.id(),row.version()));
+        row=tasks.draft(new DraftTaskRequest(row.id(),row.version(),null,"TEMPLATE",null));
+        TaskResponse submitted=tasks.submit(new SubmitReviewRequest(row.id(),row.version()));
+        assertNull(recordMapper.selectByPrimaryKey(record.id()).doctorViewedAt);
+        asDoctor(()->tasks.review(review(submitted,true,"按报告核对","已阅")));
+        CareRecord read=recordMapper.selectByPrimaryKey(record.id());
+        assertNotNull(read.doctorViewedAt);assertEquals(2L,read.doctorViewerId);
     }
     @Test void platformAccountCannotReadPatientsOrDashboard() {
         actor(4L,"PLATFORM_ADMIN");
@@ -138,7 +210,7 @@ class HealthWorkflowTest {
     }
     @Test void publishedKnowledgeEditsDoNotChangeExistingDraftSnapshot() {
         var entry=knowledge.save(new SaveKnowledgeRequest(null,"Education","EDUCATION","全科","Original education","Test source",null,null,null));
-        knowledge.publish(publish(entry.id(),entry.version()));
+        publish(entry.id(),entry.version());
         TaskResponse row=create("FOLLOWUP");row=tasks.claim(new ClaimTaskRequest(row.id(),row.version()));
         row=tasks.draft(new DraftTaskRequest(row.id(),row.version(),entry.id(),"TEMPLATE",null));String snapshot=row.draftText();
         knowledge.save(new SaveKnowledgeRequest(entry.id(),"Updated","EDUCATION","全科","New content","Test source",entry.version(),null,null));
@@ -152,10 +224,12 @@ class HealthWorkflowTest {
         rejects("50000001",()->knowledge.save(new SaveKnowledgeRequest(entry.id(),"Changed","PACKAGE","全科","Content","Source",entry.version(),30,3)));
         assertEquals("PENDING_REVIEW",awaitingReview().status());
     }
-    @Test void managerRecordsHospitalContentReviewAndOperatorCannotPublish() {
+    @Test void doctorPublishesEducationAndOperationsCannot() {
         var education=knowledge.save(new SaveKnowledgeRequest(null,"Education","EDUCATION","全科","Service information","Test source",null,null,null));
-        actor(3L,"OPERATOR");rejects("4003",()->knowledge.publish(publish(education.id(),education.version())));
-        actor(1L,"MANAGER");assertEquals("PUBLISHED",knowledge.publish(publish(education.id(),education.version())).status());
+        rejects("4003",()->knowledge.publish(new PublishKnowledgeRequest(education.id(),education.version())));
+        actor(3L,"OPERATOR");rejects("4003",()->knowledge.publish(new PublishKnowledgeRequest(education.id(),education.version())));
+        actor(1L,"MANAGER");var published=publish(education.id(),education.version());
+        assertEquals("PUBLISHED",published.status());assertEquals(2L,published.reviewerId());assertNotNull(published.reviewedAt());
     }
     @Test void dischargeDraftUsesItsOwnReportAndDoesNotInventMissingFields() {
         var record=records.create(new CreateRecordRequest(1001L,"DISCHARGE",LocalDateTime.now().minusDays(1),"Original report",14,LocalDate.of(2026,10,3)));
@@ -171,20 +245,33 @@ class HealthWorkflowTest {
     }
     @Test void rejectedDraftNeedsNewSubmissionBeforeApproval() {
         TaskResponse row=awaitingReview();
-        row=tasks.review(review(row,false,null,"需要重新核对原记录"));
+        TaskResponse submitted=row;
+        row=asDoctor(()->tasks.review(review(submitted,false,null,"需要重新核对原记录")));
         assertEquals("REJECTED",row.status());
         row=tasks.draft(new DraftTaskRequest(row.id(),row.version(),null,"MANUAL","重新核对后的问询内容"));
         assertEquals("IN_PROGRESS",row.status());
         assertEquals("",row.approvedText());
     }
-    @Test void alertClosureRequiresRecordedHospitalDisposition() {
+    @Test void onlyTheResponsibleDoctorClosesEscalatedClinicalAlerts() {
         TaskResponse row=create("ALERT");
         row=tasks.claim(new ClaimTaskRequest(row.id(),row.version()));
+        TaskResponse claimed=row;
+        rejects("50000001",()->tasks.transition(new TransitionTaskRequest(claimed.id(),claimed.version(),"COMPLETE","运营不能关闭临床异常","凭证","OUTPATIENT")));
         row=tasks.transition(new TransitionTaskRequest(row.id(),row.version(),"ESCALATE",null,null));
         TaskResponse escalated=row;
-        rejects("50000001",()->tasks.transition(new TransitionTaskRequest(escalated.id(),escalated.version(),"COMPLETE","已核实",null)));
-        rejects("50000001",()->tasks.transition(new TransitionTaskRequest(escalated.id(),escalated.version(),"COMPLETE","院方确认后记录处置结果","虚构院方处置凭证 TEST-ALERT")));
-        assertEquals("COMPLETED",tasks.transition(new TransitionTaskRequest(row.id(),row.version(),"COMPLETE","院方确认后记录处置结果","虚构院方处置凭证 TEST-ALERT","OUTPATIENT")).status());
+        rejects("50000001",()->tasks.transition(new TransitionTaskRequest(escalated.id(),escalated.version(),"COMPLETE","运营代登记处置","虚构凭证","OUTPATIENT")));
+        actor(5L,"DOCTOR");rejects("404000",()->tasks.transition(new TransitionTaskRequest(escalated.id(),escalated.version(),"COMPLETE","非责任医生",null,"OBSERVE")));
+        actor(2L,"DOCTOR");
+        rejects("4003",()->tasks.transition(new TransitionTaskRequest(escalated.id(),escalated.version(),"ESCALATE",null,null)));
+        rejects("50000001",()->tasks.transition(new TransitionTaskRequest(escalated.id(),escalated.version(),"COMPLETE","缺少去向",null)));
+        TaskResponse closed=tasks.transition(new TransitionTaskRequest(escalated.id(),escalated.version(),"COMPLETE","已电话指导门诊复查",null,"OUTPATIENT"));
+        assertEquals("COMPLETED",closed.status());assertEquals("OUTPATIENT",closed.disposition());
+    }
+    @Test void lostContactAlertIsClosedByTheTeamWithoutTheDoctor() {
+        TaskResponse row=tasks.create(new CreateTaskRequest(1001L,"ALERT","连续未联系上","P1",LocalDateTime.now().plusDays(1).withNano(0),null,null,UUID.randomUUID().toString(),"LOST_CONTACT"));
+        TaskResponse lost=row;
+        rejects("50000001",()->tasks.transition(new TransitionTaskRequest(lost.id(),lost.version(),"COMPLETE","已联系上家属",null)));
+        assertEquals("COMPLETED",tasks.transition(new TransitionTaskRequest(lost.id(),lost.version(),"COMPLETE","已联系上家属","家属电话确认患者外出，约定下周复联")).status());
     }
     @Test void arrivalRequiresEvidenceAndCompletionRequiresOutcome() {
         TaskResponse row=create("REVISIT");

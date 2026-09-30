@@ -1,9 +1,9 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Alert, Button, Empty, Form, Modal, Space, Spin, Table, Tag } from 'antd'
 import dayjs from 'dayjs'
 
 export const names = {
-  MANAGER: '运营主管', DOCTOR: '责任医生', NURSE: '健康管家', OPERATOR: '运营人员', PLATFORM_ADMIN: '平台管理员',
+  MANAGER: '运营主管', DOCTOR: '医生', NURSE: '护士', OPERATOR: '运营人员', PLATFORM_ADMIN: '平台管理员',
   FOLLOWUP: '随访', CONSULTATION: '患者咨询', ALERT: '异常处理', REVISIT: '复诊', OUTREACH: '首次联系',
   PENDING: '待处理', IN_PROGRESS: '处理中', PENDING_REVIEW: '待医生审核', APPROVED: '已审核',
   REJECTED: '已退回', CONTACTED: '已触达', COMPLETED: '已完成', CANCELLED: '已取消', ESCALATED: '待医生处置',
@@ -61,9 +61,10 @@ export function FormDialog({ title, open, initialValues, onClose, onSubmit, chil
   const [form] = Form.useForm()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
+  // Reset as soon as the dialog opens (not after the open animation), so early typing is never wiped.
+  useEffect(() => { if (open) { form.resetFields(); setError(null) } }, [open])
   return <Modal title={title} open={open} width={width} destroyOnClose onCancel={() => !busy && onClose()}
-    footer={<Space><Button disabled={busy} onClick={onClose}>取消</Button><Button type="primary" loading={busy} onClick={() => form.submit()}>{okText}</Button></Space>}
-    afterOpenChange={visible => { if (visible) { form.resetFields(); setError(null) } }}>
+    footer={<Space><Button disabled={busy} onClick={onClose}>取消</Button><Button type="primary" loading={busy} onClick={() => form.submit()}>{okText}</Button></Space>}>
     {error && <Alert type="error" showIcon message={error} className="mb" />}
     <Form form={form} layout="vertical" initialValues={initialValues} disabled={busy} onFinish={async values => {
       if (busy) return
@@ -73,3 +74,7 @@ export function FormDialog({ title, open, initialValues, onClose, onSubmit, chil
   </Modal>
 }
 export const required = [{ required: true, message: '请填写此项' }]
+/** Enabled doctor accounts for pickers; disabled doctors stay resolvable by id for history. */
+export const doctorOptions = clinicians => (clinicians || []).filter(x => x.active).map(x => ({ value: x.id, label: x.name + (x.department ? ' / ' + x.department : '') }))
+/** Patient owners: operators, nurses or the operations manager. */
+export const ownerOptions = staff => (staff || []).filter(x => ['OPERATOR', 'NURSE', 'MANAGER'].includes(x.role_code)).map(x => ({ value: x.user_id, label: x.real_name + ' / ' + names[x.role_code] }))
