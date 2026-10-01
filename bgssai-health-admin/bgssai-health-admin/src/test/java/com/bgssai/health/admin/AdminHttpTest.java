@@ -85,6 +85,7 @@ class AdminHttpTest {
         assertEquals("MOCK-P-001",patient.path("hospital_patient_id").asText());
         var records=post("/records/query",Map.of("patient_id",patientId,"page",0,"size",100),manager);
         assertEquals(2,records.path("total_size").asInt());assertTrue(records.path("items").get(0).has("external_id"));
+        assertEquals(403,request("/bgssai/admin/integrations/save",json.writeValueAsString(Map.of("provider","AI","endpoint","https://api.deepseek.com/chat/completions","model_name","deepseek-flash","secret","sk-unit-test-secret","enabled",true)),operator).statusCode());
     }
     @Test void healthAndProtectedRoutesHaveDifferentAccessRules() throws Exception {
         assertEquals(200,request("/bgssai/health/liveness",null,null).statusCode());
@@ -172,5 +173,14 @@ class AdminHttpTest {
         var integrations=request("/bgssai/admin/integrations",null,token);
         assertEquals(200,integrations.statusCode());assertFalse(integrations.body().contains("\"secret\":"));
         assertEquals(400,request("/bgssai/admin/integrations/save","{\"provider\":\"AI\",\"endpoint\":\"http://127.0.0.1/private\",\"model_name\":\"test\",\"secret\":\"test\",\"enabled\":true}",token).statusCode());
+        String secret="sk-unit-test-secret";
+        assertEquals(400,request("/bgssai/admin/integrations/save",json.writeValueAsString(Map.of("provider","AI","endpoint","https://api.deepseek.com/chat/completions","model_name","deepseek-chat","secret",secret,"enabled",true)),token).statusCode());
+        var savedResponse=request("/bgssai/admin/integrations/save",json.writeValueAsString(Map.of("provider","AI","endpoint","https://api.deepseek.com/chat/completions","model_name","deepseek-flash","secret",secret,"enabled",true)),token);
+        assertEquals(200,savedResponse.statusCode(),savedResponse.body());
+        assertFalse(savedResponse.body().contains(secret));
+        JsonNode saved=json.readTree(savedResponse.body()).path("result");
+        assertEquals("deepseek-flash",saved.path("model_name").asText());
+        assertTrue(saved.path("enabled").asBoolean());assertTrue(saved.path("configured").asBoolean());
+        assertEquals("CONFIGURED_UNVERIFIED",saved.path("status").asText());
     }
 }

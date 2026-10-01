@@ -1,0 +1,15 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>1.7 按病历生成随访建议</title>
+<style>body{margin:0;background:#f4f7fb;color:#1d2b3a;font:16px/1.6 system-ui}main{max-width:980px;margin:32px auto;padding:0 20px}h1{font-size:32px;line-height:1.25}section{background:white;border:1px solid #d7e1ee;border-radius:16px;padding:20px;margin:16px 0}.row{display:flex;gap:12px;flex-wrap:wrap}button,select,input{font:inherit;border:1px solid #c5d2e2;border-radius:8px;padding:8px 12px;background:white}.primary{background:#2463eb;color:white;border:0}.note{background:#f3f7ff;border-radius:10px;padding:12px}small{color:#5d6e82}</style>
+<main><small>HEALTH 1.7 原型 · 虚构数据</small><h1>根据出院小结生成随访建议，医生审核后才联系患者</h1>
+<p>运营主管在接入设置保存 DeepSeek API Key。随访人员打开关联了出院或门诊记录的任务，生成草稿。草稿不会直接发给患者。</p>
+<section><h2>接入设置</h2><div class="row"><label>接口 <select><option>DeepSeek · api.deepseek.com</option><option>TokenHub 开发</option></select></label><label>模型 <select><option>deepseek-flash（建议）</option><option>deepseek-v4-pro</option></select></label></div>
+<p><label>DeepSeek API Key <input type="password" value="••••••••" readonly></label></p><p><label><input type="checkbox" checked> 启用随访建议生成</label></p><p class="note">启用后，点击生成会把该任务关联报告的正文发给所选接口。密钥只保存在服务端。</p></section>
+<section><h2>随访任务 · 核对出院报告</h2><p><b>出院记录</b> <small>2026-09-28</small></p><p class="note">出院诊断：演示性胸闷。医嘱：继续原用药，7 日后心内科复诊。注意胸痛加重时立即就诊。</p>
+<div class="row"><button>基础问询起草</button><button class="primary">根据病历生成随访建议</button></div>
+<p><b>草稿来源：AI 随访建议</b></p><textarea rows="6" style="width:100%;box-sizing:border-box">本次要核对的要点：原文写明 7 日后心内科复诊。
+按原文提醒患者的事项：继续原用药；胸痛加重时立即就诊。
+需要责任医生判断的问题：原文没有新的剂量，不能自行调整。
+建议询问患者的问题：按原医嘱服药时是否遇到困难，复诊是否已经安排。
+本段为 AI 草稿，须责任医生审核通过后，才能由人工联系患者。</textarea>
+<p><button class="primary">提交医生审核</button></p></section>
+</main>

@@ -3,6 +3,8 @@ package com.bgssai.health.admin;
 import com.bgssai.health.auth.dto.AccountInfo;
 import com.bgssai.health.auth.service.CurrentAccount;
 import com.bgssai.health.common.exception.BizException;
+import com.bgssai.health.integration.dto.SaveIntegrationRequest;
+import com.bgssai.health.integration.service.IntegrationService;
 import com.bgssai.health.knowledge.dto.*;
 import com.bgssai.health.knowledge.service.KnowledgeService;
 import com.bgssai.health.mapper.*;
@@ -36,6 +38,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @Transactional
 class HealthWorkflowTest {
     @Autowired TaskService tasks;
+    @Autowired IntegrationService integrations;
     @Autowired PatientService patients;
     @Autowired RecordService records;
     @Autowired KnowledgeService knowledge;
@@ -230,6 +233,15 @@ class HealthWorkflowTest {
         actor(3L,"OPERATOR");rejects("4003",()->knowledge.publish(new PublishKnowledgeRequest(education.id(),education.version())));
         actor(1L,"MANAGER");var published=publish(education.id(),education.version());
         assertEquals("PUBLISHED",published.status());assertEquals(2L,published.reviewerId());assertNotNull(published.reviewedAt());
+    }
+    @Test void aiFollowupDraftRequiresLinkedRecordTextAndDoesNotCallOutWithoutIt() {
+        integrations.save(new SaveIntegrationRequest("AI",IntegrationService.DEEPSEEK,"deepseek-flash","sk-test",true));
+        TaskResponse row=create("FOLLOWUP");row=tasks.claim(new ClaimTaskRequest(row.id(),row.version()));
+        TaskResponse claimed=row;
+        BizException ex=assertThrows(BizException.class,()->tasks.draft(new DraftTaskRequest(claimed.id(),claimed.version(),null,"AI",null)));
+        assertEquals("50000001",ex.getCode());assertTrue(ex.getMessage().contains("病历"));
+        TaskResponse unchanged=tasks.context(claimed.id()).task();
+        assertEquals("IN_PROGRESS",unchanged.status());assertTrue(unchanged.draftText()==null||unchanged.draftText().isBlank());
     }
     @Test void dischargeDraftUsesItsOwnReportAndDoesNotInventMissingFields() {
         var record=records.create(new CreateRecordRequest(1001L,"DISCHARGE",LocalDateTime.now().minusDays(1),"Original report",14,LocalDate.of(2026,10,3)));

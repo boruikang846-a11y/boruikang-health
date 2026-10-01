@@ -134,22 +134,42 @@ export function Reports() {
     <ReportArchives query={query} />
   </>
 }
-const providers = { AI: 'AI 随访草稿', WE_COM: '医院企业微信', WECHAT_OFFICIAL: '医院公众号', HIS: 'HIS / EMR 数据', WEEKLY_DELIVERY: '周报外部投递' }
+const providers = { AI: 'DeepSeek 随访建议', WE_COM: '医院企业微信', WECHAT_OFFICIAL: '医院公众号', HIS: 'HIS / EMR 数据', WEEKLY_DELIVERY: '周报外部投递' }
+const DEEPSEEK = 'https://api.deepseek.com/chat/completions'
+const aiEndpoints = [
+  { value: DEEPSEEK, label: 'DeepSeek · api.deepseek.com' },
+  { value: 'https://dev.user.bgssai-tokenhub.cn/v1/chat/completions', label: 'TokenHub 开发' },
+  { value: 'https://www.bgssai-tokenhub.cn/v1/chat/completions', label: 'TokenHub 生产' },
+]
+const deepseekModels = [
+  { value: 'deepseek-flash', label: 'deepseek-flash（建议）' },
+  { value: 'deepseek-v4-pro', label: 'deepseek-v4-pro' },
+]
+function AiEndpointFields() {
+  const form = Form.useFormInstance()
+  return <><Form.Item name="endpoint" label="接口" rules={required}><Select options={aiEndpoints} onChange={value => {
+    if (value === DEEPSEEK && !deepseekModels.some(item => item.value === form.getFieldValue('model_name'))) form.setFieldValue('model_name', 'deepseek-flash')
+  }} /></Form.Item>
+    <Form.Item noStyle shouldUpdate={(a, b) => a.endpoint !== b.endpoint}>{() => form.getFieldValue('endpoint') === DEEPSEEK
+      ? <Form.Item name="model_name" label="DeepSeek 模型" rules={required}><Select options={deepseekModels} /></Form.Item>
+      : <Form.Item name="model_name" label="模型名称" rules={required}><Input maxLength={120} placeholder="TokenHub 上的模型名" /></Form.Item>}</Form.Item></>
+}
 function Integrations() {
   const account = useOutletContext()
   const [editor, setEditor] = useState(null)
   const state = useLoad(() => api('/integrations'))
+  const canConfigure = account.role_code === 'PLATFORM_ADMIN' || account.role_code === 'MANAGER'
   return <><div className="toolbar"><Button icon={<ReloadOutlined />} onClick={state.reload}>刷新</Button></div>
-    <LoadState state={state}>{data => <div className="integration-grid">{data.map(item => <Card key={item.provider} title={providers[item.provider]} extra={<Tag color={item.status === 'CONFIGURED_UNVERIFIED' ? 'gold' : 'default'}>{item.status === 'CONFIGURED_UNVERIFIED' ? '已配置 · 待联调' : '未接入'}</Tag>}>
-      <p>{item.provider === 'AI' ? '辅助整理问询草稿。所有建议仍由责任医生审核、人工联系。' : item.provider === 'HIS' ? '已提供虚构医院 Mock，可在“医院数据”页联调导入。真实医院接口尚未接通，待提供接口、字段字典与授权。' : '待医院提供授权与接入资料。当前仅提供患者服务介绍，后台记录人工服务过程。'}</p>
-      {item.provider === 'AI' && <><Descriptions size="small" column={1} items={[{ key: 'model', label: '模型', children: item.model_name || '未设置' }, { key: 'key', label: 'API Key', children: item.configured ? '已配置（不回显）' : '未配置' }]} />
-        {account.role_code === 'PLATFORM_ADMIN' && <Button className="mt" onClick={() => setEditor(item)}>配置 AI 接入</Button>}</>}
+    <LoadState state={state}>{data => <div className="integration-grid">{data.map(item => <Card key={item.provider} title={providers[item.provider]} extra={<Tag color={item.status === 'CONFIGURED_UNVERIFIED' ? 'gold' : 'default'}>{item.provider === 'AI' ? (item.status === 'CONFIGURED_UNVERIFIED' ? '已启用 · 待验证' : '未启用') : '未接入'}</Tag>}>
+      <p>{item.provider === 'AI' ? '按关联的出院小结或病历正文生成随访建议草稿。启用前不会外发。建议仍由责任医生审核，再由人工联系患者。' : item.provider === 'HIS' ? '已提供虚构医院 Mock，可在“医院数据”页联调导入。真实医院接口尚未接通，待提供接口、字段字典与授权。' : '待医院提供授权与接入资料。当前仅提供患者服务介绍，后台记录人工服务过程。'}</p>
+      {item.provider === 'AI' && <><Descriptions size="small" column={1} items={[{ key: 'endpoint', label: '接口', children: item.endpoint || '未设置' }, { key: 'model', label: '模型', children: item.model_name || '未设置' }, { key: 'key', label: 'API Key', children: item.configured ? '已配置（不回显）' : '未配置' }]} />
+        {canConfigure && <Button className="mt" onClick={() => setEditor(item)}>配置 DeepSeek</Button>}</>}
     </Card>)}</div>}</LoadState>
-    <FormDialog title="配置 AI 接入" open={Boolean(editor)} initialValues={editor ? { provider: 'AI', endpoint: editor.endpoint, model_name: editor.model_name, enabled: editor.enabled } : {}} onClose={() => setEditor(null)} onSubmit={async values => { await api('/integrations/save', { ...values, provider: 'AI' }); state.reload() }}>
-      <Form.Item name="endpoint" label="TokenHub 端点" rules={required}><Select options={['https://dev.user.bgssai-tokenhub.cn/v1/chat/completions', 'https://www.bgssai-tokenhub.cn/v1/chat/completions'].map(value => ({ value, label: value }))} /></Form.Item>
-      <Form.Item name="model_name" label="模型名称" rules={required}><Input maxLength={120} /></Form.Item><Form.Item name="secret" label="API Key（留空保留原值）"><Input.Password autoComplete="new-password" /></Form.Item>
-      <Form.Item name="enabled" label="启用 AI 草稿" valuePropName="checked"><Switch /></Form.Item>
-      <Alert type="info" message="保存配置不代表已通过调用联调。密钥不会在接口响应中回显。" />
+    <FormDialog title="配置 DeepSeek" open={Boolean(editor)} initialValues={editor ? { provider: 'AI', endpoint: editor.endpoint || DEEPSEEK, model_name: editor.model_name || 'deepseek-flash', enabled: editor.enabled } : {}} onClose={() => setEditor(null)} onSubmit={async values => { await api('/integrations/save', { ...values, provider: 'AI' }); state.reload() }}>
+      <AiEndpointFields />
+      <Form.Item name="secret" label="DeepSeek API Key（留空保留原值）"><Input.Password autoComplete="new-password" /></Form.Item>
+      <Form.Item name="enabled" label="启用随访建议生成" valuePropName="checked"><Switch /></Form.Item>
+      <Alert type="info" message="启用后，随访页点击「根据病历生成随访建议」会把该任务关联报告的正文发给所选接口。密钥只保存在服务端，保存本身不代表已经调用成功。" />
     </FormDialog>
   </>
 }

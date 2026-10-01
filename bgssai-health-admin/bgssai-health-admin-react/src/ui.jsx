@@ -12,7 +12,7 @@ export const names = {
   PAUSED: '已暂停', CLOSED: '已结案', TRANSFERRED: '已转出', LOST: '已失访', MALE: '男', FEMALE: '女',
   EDUCATION: '健康宣教', PACKAGE: '服务包', DRAFT: '草稿', PUBLISHED: '已发布', ACTIVE: '启用中', RETIRED: '已停用',
   OUTPATIENT: '门诊', DISCHARGE: '出院', EXAM: '体检', OBSERVATION: '指标记录', INPATIENT: '住院', DISCHARGED: '已出院',
-  PRIMARY_CARE: '基层协作', CAMPAIGN: '活动', TEMPLATE: '基础问询模板', MANUAL: '人工录入', AI: 'AI 辅助',
+  PRIMARY_CARE: '基层协作', CAMPAIGN: '活动', TEMPLATE: '基础问询模板', MANUAL: '人工录入', AI: 'AI 随访建议',
   ECG_NETWORK: '心电网络', COMMUNITY_SCREENING: '社区筛查', PRIMARY_REFERRAL: '基层转诊', HEALTH_SCREENING: '健康筛查', STROKE_SCREENING: '卒中筛查',
   NEW: '待判定', HIGH_RISK: '高危', NON_HIGH_RISK: '非高危', DISCARDED: '已作废',
   WILLING: '愿意到院', UNDECIDED: '犹豫', REFUSED: '拒绝', ALREADY_TREATED: '已在本院就诊', TREATED_ELSEWHERE: '已在外院就诊', NO_ANSWER: '无人接听', BUSY: '占线', WRONG_NUMBER: '号码错误', FAMILY_ANSWERED: '家属接听', DECEASED: '已去世', OTHER: '其他',
