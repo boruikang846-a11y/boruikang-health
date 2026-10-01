@@ -4,7 +4,7 @@ import { Alert, Button, Card, DatePicker, Descriptions, Form, Input, InputNumber
 import { ArrowRightOutlined, PlusOutlined, ReloadOutlined, TeamOutlined, ScheduleOutlined, AlertOutlined, ClockCircleOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import { api, useLoad } from '../api'
-import { DataTable, dateText, day, dayText, doctorOptions, FormDialog, LoadState, money, names, options, ownerOptions, PageTitle, required, stamp, Status } from '../ui'
+import { countUp, DataTable, dateText, day, dayText, doctorOptions, FormDialog, LoadState, money, names, options, ownerOptions, PageTitle, required, stamp, Status } from '../ui'
 import Tasks from './Tasks'
 import { InvitationDialog } from './Invitations'
 import { AppointmentAction, AppointmentDialog, appointmentActions } from './Appointments'
@@ -28,7 +28,7 @@ export function Dashboard() {
         ['待执行任务', data.pending_task_count, '已提交医生审核 ' + data.review_count + ' 项', ScheduleOutlined, 'violet', '/followups'],
         ['待处理异常', data.open_alert_count, '高风险 / 重点关注 ' + data.high_risk_count + ' 人', AlertOutlined, 'orange', '/alerts'],
         ['逾期待办', data.overdue_count, '尚待完成的复诊 ' + data.revisit_count + ' 项', ClockCircleOutlined, 'teal', '/followups?overdue=1'],
-      ].map(([label, value, detail, Icon, color, path]) => <Link to={path} key={label}><Card className="metric-card"><div className={'metric-icon ' + color}><Icon /></div><Statistic title={label} value={value} /><p>{detail}</p></Card></Link>)}
+      ].map(([label, value, detail, Icon, color, path]) => <Link to={path} key={label}><Card className="metric-card"><div className={'metric-icon ' + color}><Icon /></div><Statistic title={label} value={value} formatter={countUp} /><p>{detail}</p></Card></Link>)}
     </div>
     <Card className="mb" title="今日队列" extra={<span className="muted">按 SLA 与到期时间自动归集</span>}><LoadState state={queues}>{q => <div className="queue-grid">{q.queues.map(item => <Link key={item.code} to={item.route} className={'queue-item' + (item.count > 0 && ['SLA_OVERDUE', 'LOST_CONFIRM'].includes(item.code) ? ' danger' : '')}><span className="queue-count">{item.count}</span><span>{item.name}</span></Link>)}</div>}</LoadState></Card>
     <div className="dashboard-grid"><Card title="近 7 日随访履约" extra={<span className="muted">按到期日期统计</span>}>

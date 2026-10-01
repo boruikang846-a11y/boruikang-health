@@ -74,6 +74,26 @@ export function FormDialog({ title, open, initialValues, onClose, onSubmit, chil
   </Modal>
 }
 export const required = [{ required: true, message: '请填写此项' }]
+/** Eases a metric from 0 to its value on mount; strings and reduced-motion users get the value directly. */
+export function CountUp({ value, duration = 900 }) {
+  const target = Number(value)
+  const animate = Number.isFinite(target) && typeof window !== 'undefined' && !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+  const [shown, setShown] = useState(animate ? 0 : target)
+  useEffect(() => {
+    if (!animate) { setShown(target); return }
+    let frame
+    const start = performance.now()
+    const tick = now => {
+      const progress = Math.min(1, (now - start) / duration)
+      setShown(Math.round(target * (1 - Math.pow(1 - progress, 3))))
+      if (progress < 1) frame = requestAnimationFrame(tick)
+    }
+    frame = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(frame)
+  }, [target])
+  return <span className="count-up">{Number.isFinite(target) ? shown.toLocaleString() : value}</span>
+}
+export const countUp = value => <CountUp value={value} />
 /** Enabled doctor accounts for pickers; disabled doctors stay resolvable by id for history. */
 export const doctorOptions = clinicians => (clinicians || []).filter(x => x.active).map(x => ({ value: x.id, label: x.name + (x.department ? ' / ' + x.department : '') }))
 /** Patient owners: operators, nurses or the operations manager. */

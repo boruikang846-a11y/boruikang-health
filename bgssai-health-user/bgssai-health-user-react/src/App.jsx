@@ -4,6 +4,16 @@ import { Button, Collapse, Tag } from 'antd'
 import { ArrowRightOutlined, CheckOutlined, DesktopOutlined, GlobalOutlined, HeartOutlined,
   MessageOutlined, MobileOutlined, SafetyCertificateOutlined, TeamOutlined } from '@ant-design/icons'
 
+/** Adds .is-visible to [data-reveal] blocks as they scroll into view; CSS does the motion. */
+function useReveal(deps) {
+  useEffect(() => {
+    const nodes = Array.from(document.querySelectorAll('[data-reveal]'))
+    if (!('IntersectionObserver' in window) || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) { nodes.forEach(node => node.classList.add('is-visible')); return }
+    const observer = new IntersectionObserver(entries => entries.forEach(entry => { if (entry.isIntersecting) { entry.target.classList.add('is-visible'); observer.unobserve(entry.target) } }), { threshold: 0.12, rootMargin: '0px 0px -6% 0px' })
+    nodes.forEach(node => node.classList.contains('is-visible') || observer.observe(node))
+    return () => observer.disconnect()
+  }, deps)
+}
 export default function App() {
   const [lang, setLang] = useState(localStorage.getItem('bgssai.lang') === 'en' ? 'en' : 'zh-CN')
   const t = (zh, en) => lang === 'en' ? en : zh
@@ -12,6 +22,12 @@ export default function App() {
     document.documentElement.lang = lang
     document.title = t('BGSSAI Health 医患运营管理系统与患者端介绍', 'BGSSAI Health | Connected care')
   }, [lang])
+  useReveal([lang])
+  useEffect(() => {
+    const onScroll = () => document.body.classList.toggle('scrolled', window.scrollY > 24)
+    onScroll(); window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
   const modes = [
     [MessageOutlined, 'wecom', t('企业微信', 'WeCom'), t('让日常联系，更有温度', 'A closer connection to your care team'),
       t('计划通过医院服务团队，承接日常沟通、服务提醒与随访协作，让患者找到明确的联系人。', 'Planned to connect patients with the hospital service team for everyday communication, reminders and follow-up coordination.'),
@@ -38,28 +54,28 @@ export default function App() {
     <div className="care-card bottom"><span className="small-icon warm"><SafetyCertificateOutlined /></span><div><b>{t('医生审核 · 人工负责', 'Doctor reviewed, human led')}</b><small>{t('每一步服务都有依据', 'Care grounded in clinical review')}</small></div></div>
     <div className="art-caption">BGSSAI HEALTH / CONTINUOUS CARE</div>
   </div></section>
-  <div className="principles">{[[TeamOutlined,t('明确的服务团队','A dedicated care team')],[SafetyCertificateOutlined,t('医生审核与人工跟进','Clinical review and human follow-up')],[HeartOutlined,t('从就诊到日常的连接','Connected beyond the visit')]].map(([Icon,title]) => <div key={title}><Icon /><span>{title}</span></div>)}</div>
+  <div className="principles" data-reveal="stagger">{[[TeamOutlined,t('明确的服务团队','A dedicated care team')],[SafetyCertificateOutlined,t('医生审核与人工跟进','Clinical review and human follow-up')],[HeartOutlined,t('从就诊到日常的连接','Connected beyond the visit')]].map(([Icon,title]) => <div key={title}><Icon /><span>{title}</span></div>)}</div>
   <SystemIntro t={t} />
-  <section id="modes" className="section"><div className="section-intro"><div className="eyebrow">THREE WAYS TO CONNECT</div><h2>{t('一个服务体系，三种连接方式', 'One care experience. Three ways to connect.')}</h2><p>{t('围绕患者熟悉的使用习惯，规划企业微信、小程序与 Web 协同服务。', 'Planned around familiar ways of connecting, across WeCom, a Mini Program and the web.')}</p></div>
-    <div className="mode-grid">{modes.map(([Icon,key,title,subtitle,description,status]) => <article className={'mode-card ' + key} key={key}><div className="mode-top"><span className="mode-icon"><Icon /></span><Tag bordered={false} color={key === 'web' ? 'cyan' : 'default'}>{key === 'web' ? t('介绍已上线','Introduction') : t('规划中','Planned')}</Tag></div><h3>{title}</h3><h4>{subtitle}</h4><p>{description}</p><div className="mode-status"><span />{status}</div></article>)}</div>
+  <section id="modes" className="section"><div className="section-intro" data-reveal><div className="eyebrow">THREE WAYS TO CONNECT</div><h2>{t('一个服务体系，三种连接方式', 'One care experience. Three ways to connect.')}</h2><p>{t('围绕患者熟悉的使用习惯，规划企业微信、小程序与 Web 协同服务。', 'Planned around familiar ways of connecting, across WeCom, a Mini Program and the web.')}</p></div>
+    <div className="mode-grid" data-reveal="stagger">{modes.map(([Icon,key,title,subtitle,description,status]) => <article className={'mode-card ' + key} key={key}><div className="mode-top"><span className="mode-icon"><Icon /></span><Tag bordered={false} color={key === 'web' ? 'cyan' : 'default'}>{key === 'web' ? t('介绍已上线','Introduction') : t('规划中','Planned')}</Tag></div><h3>{title}</h3><h4>{subtitle}</h4><p>{description}</p><div className="mode-status"><span />{status}</div></article>)}</div>
   </section>
-  <section id="journey" className="journey-section"><div className="section-intro"><div className="eyebrow">CARE WITH CONTINUITY</div><h2>{t('围绕患者，形成连续的服务', 'A continuous journey around the patient')}</h2><p>{t('受托运营后台先行建设，逐步连接患者服务入口。', 'Building the managed operations workspace first, then connecting patient channels.')}</p></div>
-    <div className="journey-grid">{[
+  <section id="journey" className="journey-section"><div className="section-intro" data-reveal><div className="eyebrow">CARE WITH CONTINUITY</div><h2>{t('围绕患者，形成连续的服务', 'A continuous journey around the patient')}</h2><p>{t('受托运营后台先行建设，逐步连接患者服务入口。', 'Building the managed operations workspace first, then connecting patient channels.')}</p></div>
+    <div className="journey-grid" data-reveal="stagger">{[
       [t('建立健康档案','Create a care profile'), t('医院提供原始资料，我们核对信息并明确责任医生和随访负责人。','The hospital provides source records; our team verifies them and assigns a responsible doctor and a follow-up owner.')],
       [t('准备随访服务','Prepare follow-up care'), t('根据出院报告等原始记录，准备个体随访问询内容。','The team prepares individual follow-up questions using discharge or other clinical records.')],
       [t('医生审核，人工联系','Review and personal contact'), t('责任医生在系统里查看报告、审核个案随访意见，通过后我们人工联系并记录。','The responsible doctor reads the reports and reviews patient-specific guidance in the system; once approved, our team contacts the patient and records it.')],
       [t('跟踪反馈与复诊','Track outcomes and visits'), t('记录处理结果，核实复诊安排，让服务有始有终。','The team records outcomes and verifies return visits to complete the care process.')],
     ].map(([title,description],index) => <article key={title}><span className="step-number">0{index+1}</span><h3>{title}</h3><p>{description}</p></article>)}</div>
   </section>
-  <section id="roadmap" className="section roadmap"><div className="roadmap-heading"><div className="eyebrow">STEP BY STEP</div><h2>{t('把每一步', 'Each step,')}<br />{t('都做清楚', 'clearly defined.')}</h2><p>{t('当前聚焦受托运营团队的工作闭环。患者端功能，将在需求和医院流程确认后逐步建设。', 'The current focus is the managed operations workflow. Patient features will follow confirmed needs and hospital processes.')}</p><a href="#faq">{t('还有疑问？', 'Questions?')} <ArrowRightOutlined /></a></div>
-    <div className="roadmap-list">{[
+  <section id="roadmap" className="section roadmap"><div className="roadmap-heading" data-reveal><div className="eyebrow">STEP BY STEP</div><h2>{t('把每一步', 'Each step,')}<br />{t('都做清楚', 'clearly defined.')}</h2><p>{t('当前聚焦受托运营团队的工作闭环。患者端功能，将在需求和医院流程确认后逐步建设。', 'The current focus is the managed operations workflow. Patient features will follow confirmed needs and hospital processes.')}</p><a href="#faq">{t('还有疑问？', 'Questions?')} <ArrowRightOutlined /></a></div>
+    <div className="roadmap-list" data-reveal="stagger">{[
       [t('当前阶段','Current phase'),t('受托运营后台与患者服务介绍','Managed operations and patient introduction'),t('医生、护士与运营团队在后台协作完成报告查看、随访审核、异常与复诊跟踪；患者端公开展示整体模式。','Doctors, nurses and our team work together in the workspace on reports, reviewed follow-ups, alerts and return visits, with this public introduction for patients.')],
       [t('下一阶段','Next phase'),t('确认患者需求与医院流程','Confirm patient needs and hospital workflows'),t('明确患者使用场景、授权说明、医院联系人与服务范围，确认各渠道的接入条件。','Define patient scenarios, consent, hospital contacts and service scope, then confirm integration requirements.')],
       [t('后续规划','Later phases'),t('分阶段开放患者服务','Open patient services in phases'),t('按确认的需求建设企业微信、小程序和 Web 功能，完成医院接口联调后再开放。','Develop the agreed WeCom, Mini Program and web features, and launch after hospital integrations are validated.')],
     ].map(([phase,title,description],index) => <article key={phase}><div className={'phase-mark ' + (index === 0 ? 'current' : '')}>{index === 0 ? <CheckOutlined /> : index+1}</div><div><small>{phase}</small><h3>{title}</h3><p>{description}</p></div></article>)}</div>
   </section>
-  <section id="faq" className="faq-section"><div className="section-intro"><div className="eyebrow">GOOD TO KNOW</div><h2>{t('关于当前服务', 'About the current service')}</h2></div>
-    <Collapse ghost expandIconPosition="end" items={[
+  <section id="faq" className="faq-section"><div className="section-intro" data-reveal><div className="eyebrow">GOOD TO KNOW</div><h2>{t('关于当前服务', 'About the current service')}</h2></div>
+    <Collapse ghost expandIconPosition="end" className="faq-list" items={[
       { key:'1',label:t('现在可以注册、咨询或提交健康指标吗？','Can I register, ask questions or submit health measurements now?'),children:<p>{t('暂时不可以。当前 HEALTH-USER 仅为介绍页面，不开放注册、登录、健康填报、在线咨询或自助入组，也不收集这些个人信息。','Not yet. HEALTH-USER is currently an introduction only. Registration, sign-in, measurements, consultations and self-enrollment are unavailable, and this page does not collect that personal information.')}</p> },
       { key:'2',label:t('企业微信和小程序已经可以使用了吗？','Are WeCom and the Mini Program available?'),children:<p>{t('目前均处于规划阶段。需要确认医院授权、患者需求及接口条件后再开发、联调和开放。这里的展示不代表渠道已经接通。','Both are planned. Hospital authorization, patient needs and interface requirements must be confirmed before development, integration testing and launch. Their presence here does not imply a connected service.')}</p> },
       { key:'3',label:t('系统会自动诊断或自动回复患者吗？','Will the system diagnose or automatically reply to patients?'),children:<p>{t('当前后台按医生审核、人工负责的方式设计。系统不独立诊断、开药或调整治疗方案；人工触达记录也不等同于系统已向患者自动发送消息。','The staff workspace is designed around clinical review and human responsibility. It does not independently diagnose, prescribe or change treatment. A manual contact record does not mean an automated message was sent.')}</p> },
