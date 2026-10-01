@@ -140,6 +140,22 @@ const deepseekModels = [
   { value: 'deepseek-flash', label: 'deepseek-flash（建议）' },
   { value: 'deepseek-v4-pro', label: 'deepseek-v4-pro' },
 ]
+function AiBalance({ configured }) {
+  const state = useLoad(() => configured ? api('/integrations/ai/balance') : Promise.resolve(null), [configured])
+  return <section className="mt" aria-label="DeepSeek 账户余额"><Space wrap><h3>DeepSeek 账户余额</h3>
+    <Button icon={<ReloadOutlined />} loading={configured && state.loading} disabled={!configured || state.loading} onClick={state.reload}>刷新余额</Button></Space>
+    {!configured ? <p className="muted">保存 DeepSeek API Key 后可查询余额。</p> : <LoadState state={state}>{data => data && <>
+      {!data.is_available && <Alert className="mb" type="warning" showIcon message="当前账户无可用余额，请在 DeepSeek 平台检查余额。" />}
+      {data.balance_infos.map(item => <Descriptions key={item.currency} title={item.currency === 'CNY' ? '人民币（CNY）' : '美元（USD）'} size="small" column={1} items={[
+        { key: 'total', label: '总可用余额', children: <strong>{item.total_balance} {item.currency}</strong> },
+        { key: 'granted', label: '赠送余额', children: item.granted_balance + ' ' + item.currency },
+        { key: 'topped', label: '充值余额', children: item.topped_up_balance + ' ' + item.currency },
+      ]} />)}
+      <p className="muted">查询时间：{dateText(data.checked_at)}</p>
+    </>}</LoadState>}
+    <p className="muted">总额包含赠送与充值余额。余额属于此 API Key 对应的 DeepSeek 账户，可能与其他应用共享。</p>
+  </section>
+}
 function Integrations() {
   const account = useOutletContext()
   const [editor, setEditor] = useState(null)
@@ -149,7 +165,7 @@ function Integrations() {
     <LoadState state={state}>{data => <div className="integration-grid">{data.map(item => <Card key={item.provider} title={providers[item.provider]} extra={<Tag color={item.status === 'CONFIGURED_UNVERIFIED' ? 'gold' : 'default'}>{item.provider === 'AI' ? (item.status === 'CONFIGURED_UNVERIFIED' ? '已启用 · 待验证' : '未启用') : '未接入'}</Tag>}>
       <p>{item.provider === 'AI' ? '按关联的出院小结或病历正文生成随访建议草稿。启用前不会外发。建议仍由责任医生审核，再由人工联系患者。' : item.provider === 'HIS' ? '已提供虚构医院 Mock，可在“医院数据”页联调导入。真实医院接口尚未接通，待提供接口、字段字典与授权。' : '待医院提供授权与接入资料。当前仅提供患者服务介绍，后台记录人工服务过程。'}</p>
       {item.provider === 'AI' && <><Descriptions size="small" column={1} items={[{ key: 'endpoint', label: '接口', children: item.endpoint || '未设置' }, { key: 'model', label: '模型', children: item.model_name || '未设置' }, { key: 'key', label: 'API Key', children: item.configured ? '已配置（不回显）' : '未配置' }]} />
-        {canConfigure && <Button className="mt" onClick={() => setEditor(item)}>配置 DeepSeek</Button>}</>}
+        {canConfigure && <><Button className="mt" onClick={() => setEditor(item)}>配置 DeepSeek</Button><AiBalance configured={item.configured} /></>}</>}
     </Card>)}</div>}</LoadState>
     <FormDialog title="配置 DeepSeek" open={Boolean(editor)} initialValues={editor ? { model_name: editor.model_name || 'deepseek-flash', enabled: editor.enabled } : {}} onClose={() => setEditor(null)} onSubmit={async values => { await api('/integrations/save', { ...values, provider: 'AI', endpoint: DEEPSEEK }); state.reload() }}>
       <p>服务商：DeepSeek</p>

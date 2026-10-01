@@ -89,3 +89,5 @@ HospitalGateway 定义获取医院批次的接口；MockHospitalGateway 返回�
 服务分层：`SlaResolver` 只依赖 `sla_config`，供 `OrgService`、`OutreachService`、`ReferralService` 与 `InvitationService` 共用，避免 PatientService 与 OrgService 之间的循环依赖；`OutreachService` 在患者行锁内开、关首触任务并升级失联异常（`Propagation.MANDATORY`）；`PatientService.advance()` 只允许阶段向前推进且不越过人工态（PAUSED 及之后），各台账动作通过它同步患者阶段；`AppointmentService` 通过 `TaskWriter` 镜像复诊任务；`EnrollmentService.activate()` 展开方案节点为任务；`MetricService` 以有界样本（5000 行）在内存里算十项指标、漏斗、按人绩效、日统计与队列，不落库。ExampleBase 增加 `le/gt/isNull/isNotNull`。
 
 指标与 SLA 全部可按医院配置；默认口径见需求文档。控制器由 `tools` 中的生成脚本统一产出一接口一类。演示种子由 `tools/generate-ledger-seed.py` 生成，日期按参数绝对化，H2 与 MySQL 文本一致。
+
+DeepSeek 余额沿用本院已保存密钥，由主管/平台管理员查询；浏览器不接触密钥。读取配置 → 固定 GET /user/balance → 校验响应 → 返回各币种金额和时间，全程不写数据库、不触发模型、不修改接入状态；详见 [1.7 API 契约](../api/followup-ai-1.7.md)。
