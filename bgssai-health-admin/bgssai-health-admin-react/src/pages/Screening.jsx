@@ -1,10 +1,13 @@
 import React, { useRef, useState } from 'react'
 import { Link, useNavigate, useOutletContext } from 'react-router-dom'
 import { Alert, Button, Card, DatePicker, Form, Input, InputNumber, Select, Space, Switch, Tag } from 'antd'
-import { ImportOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons'
+import { ImportOutlined, PlusOutlined, ReloadOutlined, UploadOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import { api, useLoad } from '../api'
 import { DataTable, dateText, doctorOptions, FormDialog, LoadState, names, options, ownerOptions, PageTitle, required, stamp, Status } from '../ui'
+import FileImportDialog from './FileImportDialog'
+import { createScreeningTemplate, parseScreeningFile, screeningImportColumns } from './screeningImport'
+import { fileImportResult, newImportBatch } from './fileImport'
 
 const sources = ['ECG_NETWORK', 'EXAM', 'HEALTH_SCREENING', 'STROKE_SCREENING', 'OUTPATIENT', 'INPATIENT', 'CAMPAIGN']
 const pool = ['NEW', 'HIGH_RISK', 'NON_HIGH_RISK', 'ENROLLED', 'DISCARDED']
@@ -23,6 +26,7 @@ export default function Screening() {
   const [filters, setFilters] = useState({})
   const [create, setCreate] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
+  const [fileImportOpen, setFileImportOpen] = useState(false)
   const [judge, setJudge] = useState(null)
   const [enroll, setEnroll] = useState(null)
   const [result, setResult] = useState(null)
@@ -34,7 +38,7 @@ export default function Screening() {
   const clinicians = useLoad(() => api('/clinicians'))
   const filter = (key, value) => { setFilters(previous => ({ ...previous, [key]: value === '' ? undefined : value })); setPage(0) }
   const orgName = id => orgs.data?.find(x => x.id === id)?.name || '—'
-  return <><PageTitle title="患者池" subtitle="心电网络、体检、筛查发现的对象先进池，判定高危后再建档入组并开出首次联系任务。" extra={<Space><Button icon={<ImportOutlined />} onClick={() => { batch.current = 'B' + dayjs().format('YYYYMMDD-HHmmss'); setImportOpen(true) }}>粘贴导入</Button><Button type="primary" icon={<PlusOutlined />} onClick={() => setCreate(true)}>人工录入</Button></Space>} />
+  return <><PageTitle title="患者池" subtitle="心电网络、体检、筛查发现的对象先进池，判定高危后再建档入组并开出首次联系任务。" extra={<Space wrap><Button icon={<UploadOutlined />} onClick={() => setFileImportOpen(true)}>文件导入</Button><Button icon={<ImportOutlined />} onClick={() => { batch.current = newImportBatch(); setImportOpen(true) }}>粘贴导入</Button><Button type="primary" icon={<PlusOutlined />} onClick={() => setCreate(true)}>人工录入</Button></Space>} />
     {result && <Alert className="mb" type="success" showIcon closable onClose={() => setResult(null)} message={'批次 ' + result.import_batch + '：新增 ' + result.created + ' 条，跳过 ' + result.skipped + ' 条'} description={result.messages.length ? <ul>{result.messages.map((m, i) => <li key={i}>{m}</li>)}</ul> : null} />}
     <Card><div className="toolbar"><Input.Search placeholder="搜索姓名" allowClear onSearch={value => filter('keyword', value)} style={{ width: 200 }} />
       <Select aria-label="来源" placeholder="全部来源" allowClear style={{ width: 150 }} options={options(sources)} onChange={value => filter('source_type', value)} />
@@ -63,6 +67,16 @@ export default function Screening() {
         {account.role_code === 'MANAGER' && <LoadState state={staff}>{data => <Form.Item name="owner_id" label="负责人"><Select options={ownerOptions(data)} /></Form.Item>}</LoadState>}</div>
       <Form.Item name="note" label="备注"><Input.TextArea rows={2} maxLength={1000} /></Form.Item>
     </FormDialog>
+    {fileImportOpen && <FileImportDialog title="文件导入患者池" columns={screeningImportColumns} parseFile={parseScreeningFile} createTemplate={createScreeningTemplate} templateName="患者池导入模板.xlsx"
+      description="首行表头，姓名、联系电话、发现结论必填。发现时间为空使用导入时间；同来源的重复来源编号会跳过。文件先预览，确认后进入待判定池。"
+      initialValues={{ source_type: 'ECG_NETWORK', owner_id: account.user_id }} onClose={() => setFileImportOpen(false)} onSubmit={async (values, preview, importBatch) => {
+        const response = await api('/screenings/import', { ...values, import_batch: importBatch, rows: preview.rows })
+        setResult(fileImportResult(response, preview.entries)); state.reload()
+      }}><div className="form-grid"><Form.Item name="source_type" label="来源" rules={required}><Select options={options(sources)} /></Form.Item>
+        <LoadState state={orgs}>{data => <Form.Item name="org_id" label="来源机构"><Select allowClear options={data.filter(o => o.active).map(o => ({ value: o.id, label: o.name }))} /></Form.Item>}</LoadState>
+        <LoadState state={campaigns}>{data => <Form.Item name="campaign_id" label="所属活动"><Select allowClear options={data.items.filter(c => c.status !== 'CLOSED').map(c => ({ value: c.id, label: c.name }))} /></Form.Item>}</LoadState>
+        {account.role_code === 'MANAGER' && <LoadState state={staff}>{data => <Form.Item name="owner_id" label="负责人"><Select options={ownerOptions(data)} /></Form.Item>}</LoadState>}
+      </div></FileImportDialog>}
     <FormDialog title="粘贴导入筛查名单" width={760} open={importOpen} initialValues={{ source_type: 'ECG_NETWORK', owner_id: account.user_id }} onClose={() => setImportOpen(false)} okText="导入" onSubmit={async values => {
       const rows = parseRows(values.text || '')
       if (!rows.length) throw new Error('请粘贴至少一行数据')

@@ -65,6 +65,35 @@ public class PatientService {
     @Transactional
     public PatientResponse create(CreatePatientRequest req) { return create(req,"MANUAL",null); }
     @Transactional
+    public ImportPatientsResponse importRows(ImportPatientsRequest req) {
+        log.info("import patient file batch={} rows={}",req.importBatch(),req.rows().size());
+        access.operations();var actor=CurrentAccount.get();
+        if(access.executor())Checks.permit(actor.userId().equals(req.ownerId()));
+        validateClinician(req.doctorId());validateStaff(req.ownerId(),"OPERATOR","NURSE","MANAGER");validateOrg(req.orgId());
+        int created=0,skipped=0;List<String> messages=new ArrayList<>();
+        for(int i=0;i<req.rows().size();i++) {
+            var row=req.rows().get(i);
+            String sourceId=Checks.text(row.externalId())?"E:"+row.externalId().trim():"B:"+req.importBatch()+":"+(i+1);
+            PatientExample duplicate=new PatientExample();duplicate.eq("hospital_id",actor.hospitalId()).eq("source_system","FILE_IMPORT").eq("hospital_patient_id",sourceId);
+            if(patients.countByExample(duplicate)>0) {
+                skipped++;messages.add("第"+(i+1)+"行：来源编号或该批次记录已存在，跳过");continue;
+            }
+            String idCard=Checks.text(row.idCard())?row.idCard().trim().toUpperCase(java.util.Locale.ROOT):null;
+            if(idCard!=null) {
+                PatientExample identity=new PatientExample();identity.eq("hospital_id",actor.hospitalId()).eq("id_card",idCard);
+                if(patients.countByExample(identity)>0) {
+                    skipped++;messages.add("第"+(i+1)+"行：证件号已存在，跳过");continue;
+                }
+            }
+            CreatePatientRequest patient=new CreatePatientRequest(row.name().trim(),row.gender()==null?"UNKNOWN":row.gender(),row.age(),row.phone().trim(),
+                row.department().trim(),row.disease().trim(),req.doctorId(),req.ownerId(),row.note(),idCard,row.birthDate(),row.address(),row.emergencyContact(),
+                row.emergencyPhone(),row.inpatientNo(),row.bedNo(),req.patientType(),req.sourceScene(),req.orgId(),null,null,null,"UNKNOWN",null,!Boolean.FALSE.equals(req.outreach()));
+            create(patient,"FILE_IMPORT",sourceId);created++;
+        }
+        audit.append(null,"PATIENT_FILE_IMPORTED",null,null,"IMPORTED","batch="+req.importBatch()+"; created="+created+"; skipped="+skipped);
+        return new ImportPatientsResponse(req.importBatch(),created,skipped,messages);
+    }
+    @Transactional
     public PatientResponse importHospital(CreatePatientRequest req,String sourceSystem,String externalId) {
         access.manager();Checks.require("HOSPITAL_MOCK".equals(sourceSystem)&&Checks.text(externalId),"Invalid hospital source");
         return create(req,sourceSystem,externalId);

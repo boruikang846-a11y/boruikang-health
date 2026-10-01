@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { Link, useNavigate, useOutletContext, useParams } from 'react-router-dom'
 import { Alert, Button, Card, DatePicker, Descriptions, Form, Input, InputNumber, Select, Space, Statistic, Switch, Table, Tabs, Tag, Timeline } from 'antd'
-import { ArrowRightOutlined, PlusOutlined, ReloadOutlined, TeamOutlined, ScheduleOutlined, AlertOutlined, ClockCircleOutlined } from '@ant-design/icons'
+import { ArrowRightOutlined, PlusOutlined, ReloadOutlined, TeamOutlined, ScheduleOutlined, AlertOutlined, ClockCircleOutlined, UploadOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import { api, useLoad } from '../api'
 import { countUp, DataTable, dateText, day, dayText, doctorOptions, FormDialog, LoadState, money, names, options, ownerOptions, PageTitle, required, stamp, Status } from '../ui'
@@ -12,6 +12,9 @@ import { EnrollmentDialog, enrollmentColumns } from './Packages'
 import { ReferralAction, ReferralDialog, referralActions } from './Referrals'
 import { MessageLogDialog } from './Configuration'
 import { ReportReviewDialog, ReportStatus } from './ReportReview'
+import FileImportDialog from './FileImportDialog'
+import { createPatientTemplate, parsePatientFile, patientImportColumns } from './patientImport'
+import { fileImportResult } from './fileImport'
 
 const lifecycles = ['ENROLLED', 'CONTACTED', 'BOOKED', 'ARRIVED', 'MANAGING', 'REVISIT_DUE', 'PAUSED', 'TRANSFERRED', 'LOST', 'CLOSED']
 const scenes = ['ECG_NETWORK', 'EXAM', 'COMMUNITY_SCREENING', 'PRIMARY_REFERRAL', 'OUTPATIENT', 'INPATIENT', 'DISCHARGE', 'CAMPAIGN', 'MANUAL']
@@ -70,13 +73,29 @@ export function Patients() {
   const [page, setPage] = useState(0)
   const [filters, setFilters] = useState({})
   const [create, setCreate] = useState(false)
+  const [fileImportOpen, setFileImportOpen] = useState(false)
+  const [importResult, setImportResult] = useState(null)
   const state = useLoad(() => api('/patients/query', { page, size: 10, ...filters }), [page, JSON.stringify(filters)])
   const staff = useLoad(() => api('/staff'))
   const clinicians = useLoad(() => api('/clinicians'))
   const orgs = useLoad(() => api('/orgs'))
   const filter = (key, value) => { setFilters(previous => ({ ...previous, [key]: value === '' ? undefined : value })); setPage(0) }
   const doctor = account.role_code === 'DOCTOR'
-  return <><PageTitle title={doctor ? '我的患者' : '患者中心'} subtitle={doctor ? '您作为责任医生的患者。档案只读，报告与随访意见在左侧对应页面处理。' : '医院提供资料，责任医生负责医学判断，运营人员和护士负责日常随访。'} extra={!doctor && <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreate(true)}>新建患者</Button>} />
+  return <><PageTitle title={doctor ? '我的患者' : '患者中心'} subtitle={doctor ? '您作为责任医生的患者。档案只读，报告与随访意见在左侧对应页面处理。' : '医院提供资料，责任医生负责医学判断，运营人员和护士负责日常随访。'} extra={!doctor && <Space wrap><Button icon={<UploadOutlined />} onClick={() => setFileImportOpen(true)}>文件批量导入</Button><Button type="primary" icon={<PlusOutlined />} onClick={() => setCreate(true)}>新建患者</Button></Space>} />
+    {importResult && <Alert className="mb" type="success" showIcon closable onClose={() => setImportResult(null)} message={'批次 ' + importResult.import_batch + '：新增 ' + importResult.created + ' 条，跳过 ' + importResult.skipped + ' 条'} description={importResult.messages.length ? <ul>{importResult.messages.map((message, index) => <li key={index}>{message}</li>)}</ul> : null} />}
+    {fileImportOpen && <FileImportDialog title="文件批量导入患者档案" columns={patientImportColumns} parseFile={parsePatientFile} createTemplate={createPatientTemplate} templateName="患者中心导入模板.xlsx"
+      description="姓名、年龄、联系电话、科室、病种/管理原因必填。建议填写来源编号或证件号用于跨批次去重；手机号不会合并档案。确认后批量建档，风险待评估。"
+      initialValues={{ patient_type: 'UNKNOWN', source_scene: 'MANUAL', outreach: true, owner_id: account.user_id }} onClose={() => setFileImportOpen(false)} onSubmit={async (values, preview, importBatch) => {
+        const response = await api('/patients/import', { ...values, import_batch: importBatch, rows: preview.rows })
+        setImportResult(fileImportResult(response, preview.entries)); state.reload()
+      }}><div className="form-grid">
+        <LoadState state={clinicians}>{data => <Form.Item name="doctor_id" label="统一责任医生" rules={required}><Select options={doctorOptions(data)} /></Form.Item>}</LoadState>
+        <LoadState state={staff}>{data => <Form.Item name="owner_id" label="统一负责人" rules={required}><Select disabled={account.role_code !== 'MANAGER'} options={ownerOptions(data)} /></Form.Item>}</LoadState>
+        <Form.Item name="patient_type" label="患者类型" rules={required}><Select options={options(['OUTPATIENT', 'INPATIENT', 'DISCHARGED', 'UNKNOWN'])} /></Form.Item>
+        <Form.Item name="source_scene" label="来源场景" rules={required}><Select options={options(scenes)} /></Form.Item>
+        <LoadState state={orgs}>{data => <Form.Item name="org_id" label="来源机构"><Select allowClear options={data.filter(org => org.active).map(org => ({ value: org.id, label: org.name }))} /></Form.Item>}</LoadState>
+      </div><Form.Item name="outreach" label="建档后开出首次联系任务（按 SLA 计算截止）" valuePropName="checked"><Switch /></Form.Item>
+    </FileImportDialog>}
     <Card><div className="toolbar"><Input.Search placeholder="搜索患者姓名" allowClear onSearch={value => filter('keyword', value)} style={{ width: 200 }} />
       <Select aria-label="风险筛选" placeholder="全部风险" allowClear style={{ width: 130 }} options={options(['UNKNOWN', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'])} onChange={value => filter('risk_level', value)} />
       <Select aria-label="阶段" placeholder="全部阶段" allowClear style={{ width: 130 }} options={options(lifecycles)} onChange={value => filter('lifecycle', value)} />
@@ -156,7 +175,7 @@ export function PatientDetail() {
       { key: 'consent', label: '知情同意', children: patient.consent_at ? dateText(patient.consent_at) + ' / ' + (patient.consent_version || '') : <Tag color="gold">未登记</Tag> },
       { key: 'emergency', label: '紧急联系人', children: patient.emergency_contact ? patient.emergency_contact + ' ' + (patient.emergency_phone || '') : '—' },
       { key: 'idcard', label: '证件号', children: patient.id_card || '—' }, { key: 'address', label: '住址', children: patient.address || '—' },
-      { key: 'source', label: '数据来源', children: patient.source_system === 'HOSPITAL_MOCK' ? <Tag color="gold">模拟医院接口 {patient.hospital_patient_id}</Tag> : '人工录入' },
+      { key: 'source', label: '数据来源', children: patient.source_system === 'HOSPITAL_MOCK' ? <Tag color="gold">模拟医院接口 {patient.hospital_patient_id}</Tag> : patient.source_system === 'FILE_IMPORT' ? '文件导入' : '人工录入' },
       { key: 'tags', label: '标签', children: patient.tags?.length ? patient.tags.map(t => <Tag key={t}>{t}</Tag>) : '—', span: 2 },
       { key: 'note', label: '内部备注', children: patient.note || '暂无', span: 2 },
     ]} /></Card>

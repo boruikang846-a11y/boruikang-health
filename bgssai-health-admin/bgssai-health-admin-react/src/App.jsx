@@ -85,7 +85,7 @@ function Shell({ account, logout }) {
     <div className="nav-caption">{account.role_code === 'DOCTOR' ? '医生工作台' : '院外连续服务'}</div>
     <Menu mode="inline" selectedKeys={[selected]} items={visible.map(([path, title, Icon]) => ({
       key: path, icon: <Icon />, label: <Link to={path}>{title}</Link>,
-    }))} /><div className="sidebar-foot"><span className="online-dot" /> 医患协作 / 1.7</div>
+    }))} /><div className="sidebar-foot"><span className="online-dot" /> 医患协作 / 1.8</div>
   </Layout.Sider><Layout><header className="topbar"><span className="muted">医患运营管理平台 <span className="topbar-divider">/</span> 工作空间</span>
     <Space><Tag>{names[account.role_code]}</Tag><Avatar size="small" style={{ background: '#e5efff', color: '#2469d9' }}>{account.real_name?.slice(0, 1)}</Avatar><span>{account.real_name}</span><Button type="text" icon={<KeyOutlined />} onClick={() => setPassword(true)}>修改密码</Button><Button type="text" icon={<LogoutOutlined />} onClick={logout}>退出</Button></Space>
   </header><main className="main-content"><div className="page-enter" key={location.pathname}><Outlet context={account} /></div></main></Layout>
