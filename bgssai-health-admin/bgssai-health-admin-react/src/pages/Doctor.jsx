@@ -3,7 +3,7 @@ import { Link, useOutletContext, useSearchParams } from 'react-router-dom'
 import { Button, Card, Segmented, Select, Space, Statistic, Tag } from 'antd'
 import { ArrowRightOutlined, AlertOutlined, AuditOutlined, FileSearchOutlined, InboxOutlined, ReloadOutlined } from '@ant-design/icons'
 import { api, useLoad } from '../api'
-import { DataTable, dateText, LoadState, names, options, PageTitle } from '../ui'
+import { countUp, DataTable, dateText, LoadState, names, options, PageTitle } from '../ui'
 import { TaskDrawer, taskColumns } from './Tasks'
 import { ReportReviewDialog } from './ReportReview'
 
@@ -31,7 +31,7 @@ export function DoctorHome() {
         ['待阅报告', data.unread_report_count, '出院、门诊、体检报告', FileSearchOutlined, 'blue', '/doctor/reports'],
         ['待查收随访结果', data.pending_result_count, '已联系患者的随访记录', InboxOutlined, 'teal', '/doctor/results'],
         ['待处置异常', data.escalated_alert_count, '负责患者 ' + data.patient_count + ' 人 / 高风险 ' + data.high_risk_count + ' 人', AlertOutlined, 'orange', '/doctor/alerts'],
-      ].map(([label, value, detail, Icon, color, path]) => <Link to={path} key={label}><Card className="metric-card"><div className={'metric-icon ' + color}><Icon /></div><Statistic title={label} value={value} /><p>{detail}</p></Card></Link>)}
+      ].map(([label, value, detail, Icon, color, path]) => <Link to={path} key={label}><Card className="metric-card"><div className={'metric-icon ' + color}><Icon /></div><Statistic title={label} value={value} formatter={countUp} /><p>{detail}</p></Card></Link>)}
     </div>}</LoadState>
     <Card className="mb" title="待审核随访意见" extra={<Link to="/doctor/reviews">全部 <ArrowRightOutlined /></Link>}><DataTable state={reviews} page={0} size={5} setPage={() => {}} columns={taskColumns(setTask)} /></Card>
     <Card className="mb" title="待阅报告" extra={<Link to="/doctor/reports">全部 <ArrowRightOutlined /></Link>}><DataTable state={reports} page={0} size={5} setPage={() => {}} columns={reportColumns(setReport)} /></Card>
