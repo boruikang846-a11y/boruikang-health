@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Health 1.7 · DeepSeek 接入设置</title>
+<style>body{margin:0;background:#f4f7fb;color:#24374d;font:16px/1.6 system-ui}main{max-width:780px;margin:32px auto;padding:0 20px}section,dialog{background:white;border:1px solid #d8e2ef;border-radius:12px;padding:24px}dialog{max-width:520px;width:calc(100% - 80px)}label{display:block;margin:16px 0}input,select,button{font:inherit;padding:10px;border:1px solid #cad6e6;border-radius:6px}input[type=password],select{display:block;box-sizing:border-box;width:100%;margin-top:8px}button{cursor:pointer;background:#2469d9;color:white}p,small{color:#5a6d82}a{color:#2469d9}.note{background:#eef4ff;padding:12px}</style>
+<main><a href="index.html">返回管理端原型</a> · <a href="PAGE-FLOW.html">页面跳转契约</a>
+<h1>运营设置 · 外部接入</h1><p>HEALTH 1.7 交互原型。使用虚构密钥演示，不保存到磁盘、不调用外部接口。</p>
+<section><h2>DeepSeek 随访建议</h2><p>根据关联病历生成草稿，由责任医生审核后再人工联系。</p>
+<p id="status" role="status">API Key：未配置 · 未启用</p><button id="configure">配置 DeepSeek</button></section>
+<p>运营主管从「运营设置 → 外部接入」进入；平台管理员从「接入设置」进入。</p>
+<a href="../../../feature/followup-ai-1.7.html">查看随访生成与医生审核流程</a></main>
+<dialog id="editor"><form id="config"><h2>配置 DeepSeek</h2><p>服务商：DeepSeek</p>
+<label>DeepSeek 模型<select name="model_name"><option value="deepseek-flash">deepseek-flash（建议）</option><option value="deepseek-v4-pro">deepseek-v4-pro</option></select></label>
+<label>DeepSeek API Key（留空保留原值）<input name="secret" type="password" autocomplete="off" placeholder="输入虚构密钥演示"></label>
+<label><input name="enabled" type="checkbox"> 启用随访建议生成</label>
+<p class="note">启用后，随访页点击「根据病历生成随访建议」会把关联报告正文发给 DeepSeek。保存不代表已经调用成功。</p>
+<p id="error" role="alert"></p><button type="button" id="cancel">取消</button> <button type="submit">保存</button></form></dialog>
+<script>
+const dialog=document.getElementById('editor'),form=document.getElementById('config');let configured=false,enabled=false,model='deepseek-flash';
+document.getElementById('configure').onclick=()=>{form.reset();form.elements.model_name.value=model;form.elements.enabled.checked=enabled;document.getElementById('error').textContent='';dialog.showModal()};
+document.getElementById('cancel').onclick=()=>dialog.close();
+form.onsubmit=event=>{event.preventDefault();const hasKey=configured||Boolean(form.elements.secret.value.trim());if(form.elements.enabled.checked&&!hasKey){document.getElementById('error').textContent='请填写 DeepSeek API Key 后再启用';return}configured=hasKey;enabled=form.elements.enabled.checked;model=form.elements.model_name.value;form.elements.secret.value='';document.getElementById('status').textContent='模型：'+model+' · API Key：'+(configured?'已配置（不回显）':'未配置')+' · '+(enabled?'已配置，尚未验证调用':'未启用');dialog.close()};
+</script></html>

@@ -30,10 +30,10 @@ public class AiDraftService {
     public String generate(KnowledgeEntry reference,CareRecord record){
         log.info("generate AI follow-up draft recordId={}",record==null?null:record.id);IntegrationConfig config=integrations.aiConfig();
         Checks.require(config!=null&&Boolean.TRUE.equals(config.enabled)&&Checks.text(config.secret),"AI not configured / AI 尚未配置。请在接入设置填写 DeepSeek API Key 并启用，或改用基础问询起草");
-        Checks.require(IntegrationService.endpointAllowed(config.endpoint),"Unapproved AI endpoint");
+        Checks.require(IntegrationService.endpointAllowed(config.endpoint),"Only DeepSeek is supported / 请在接入设置重新配置 DeepSeek");
         Checks.require(IntegrationService.modelAllowed(config.endpoint,config.modelName),"Unsupported AI model");
         Checks.require(record!=null&&Checks.text(record.content),"Linked record has no clinical text / 本任务没有可引用的出院小结或病历正文，无法生成随访建议");
-        AiThinking thinking=IntegrationService.DEEPSEEK.equals(config.endpoint)?new AiThinking("disabled"):null;
+        AiThinking thinking=new AiThinking("disabled");
         AiRequest req=new AiRequest(config.modelName,List.of(new AiMessage("system",SYSTEM),new AiMessage("user",userPrompt(reference,record))),thinking,2000,0.2,false);
         HttpHeaders headers=new HttpHeaders();headers.setContentType(MediaType.APPLICATION_JSON);headers.setBearerAuth(config.secret);
         try {
