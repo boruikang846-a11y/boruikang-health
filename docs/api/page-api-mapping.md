@@ -36,7 +36,7 @@ MANUAL/TEMPLATE/AI 均生成待审核草稿。列表隐藏内部 note，授权�
 | 页面 | API | 操作 |
 | --- | --- | --- |
 | workbench 队列 | A/reports/workbench | 八个队列计数与跳转 |
-| screening | A/screenings/query、create、import、judge、enroll、A/orgs、A/campaigns/query、A/staff、A/clinicians | 患者池录入、导入、判定、建档入组 |
+| screening | A/screenings/query、create、import、judge、enroll、A/orgs、A/campaigns/query、A/staff、A/clinicians | 患者池录入、粘贴/文件导入（1.8 模板、校验、预览确认，复用 import）、判定、建档入组 |
 | invitations、patients/:id 邀约页签 | A/invitations/query、create、A/templates/query | 逐轮邀约登记与话术参考 |
 | appointments、patients/:id 预约页签、任务抽屉结构化预约 | A/appointments/query、create、transition | 预约、提醒、到院、爽约、取消、结果 |
 | packages | A/packages/query、save、status、A/plans/query、save、status、A/enrollments/query、create、transition | 服务包 SKU、随访方案节点、签约实例生命周期 |
@@ -45,3 +45,11 @@ MANUAL/TEMPLATE/AI 均生成待审核草稿。列表隐藏内部 note，授权�
 | patients/:id 扩展 | A/patients/timeline、consent、A/medications/query、save、A/message-logs/query、create、A/records/observation | 时间轴、同意、用药、已发消息、代录指标 |
 | followups、alerts、revisits 抽屉 | A/tasks/reassign、A/message-logs/create、A/appointments/create；transition 增加 disposition | 转交、短信登记、结构化预约、处置去向 |
 | reports 扩展 | A/reports/metrics、funnel、operators、daily、metric-dictionary | 十项指标、漏斗、按人绩效、日统计、字典 |
+
+
+## 1.8 文件导入
+
+| 页面 | API | 行为 |
+| --- | --- | --- |
+| patients | A/patients/import、A/staff、A/clinicians、A/orgs | 文件批量建档、逐行校验、统一分配、来源编号/证件号去重；见 patient-file-import-1.8.md |
+| screening | A/screenings/import | 文件预览校验后导入待判定池；见 screening-file-import-1.8.md |

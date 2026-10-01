@@ -3,7 +3,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import java.time.LocalDateTime;
 import java.util.List;
-/** Pasted-table import: the browser splits the pasted text into rows; the server validates and de-duplicates by external id. */
+/** Pasted-table or file import: the browser normalizes rows; the server validates and de-duplicates by external id. */
 public record ImportScreeningRequest(@NotBlank @Pattern(regexp="ECG_NETWORK|EXAM|HEALTH_SCREENING|STROKE_SCREENING|OUTPATIENT|INPATIENT|CAMPAIGN") String sourceType,
     @NotBlank @Pattern(regexp="[a-zA-Z0-9-]{1,60}") String importBatch,@Positive Long orgId,@Positive Long campaignId,@Positive Long ownerId,
     @NotEmpty @Size(max=500) List<@Valid Row> rows) {

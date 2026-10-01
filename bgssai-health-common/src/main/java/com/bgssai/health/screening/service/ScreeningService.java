@@ -69,7 +69,7 @@ public class ScreeningService {
             r.screenedAt=row.screenedAt()==null?LocalDateTime.now():row.screenedAt();r.finding=row.finding().trim();r.category=row.category();r.riskLevel="UNKNOWN";r.poolStatus="NEW";
             r.externalId=externalId;r.importBatch=req.importBatch();r.version=0;r.creator=actor.userId().toString();screenings.insertSelective(r);created++;
         }
-        audit.append(null,"SCREENING_IMPORTED",null,null,req.importBatch(),"source="+req.sourceType()+"; created="+created+"; skipped="+skipped);
+        audit.append(null,"SCREENING_IMPORTED",null,null,"IMPORTED","batch="+req.importBatch()+"; source="+req.sourceType()+"; created="+created+"; skipped="+skipped);
         return new ImportScreeningResponse(req.importBatch(),created,skipped,messages);
     }
     @Transactional
