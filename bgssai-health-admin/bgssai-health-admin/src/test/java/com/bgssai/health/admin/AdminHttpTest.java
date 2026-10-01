@@ -173,6 +173,9 @@ class AdminHttpTest {
         var integrations=request("/bgssai/admin/integrations",null,token);
         assertEquals(200,integrations.statusCode());assertFalse(integrations.body().contains("\"secret\":"));
         assertEquals(400,request("/bgssai/admin/integrations/save","{\"provider\":\"AI\",\"endpoint\":\"http://127.0.0.1/private\",\"model_name\":\"test\",\"secret\":\"test\",\"enabled\":true}",token).statusCode());
+        for(String endpoint:List.of("https://dev.user.bgssai-tokenhub.cn/v1/chat/completions","https://www.bgssai-tokenhub.cn/v1/chat/completions")) {
+            assertEquals(400,request("/bgssai/admin/integrations/save",json.writeValueAsString(Map.of("provider","AI","endpoint",endpoint,"model_name","deepseek-flash","secret","old-key","enabled",true)),token).statusCode());
+        }
         String secret="sk-unit-test-secret";
         assertEquals(400,request("/bgssai/admin/integrations/save",json.writeValueAsString(Map.of("provider","AI","endpoint","https://api.deepseek.com/chat/completions","model_name","deepseek-chat","secret",secret,"enabled",true)),token).statusCode());
         var savedResponse=request("/bgssai/admin/integrations/save",json.writeValueAsString(Map.of("provider","AI","endpoint","https://api.deepseek.com/chat/completions","model_name","deepseek-flash","secret",secret,"enabled",true)),token);
@@ -182,5 +185,11 @@ class AdminHttpTest {
         assertEquals("deepseek-flash",saved.path("model_name").asText());
         assertTrue(saved.path("enabled").asBoolean());assertTrue(saved.path("configured").asBoolean());
         assertEquals("CONFIGURED_UNVERIFIED",saved.path("status").asText());
+        String body=json.writeValueAsString(Map.of("provider","AI","endpoint","https://api.deepseek.com/chat/completions","model_name","deepseek-v4-pro","secret","","enabled",false));
+        var updatedResponse=request("/bgssai/admin/integrations/save",body,token);
+        assertEquals(200,updatedResponse.statusCode(),updatedResponse.body());
+        assertFalse(updatedResponse.body().contains(secret));
+        assertTrue(json.readTree(updatedResponse.body()).path("result").path("configured").asBoolean());
+        assertFalse(json.readTree(updatedResponse.body()).path("result").path("enabled").asBoolean());
     }
 }

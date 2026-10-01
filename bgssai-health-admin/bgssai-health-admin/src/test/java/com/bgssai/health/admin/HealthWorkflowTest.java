@@ -39,6 +39,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class HealthWorkflowTest {
     @Autowired TaskService tasks;
     @Autowired IntegrationService integrations;
+    @Autowired IntegrationConfigMapper integrationMapper;
     @Autowired PatientService patients;
     @Autowired RecordService records;
     @Autowired KnowledgeService knowledge;
@@ -317,4 +318,37 @@ class HealthWorkflowTest {
         assertThrows(IllegalArgumentException.class,()->ex.setOrderByClause("id DESC; DROP TABLE patient"));
         assertThrows(IllegalArgumentException.class,()->ex.selectColumns("password"));
     }
+    @Test void onlyManagersAndPlatformAdminsCanConfigureDeepseek() {
+        var request=new SaveIntegrationRequest("AI",IntegrationService.DEEPSEEK,"deepseek-flash","test-deepseek-key",true);
+        for(String role:java.util.List.of("DOCTOR","NURSE","OPERATOR")) {
+            actor(3L,role);rejects("4003",()->integrations.save(request));
+        }
+        for(String role:java.util.List.of("MANAGER","PLATFORM_ADMIN")) {
+            actor(1L,role);assertTrue(integrations.save(request).configured());
+        }
+    }
+    @Test void previousProviderRequiresANewDeepseekKey() {
+        IntegrationConfig old=integrations.aiConfig();old.endpoint="https://dev.user.bgssai-tokenhub.cn/v1/chat/completions";old.modelName="legacy-model";old.secret="legacy-key";old.enabled=true;
+        IntegrationConfigExample ex=new IntegrationConfigExample();ex.eq("id",old.id);
+        integrationMapper.updateByExampleSelective(old,ex);
+        var listed=integrations.list().getFirst();
+        assertEquals(IntegrationService.DEEPSEEK,listed.endpoint());assertEquals("deepseek-flash",listed.modelName());
+        assertFalse(listed.enabled());assertFalse(listed.configured());assertEquals("NOT_CONFIGURED",listed.status());
+        assertEquals(old.endpoint,integrations.aiConfig().endpoint);
+        assertThrows(BizException.class,()->integrations.save(new SaveIntegrationRequest("AI",IntegrationService.DEEPSEEK,"deepseek-flash","",true)));
+        assertEquals("legacy-key",integrations.aiConfig().secret);
+        var saved=integrations.save(new SaveIntegrationRequest("AI",IntegrationService.DEEPSEEK,"deepseek-flash","new-deepseek-key",true));
+        assertTrue(saved.configured());assertTrue(saved.enabled());assertEquals("new-deepseek-key",integrations.aiConfig().secret);
+        integrations.save(new SaveIntegrationRequest("AI",IntegrationService.DEEPSEEK,"deepseek-v4-pro","",true));
+        assertEquals("new-deepseek-key",integrations.aiConfig().secret);
+    }
+    @Test void savingDisabledDeepseekDoesNotRetainOtherProviderKey() {
+        IntegrationConfig old=integrations.aiConfig();old.endpoint="https://www.bgssai-tokenhub.cn/v1/chat/completions";old.secret="legacy-key";old.enabled=true;
+        IntegrationConfigExample ex=new IntegrationConfigExample();ex.eq("id",old.id);
+        integrationMapper.updateByExampleSelective(old,ex);
+        var saved=integrations.save(new SaveIntegrationRequest("AI",IntegrationService.DEEPSEEK,"deepseek-flash","",false));
+        assertFalse(saved.configured());assertFalse(saved.enabled());assertEquals("",integrations.aiConfig().secret);
+        assertThrows(BizException.class,()->integrations.save(new SaveIntegrationRequest("AI",IntegrationService.DEEPSEEK,"deepseek-flash","",true)));
+    }
+
 }

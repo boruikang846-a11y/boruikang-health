@@ -49,14 +49,13 @@ class AiDraftServiceTest {
         KnowledgeEntry reference=new KnowledgeEntry();reference.content="宣教：按时复诊。";
         assertEquals("核对复诊安排。\n本段为 AI 草稿",service.generate(reference,record));
     }
-    @Test void tokenHubRequestOmitsThinkingMode() {
-        IntegrationConfig config=config("https://dev.user.bgssai-tokenhub.cn/v1/chat/completions","demo-model");
-        when(integrations.aiConfig()).thenReturn(config);
-        when(http.postForObject(eq(config.endpoint),any(),eq(String.class))).thenAnswer(invocation->{
-            assertFalse(invocation.getArgument(1,HttpEntity.class).getBody().toString().contains("thinking"));
-            return "{\"choices\":[{\"message\":{\"content\":\"问询草稿\"}}]}";
-        });
-        assertEquals("问询草稿",service.generate(null,record("门诊记录：血压偏高。")));
+    @Test void otherEndpointsAreRejectedBeforeAnyCall() {
+        for(String endpoint:java.util.List.of("https://dev.user.bgssai-tokenhub.cn/v1/chat/completions","https://www.bgssai-tokenhub.cn/v1/chat/completions","https://api.deepseek.com.evil.example/chat/completions")) {
+            when(integrations.aiConfig()).thenReturn(config(endpoint,"deepseek-flash"));
+            BizException ex=assertThrows(BizException.class,()->service.generate(null,record("出院小结")));
+            assertTrue(ex.getMessage().contains("DeepSeek"));
+        }
+        verifyNoInteractions(http);
     }
     @Test void missingRecordTextFailsBeforeAnyCall() {
         when(integrations.aiConfig()).thenReturn(config(IntegrationService.DEEPSEEK,"deepseek-flash"));

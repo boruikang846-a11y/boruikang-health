@@ -14,7 +14,7 @@
 | channels | A/channels、A/channels/create、toggle | 经理维护渠道，二维码本地生成 |
 | reports | A/reports/weekly | 日期范围统计、浏览器打印 |
 | hospital | A/hospital/status、mock/query、sync、A/staff | 经理预览/同步虚构医院数据、查看幂等结果 |
-| settings | A/integrations、A/integrations/save | 接入状态；运营主管或平台管理员保存 DeepSeek / TokenHub 配置，密钥不回显 |
+| settings | A/integrations、A/integrations/save | 接入状态；运营主管或平台管理员保存 DeepSeek 模型、API Key 与启用状态（端点固定），密钥不回显 |
 | 用户端 /、/join/:token | 无 | 系统全貌、角色、出院报告依据、三模式规划、页内导航与语言切换 |
 
 MANUAL/TEMPLATE/AI 均生成待审核草稿。列表隐藏内部 note，授权医护详情可查看。所有查询失败必须显示错误和重试，不用零值冒充统计结果。报告打印只包含当前已加载范围。
