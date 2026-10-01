@@ -60,7 +60,7 @@ manager 可从侧栏“医院数据”预览并同步 Mock：2 位虚构患者�
 
 ## 文档与发布
 
-- [范围与验收标准](docs/feature/health-mvp.md)、[参考资料吸收](docs/project/reference-intake.md)
+- [范围与验收标准](docs/feature/health-mvp.md)、[参考资料吸收](docs/project/reference-intake.md)、[需求对照与差距报告 2026-09-29](docs/project/requirements-gap-20260929.md)
 - [原型入口](docs/demo-static/web/index.html)、[技术设计](docs/architecture/health-mvp.md)、[API 契约](docs/api/health-mvp.md)
 - [SQL 使用说明](sql/README.md)、[部署交接](docs/deploy/health-mvp.md)、[验证记录](docs/review/mvp-validation.md)
 - [开发试点边界](docs/security/health-mvp.md)
