@@ -1,19 +1,18 @@
 <!doctype html>
-<html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>HEALTH 1.8 患者中心文件导入原型</title>
-<style>body{font:14px system-ui;margin:0;background:#f4f7fb;color:#23374b}main{max-width:1050px;margin:40px auto;padding:24px}button,select,input{font:inherit;padding:9px 14px;border:1px solid #d9e2ee;border-radius:7px;background:white;color:inherit}button{cursor:pointer}.primary{background:#2769dc;color:white}header,.row{display:flex;justify-content:space-between;align-items:center;gap:12px}.card{background:white;border:1px solid #e4eaf1;border-radius:12px;padding:24px;margin-top:20px}dialog{width:min(860px,90vw);border:0;border-radius:14px;padding:26px}dialog::backdrop{background:#1236}.info{background:#edf5ff;padding:15px;line-height:1.8;border-radius:8px}.error{color:#b33;background:#fff2f0}.fields{display:flex;gap:18px;margin:20px 0}.fields label{flex:1}.fields select{display:block;width:100%;margin-top:8px}table{width:100%;border-collapse:collapse;margin:20px 0}td,th{text-align:left;padding:12px;border-bottom:1px solid #e4eaf1}p{line-height:1.8;color:#61758b}footer{text-align:right;margin-top:20px}button:disabled{opacity:.5;cursor:default}</style>
-<main><header><div><h1>患者中心</h1><p>文件批量创建患者档案，统一分配责任医生与负责人。</p></div><div><button onclick="openImport()">文件导入</button> <button>新建患者</button> <button class="primary">刷新</button></div></header>
-<div class="info">HEALTH 1.8 交互原型，预览与导入结果均为虚构演示，不连接患者中心接口。</div><div id="result" class="card" hidden></div><div class="card"><h2>已建档对象</h2><table><tr><th>姓名</th><th>来源</th><th>科室 / 病种</th><th>状态</th></tr><tr><td>演示对象</td><td>心电网络</td><td>综合服务 / 虚构病种</td><td>已建档</td></tr></table></div><p><a href="index.html">管理端概览</a> · <a href="PAGE-FLOW.html">页面契约</a></p></main>
-<dialog id="import"><header><h2>文件批量导入患者中心</h2><button onclick="closeImport()">关闭</button></header><div class="info">支持 Excel（.xlsx）和 CSV，单文件最多 5 MiB、500 条记录。首行表头；姓名、年龄、联系电话、科室、病种/管理原因必填。重复来源编号或证件号将跳过。</div>
-<p><button onclick="alert('实际页面下载含空白数据表与填写说明的 Excel 模板，电话与编号列使用文本格式。')">下载 Excel 模板</button> <label>选择文件 <input type="file" accept=".xlsx,.csv" onchange="selectFile(this.files[0])"></label></p>
-<div class="fields"><label>责任医生<select><option>虚构示范医生</option></select></label><label>来源<select id="source"><option value="ECG_NETWORK">心电网络</option><option value="EXAM">体检</option><option value="HEALTH_SCREENING">健康筛查</option></select></label><label>来源机构<select><option>不指定</option><option>虚构示范医院</option></select></label><label>所属活动<select><option>不指定</option></select></label><label>负责人<select><option>当前运营主管</option><option>演示运营人员</option></select></label></div>
-<div id="preview" hidden><p id="file"></p><div id="validation" class="info"></div><table><tr><th>文件行号</th><th>姓名</th><th>电话</th><th>年龄</th><th>科室 / 病种</th><th>校验</th></tr><tbody id="rows"></tbody></table><button onclick="showPreview(true)">演示：校验失败</button> <button onclick="showPreview(false)">演示：正确预览</button></div>
-<footer><button onclick="closeImport()">取消</button> <button id="submit" class="primary" disabled onclick="submitImport()">确认导入</button></footer></dialog>
-<script>
-const dialog=document.querySelector('#import');let selected='';
-function closeImport(){dialog.close();selected='';document.querySelector('input[type=file]').value='';document.querySelector('#preview').hidden=true;document.querySelector('#submit').disabled=true}
-function openImport(){closeImport();dialog.showModal()}
-function selectFile(file){document.querySelector('#submit').disabled=true;if(!file)return;if(!/\.(xlsx|csv)$/i.test(file.name)||file.size>5*1024*1024){alert('请选择 5 MiB 内的 .xlsx 或 .csv 文件');return}selected=file.name;document.querySelector('#file').textContent='文件：'+selected+' / 虚构演示预览：2 条记录';showPreview(false)}
-function showPreview(invalid){document.querySelector('#preview').hidden=false;const v=document.querySelector('#validation');v.className=invalid?'info error':'info';v.textContent=invalid?'第 3 行：年龄必须为 0–130 的整数。请修改文件后重新选择；不能提交。':'2 条记录校验通过。确认后创建患者档案。';document.querySelector('#rows').innerHTML='<tr><td>2</td><td>演示对象一</td><td>00000000001</td><td>66</td><td>综合服务 / 虚构病种</td><td>通过</td></tr><tr><td>3</td><td>演示对象二</td><td>00000000002</td><td>'+(invalid?'150':'52')+'</td><td>内科 / 虚构病种</td><td>'+(invalid?'年龄超限':'通过')+'</td></tr>';document.querySelector('#submit').disabled=invalid}
-function submitImport(){closeImport();const r=document.querySelector('#result');r.hidden=false;r.textContent='演示批次 B20261001：新增 1 条，跳过 1 条；第 2 条：来源编号 DEMO-002 已存在，跳过。患者中心已刷新。'}
-</script></html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>HEALTH 1.8 · 患者中心文件导入原型</title>
+  <link rel="stylesheet" href="../interactive.css">
+</head>
+<body data-demo-entry="patient-import">
+  <header id="header"></header>
+  <div class="layout"><aside id="nav"></aside><main id="main"></main></div>
+  <dialog id="dialog"><div id="dialog-content"></div></dialog>
+  <div id="notice" role="status" aria-live="polite"></div>
+  <script src="../patient-import-files.js"></script>
+  <script src="../patient-import.js"></script>
+  <script src="../interactive.js"></script>
+</body>
+</html>

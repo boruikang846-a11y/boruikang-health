@@ -53,3 +53,11 @@ sequenceDiagram
 批次审计 `after_state=IMPORTED`，完整批次号放在 `detail`，满足状态列 32 字上限且保留最长 60 字批次。
 
 表头白名单：姓名/name、性别/gender、年龄/age、联系电话/电话/手机号/phone、科室/department、病种/管理原因/病种/管理原因/disease、来源编号/external_id、证件号/身份证号/id_card、出生日期/birth_date、住址/地址/address、紧急联系人/emergency_contact、紧急联系电话/emergency_phone、住院号/inpatient_no、床号/bed_no、内部备注/备注/note。日期、编码、未识别列、重复表头与实际行号规则见[患者池通用解析设计](screening-file-import-1.8.md)。
+
+## 原型交互与正式接口的对应（2026-10-02）
+
+患者中心与专项 HTML 共用三步弹窗，页面入口和清单联动以[完整原型](../demo-static/web/interactive.html)为准。`patient-import-files.js` 由 `docs/demo-static/build-import-parser.mjs` 打包现有 `patientImport.js` / `fileImport.js`，离线提供同口径 Excel/CSV 解析、模板和校验，不引入新的字段契约。
+
+第二步统一选择对应现有 `doctor_id/owner_id/patient_type/source_scene/org_id/outreach`；预览显示物理文件行号，错误阻止整批提交，重复来源编号或证件号预计跳过。确认后原型仅模拟内存建档、OUTREACH 任务与追加审计；正式应用继续使用本契约的 `/patients/import` 与后台最终查重。结果视图对应 `import_batch/created/skipped/messages`，可回到本批新增患者清单。浏览器演示结果不代表真实接口调用或数据库写入。
+
+本次只完善原型交互，应用实现、接口与 SQL 沿用现有 1.8：无新增接口、枚举或数据结构。
