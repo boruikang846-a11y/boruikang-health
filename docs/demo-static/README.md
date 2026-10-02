@@ -1,6 +1,8 @@
-# HEALTH 1.6 离线交互原型
+# HEALTH 1.8 离线交互原型
 
 打开 [完整原型](web/interactive.html)。[原型入口](web/index.html)同时保留历史页面。
+
+患者中心文件导入可直接打开[专项入口](web/admin/patient-file-import-1.8.html)，以虚构运营主管进入患者清单。点击“文件导入”，体验上传、校验与分配、导入结果；没有文件时可选虚构正确/重复或错误样例。实际 Excel/CSV 在本地读取，模板与校验复用现有业务页面；演示建档、首触任务、时间轴与清单联动仅保存在当前页面。
 
 完整原型使用虚构患者、报告和业务记录，不请求后端或任何外部服务。侧栏、工作台队列、清单、详情、患者档案页签、流程总览和返回路径均可点击。浏览器后退可以回到上一页；切换演示角色保留记录，刷新或“重置演示”恢复初始状态。
 
@@ -21,3 +23,11 @@
 ```sh
 python3 docs/demo-static/build-preview.py /tmp/health-prototype.html
 ```
+
+直接进入患者中心的单文件版本：
+
+```sh
+python3 docs/demo-static/build-preview.py /tmp/patient-import-prototype.html --patient-import
+```
+
+离线文件解析器已随原型提交，无需安装依赖即可体验。更新字段规则后，先安装管理端前端依赖，再运行 `node docs/demo-static/build-import-parser.mjs` 重新打包。
