@@ -1,6 +1,6 @@
 # 数据库使用说明
 
-MySQL 8 为部署目标。`DDL.sql` 是新库的规范表结构，`DML.sql` 是演示知识和未启用的接入配置，`dev/DML.sql` 是虚构账号、患者和任务。dev 手工初始化顺序为 DDL → DML → dev/DML，执行前核对目标库 `bgssai_health`。应用 dev/prod 均 `spring.sql.init.mode=never`，不会启动时建表或灌入演示数据。
+MySQL 8 为部署目标。`DDL.sql` 是新库的规范表结构，`DML.sql` 是演示知识和未启用的接入配置，`dev/DML.sql` 是虚构账号、患者和任务。SQL 文件不指定库名；初始化时必须先创建目标库，并让 MySQL 客户端选择该库后按 DDL → DML → dev/DML 执行。dev 的目标库是华为云 RDS `192.168.0.217:3306/boruikang`（应用主机走内网；外网地址 `101.44.27.60` 仅供授权的运维连接），prod 由独立配置决定。应用 dev/prod 均 `spring.sql.init.mode=never`，不会启动时建表或灌入演示数据。
 
 `DDL-local.sql`、`DML-local.sql`、`dev/DML-local.sql` 是 H2 MySQL 模式适配，只用于 local/test 自动初始化。不得用于 MySQL 部署。H2 验证不能代替真实 MySQL 上的 DDL、唯一约束、锁并发与备份恢复验证。
 

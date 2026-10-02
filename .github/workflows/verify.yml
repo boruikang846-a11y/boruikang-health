@@ -17,6 +17,7 @@ jobs:
         env:
           MYSQL_ROOT_PASSWORD: health-ci-only
           MYSQL_ROOT_HOST: '%'
+          MYSQL_DATABASE: bgssai_health
         ports:
           - 3307:3306
         options: >-
@@ -53,7 +54,7 @@ jobs:
           MYSQL_CONTAINER: ${{ job.services.mysql.id }}
         run: |
           for sql in sql/DDL.sql sql/DML.sql sql/dev/DML.sql; do
-            docker exec -i "$MYSQL_CONTAINER" mysql --default-character-set=utf8mb4 -uroot -phealth-ci-only < "$sql"
+            docker exec -i "$MYSQL_CONTAINER" mysql --default-character-set=utf8mb4 -uroot -phealth-ci-only bgssai_health < "$sql"
           done
       - name: Verify Java modules and packaged resources
         run: mvn -B verify

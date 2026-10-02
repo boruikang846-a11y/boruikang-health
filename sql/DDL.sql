@@ -1,6 +1,4 @@
 -- HEALTH-MVP-1 / MySQL 8. Canonical schema, non-destructive initialization.
-CREATE DATABASE IF NOT EXISTS bgssai_health CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE bgssai_health;
 CREATE TABLE IF NOT EXISTS health_account (
  id BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
  username VARCHAR(64) NOT NULL, password VARCHAR(200) NOT NULL, real_name VARCHAR(80) NOT NULL,
