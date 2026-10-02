@@ -1,4 +1,3 @@
-USE bgssai_health;
 -- Development-only fictional accounts and patients. No source patient records are copied.
 INSERT INTO health_account (id,username,password,real_name,role_code,hospital_id,is_enabled,creator) VALUES (1,'manager','HealthDemo@2026!','演示运营主管','MANAGER',1,1,'demo-seed') ON DUPLICATE KEY UPDATE id=id;
 INSERT INTO health_account (id,username,password,real_name,role_code,hospital_id,department,is_enabled,creator) VALUES (2,'doctor','HealthDemo@2026!','演示责任医生','DOCTOR',1,'心血管内科',1,'demo-seed') ON DUPLICATE KEY UPDATE id=id;
