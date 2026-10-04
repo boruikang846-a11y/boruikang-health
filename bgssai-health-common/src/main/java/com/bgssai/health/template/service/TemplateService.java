@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
-/** SMS and phone-script templates plus the manual "already sent" ledger. Nothing here transmits a message. */
+/** SMS, phone-script and WeChat wording templates plus the manual "already sent" ledger. Nothing here transmits a message; WeChat sending lives in the wechat package. */
 @Service
 public class TemplateService {
     private static final Logger log=LoggerFactory.getLogger(TemplateService.class);
@@ -31,6 +31,10 @@ public class TemplateService {
         MessageTemplateExample duplicate=new MessageTemplateExample();duplicate.eq("hospital_id",hospitalId).eq("code",req.code());if(req.id()!=null)duplicate.ne("id",req.id());
         Checks.require(templates.countByExample(duplicate)==0,"Template code already exists / 模板编码重复");
         MessageTemplate row=new MessageTemplate();row.code=req.code();row.channel=req.channel();row.scene=req.scene();row.title=req.title().trim();row.content=req.content().trim();row.active=req.active()==null||req.active();
+        boolean official="MP_TEMPLATE".equals(req.channel());row.externalTemplateId=official&&Checks.text(req.externalTemplateId())?req.externalTemplateId():"";
+        Checks.require(!official||Checks.text(req.externalTemplateId()),"WeChat template id required / 公众号模板消息请填写微信模板 ID");
+        if(official)com.bgssai.health.wechat.service.WechatLedger.templateData(row.content.replaceAll("\\{[^{}\\n]{1,30}}","x"));
+        Checks.require(!"WELCOME".equals(req.scene())||("WECHAT".equals(req.channel())&&!com.bgssai.health.wechat.service.WechatLedger.hasPlaceholder(row.content)),"Welcome wording is sent as written / 欢迎语只用于微信渠道，会原样自动发送，不能包含 {占位}");
         if(req.id()==null){row.hospitalId=hospitalId;row.version=0;row.creator=CurrentAccount.get().userId().toString();templates.insertSelective(row);}
         else{MessageTemplate old=templates.selectByPrimaryKey(req.id());Checks.found(old!=null&&hospitalId.equals(old.hospitalId));Checks.conflict(req.version()!=null&&req.version().equals(old.version));
             row.version=old.version+1;row.modifier=CurrentAccount.get().userId().toString();MessageTemplateExample ex=new MessageTemplateExample();ex.eq("id",old.id).eq("hospital_id",hospitalId).eq("version",old.version);Checks.conflict(templates.updateByExampleSelective(row,ex)==1);row.id=old.id;}
@@ -56,6 +60,6 @@ public class TemplateService {
         ex.setOrderByClause("sent_at DESC,id DESC");PageHelper.startPage(Paged.number(req.page()),Paged.size(req.size()));
         List<MessageLog> rows=logs.selectByExample(ex);return Paged.of(rows,TemplateService::view);
     }
-    private static TemplateResponse view(MessageTemplate t){return new TemplateResponse(t.id,t.code,t.channel,t.scene,t.title,t.content,t.active,t.version);}
+    private static TemplateResponse view(MessageTemplate t){return new TemplateResponse(t.id,t.code,t.channel,t.scene,t.title,t.content,t.active,t.version,Checks.text(t.externalTemplateId)?t.externalTemplateId:null);}
     private static MessageLogResponse view(MessageLog m){return new MessageLogResponse(m.id,m.patientId,m.taskId,m.channel,m.templateCode,m.content,m.sentAt,m.actorId,m.evidence);}
 }

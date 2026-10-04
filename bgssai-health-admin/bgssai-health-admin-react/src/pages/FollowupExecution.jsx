@@ -5,7 +5,7 @@ import { api, useLoad } from '../api'
 import { dateText, LoadState, required } from '../ui'
 
 export const contactNames = { CONNECTED: '已核实并完成联系', NO_ANSWER: '未接通', BUSY: '忙线 / 不便沟通', WRONG_NUMBER: '号码问题', REFUSED: '拒绝联系', IDENTITY_UNVERIFIED: '身份未核实', FAMILY_ANSWERED: '家属接听', NOT_COOPERATIVE: '不配合', DECEASED: '已去世', OTHER: '其他' }
-const methods = [{ value: 'PHONE', label: '电话' }, { value: 'IN_PERSON', label: '当面' }, { value: 'MANUAL_OTHER', label: '其他人工方式' }]
+const methods = [{ value: 'PHONE', label: '电话' }, { value: 'IN_PERSON', label: '当面' }, { value: 'WECHAT', label: '微信' }, { value: 'MANUAL_OTHER', label: '其他人工方式' }]
 export function ContactExecution({ task, busy, run }) {
   const [result, setResult] = useState(task.status === 'APPROVED' ? 'CONNECTED' : 'NO_ANSWER')
   const success = result === 'CONNECTED'

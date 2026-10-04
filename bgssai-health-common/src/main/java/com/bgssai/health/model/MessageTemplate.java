@@ -8,4 +8,5 @@ public class MessageTemplate extends BaseRow {
     public String content;
     public Boolean active;
     public Integer version;
+    public String externalTemplateId;
 }

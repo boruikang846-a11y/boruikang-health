@@ -6,4 +6,11 @@ public class IntegrationConfig extends BaseRow {
     public String modelName;
     public String secret;
     public Boolean enabled;
+    public String appId;
+    public String callbackToken;
+    public String aesKey;
+    public String channelMode;
+    public String verifyStatus;
+    public java.time.LocalDateTime verifiedAt;
+    public String lastError;
 }

@@ -158,7 +158,7 @@ public class TaskService {
         Checks.require(Boolean.TRUE.equals(req.identityVerified()),"Verify patient or authorized contact identity first / 请先核实本人或授权联系人身份");
         Checks.require(t.recordId==null||Boolean.TRUE.equals(req.reportReviewed()),"Review the linked report first / 请核对本任务关联的原报告");
         Checks.require(req.contactAt()!=null&&!req.contactAt().isAfter(LocalDateTime.now()),"Actual contact time required");
-        Checks.require(List.of("PHONE","IN_PERSON","MANUAL_OTHER").contains(req.method())&&List.of("PATIENT","AUTHORIZED_CONTACT").contains(req.recipientRole()),"Invalid contact method or recipient");
+        Checks.require(List.of("PHONE","IN_PERSON","WECHAT","MANUAL_OTHER").contains(req.method())&&List.of("PATIENT","AUTHORIZED_CONTACT").contains(req.recipientRole()),"Invalid contact method or recipient");
         Checks.require(Checks.text(req.medicationFeedback())&&Checks.text(req.patientQuestions()),"Record the feedback and questions; explicitly state none or not applicable when appropriate");
         CareTask patch=new CareTask();patch.status="CONTACTED";patch.evidence=req.evidence().trim();patch.identityVerified=true;patch.contactResult="CONNECTED";
         CareTask saved=writer.save(t,patch,"MANUAL_CONTACT_RECORDED");
@@ -207,7 +207,7 @@ public class TaskService {
         Checks.require(req.contactAt()!=null&&!req.contactAt().isAfter(LocalDateTime.now()),"Actual contact time required");
         Checks.require(req.nextContactAt()!=null&&req.nextContactAt().isAfter(req.contactAt())&&req.nextContactAt().isBefore(LocalDateTime.now().plusYears(1)),"Enter a later next action time within one year");
         Checks.require(Checks.text(req.reason())&&Checks.text(req.nextPlan())&&Checks.text(req.evidence()),"Reason, next plan and evidence are required");
-        Checks.require(List.of("PHONE","IN_PERSON","MANUAL_OTHER").contains(req.method()),"Invalid method");
+        Checks.require(List.of("PHONE","IN_PERSON","WECHAT","MANUAL_OTHER").contains(req.method()),"Invalid method");
         CareTask patch=new CareTask();patch.nextContactAt=req.nextContactAt();patch.contactResult=req.result();if("OUTREACH".equals(t.taskType)&&"PENDING".equals(t.status))patch.status="IN_PROGRESS";
         CareTask saved=writer.save(t,patch,"CONTACT_ATTEMPT_RECORDED");
         ContactAttempt row=attemptBase(t,req.contactAt(),req.method(),req.result(),req.evidence());

@@ -8,4 +8,7 @@ public class IntakeChannel extends BaseRow {
     public Long ownerId;
     public String token;
     public Boolean active;
+    public String wecomConfigId;
+    public String wecomQrUrl;
+    public String officialQrUrl;
 }

@@ -31,3 +31,7 @@ python3 docs/demo-static/build-preview.py /tmp/patient-import-prototype.html --p
 ```
 
 离线文件解析器已随原型提交，无需安装依赖即可体验。更新字段规则后，先安装管理端前端依赖，再运行 `node docs/demo-static/build-import-parser.mjs` 重新打包。
+
+## 1.9 企业微信与公众号
+
+打开 [专项原型](web/admin/wechat-channels-1.9.html)，可切换运营主管、运营人员、责任医生、平台管理员四个角色，体验外部接入配置与测试连接、会话列表、绑定与解绑、三类发送、标记已处理、转咨询任务、刷新群发结果、渠道活码和成员账号。[流程图解](../feature/wechat-channels-1.9.html) 给出业务路径、角色分工与不做的范围。原型里带"演示"字样的下拉和按钮只用来切换演示结果，真实页面没有；所有数据虚构，不连接微信或后端。用户端的"微信互动"演示直接做在介绍页里，见 [用户端原型](web/user/index.html) 的说明。

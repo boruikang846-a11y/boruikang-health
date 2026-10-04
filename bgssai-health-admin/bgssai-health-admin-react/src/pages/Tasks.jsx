@@ -8,6 +8,7 @@ import { api, useLoad } from '../api'
 import { AppointmentDialog } from './Appointments'
 import { MessageLogDialog } from './Configuration'
 import { ReportReviewDialog, ReportStatus } from './ReportReview'
+import { WechatAdvice } from './Wechat'
 import { DataTable, dateText, FormDialog, LoadState, names, options, PageTitle, required, Status } from '../ui'
 
 const ended = ['COMPLETED', 'CANCELLED']
@@ -163,7 +164,7 @@ export function TaskDrawer({ id, onClose, onChanged }) {
           <Space className="mt"><Button danger disabled={!reviewNote.trim() || busy} onClick={() => run('review', { approved: false, review_note: reviewNote })}>退回修改</Button><Button type="primary" disabled={!review.trim() || busy} onClick={() => run('review', { approved: true, approved_text: review, review_note: reviewNote })}>审核通过</Button></Space>
         </div> : <Alert className="mt" type="info" showIcon message={'已提交 ' + responsible + ' 审核'} description="医生在系统里通过或退回后，这里会显示结果。" />)}
         {task.review_note && <Alert className="mt" type={task.status === 'REJECTED' ? 'warning' : 'info'} message={task.status === 'REJECTED' ? '医生退回原因' : '医生审核意见'} description={task.review_note} />}
-        {task.approved_text && <div className="approved-block"><h3>医生审核通过的正文</h3><p className="pre-wrap">{task.approved_text}</p></div>}
+        {task.approved_text && <div className="approved-block"><h3>医生审核通过的正文</h3><p className="pre-wrap">{task.approved_text}</p>{!doctor && clinical && task.status === 'APPROVED' && <WechatAdvice task={task} />}</div>}
         {!doctor && (clinical || outreach) && !ended.includes(task.status) && task.status !== 'CONTACTED' && <ContactExecution key={task.id + '-' + task.version} task={task} busy={busy} run={run} />}
         <ContactHistory attempts={context.attempts} />
         {task.handover_status && <div className="action-block"><h3>随访结果查收</h3><Tag color={task.handover_status === 'ACKNOWLEDGED' ? 'green' : 'gold'}>{task.handover_status === 'ACKNOWLEDGED' ? '医生已查收' : '待医生查收'}</Tag>

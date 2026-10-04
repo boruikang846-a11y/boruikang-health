@@ -26,3 +26,8 @@ INSERT INTO sla_config (id,hospital_id,risk_level,first_contact_hours,booking_da
 INSERT INTO sla_config (id,hospital_id,risk_level,first_contact_hours,booking_days,arrival_days,lost_after_attempts,note,version,creator) VALUES (4,1,'LOW',168,30,90,3,'低风险：一周内首触',0,'demo-seed') ON DUPLICATE KEY UPDATE id=id;
 INSERT INTO sla_config (id,hospital_id,risk_level,first_contact_hours,booking_days,arrival_days,lost_after_attempts,note,version,creator) VALUES (5,1,'UNKNOWN',168,30,90,3,'未评估按低风险口径',0,'demo-seed') ON DUPLICATE KEY UPDATE id=id;
 -- END OPERATIONS LEDGER 1.5
+-- BEGIN WECHAT 1.9
+-- WeChat wording samples, disabled until the hospital reviews them. The template id is filled in after the Official Account template is approved.
+INSERT INTO message_template (id,hospital_id,code,channel,scene,title,content,is_active,version,external_template_id,creator) VALUES (15,1,'WECHAT_WELCOME','WECHAT','WELCOME','加好友 / 关注欢迎语','您好，这里是{医院}健康管理团队。服务时间为工作日 8:00–17:00，留言会在服务时间内回复。如出现胸痛、呼吸困难等紧急情况，请立即拨打 120 或前往急诊，不要等待回复。',0,0,'','demo-seed') ON DUPLICATE KEY UPDATE id=id;
+INSERT INTO message_template (id,hospital_id,code,channel,scene,title,content,is_active,version,external_template_id,creator) VALUES (16,1,'MP_REVISIT_REMINDER','MP_TEMPLATE','REVISIT_REMINDER','复诊提醒（公众号模板消息）','thing1={姓名}\ntime2={复诊日期}\nthing3=请按医生安排复诊，改期请联系健康管理团队',0,0,'','demo-seed') ON DUPLICATE KEY UPDATE id=id;
+-- END WECHAT 1.9

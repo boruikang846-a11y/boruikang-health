@@ -30,12 +30,15 @@ export const names = {
   FIRST_CONTACT: '首次联系', URGENT: '紧急', FAMILY: '家属', ARRIVAL_REMINDER: '到诊提醒', FOLLOWUP_REMINDER: '随访提醒', REVISIT_REMINDER: '复诊提醒', HESITANT: '犹豫', COMPLAINT: '投诉',
   STOPPED: '已停用', HOSPITAL_RECORD: '院方记录', GOOD: '依从好', PARTIAL: '部分依从', POOR: '依从差',
   DEVICE: '设备', HOME_VISIT: '上门', STAFF_ENTRY: '团队代录',
+  WE_COM: '企业微信', WECHAT_OFFICIAL: '公众号', MP_TEMPLATE: '公众号模板消息', WELCOME: '欢迎语', REMOVED: '已失联',
+  SENDING: '发送中', SENT: '已发出', PENDING_CONFIRM: '待成员确认', FAILED: '失败', RECEIVED: '待处理', HANDLED: '已处理',
 }
 const colors = { HIGH: 'orange', CRITICAL: 'red', PENDING_REVIEW: 'gold', APPROVED: 'cyan', COMPLETED: 'green',
   CONTACTED: 'blue', ESCALATED: 'red', REJECTED: 'orange', LOW: 'green', PUBLISHED: 'green', P0: 'red', P1: 'orange', P2: 'blue',
   HIGH_RISK: 'red', NON_HIGH_RISK: 'green', DISCARDED: 'default', ENROLLED: 'blue', WILLING: 'green', REFUSED: 'orange', NO_ANSWER: 'default',
   ARRIVED: 'green', NO_SHOW: 'orange', CANCELLED: 'default', REMINDED: 'cyan', BOOKED: 'blue', ACTIVE: 'green', RETIRED: 'default', EXPIRED: 'orange', LOST: 'red', TRANSFERRED: 'default',
-  MANAGING: 'green', REVISIT_DUE: 'gold', OUTREACH: 'purple', LOST_CONTACT: 'red', FEEDBACK_RECORDED: 'cyan', ACCEPTED: 'blue', INITIATED: 'gold', PENDING_ACTIVATION: 'gold', UPGRADED: 'cyan' }
+  MANAGING: 'green', REVISIT_DUE: 'gold', OUTREACH: 'purple', LOST_CONTACT: 'red', FEEDBACK_RECORDED: 'cyan', ACCEPTED: 'blue', INITIATED: 'gold', PENDING_ACTIVATION: 'gold', UPGRADED: 'cyan',
+  SENDING: 'blue', SENT: 'green', PENDING_CONFIRM: 'gold', FAILED: 'red', RECEIVED: 'orange', HANDLED: 'default' }
 export const options = values => values.map(value => ({ value, label: names[value] || value }))
 export const dateText = value => value ? dayjs(value).format('YYYY-MM-DD HH:mm') : '—'
 export const dayText = value => value ? dayjs(value).format('YYYY-MM-DD') : '—'

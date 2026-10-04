@@ -30,7 +30,7 @@ public class StaffAccountService {
         if(Checks.text(req.roleCode()))ex.eq("role_code",req.roleCode());else ex.in("role_code",PatientAccess.STAFF);
         if(Checks.text(req.keyword()))ex.like("real_name","%"+req.keyword().trim()+"%");
         if(req.enabled()!=null)ex.eq("is_enabled",req.enabled());
-        ex.selectColumns("id","username","real_name","role_code","department","is_enabled","gmt_create");ex.setOrderByClause("role_code ASC,id ASC");
+        ex.selectColumns("id","username","real_name","role_code","department","is_enabled","gmt_create","wecom_user_id");ex.setOrderByClause("role_code ASC,id ASC");
         PageHelper.startPage(Paged.number(req.page()),Paged.size(req.size()));
         List<HealthAccount> rows=accounts.selectByExample(ex);return Paged.of(rows,StaffAccountService::view);
     }
@@ -65,6 +65,17 @@ public class StaffAccountService {
         update(row,patch);audit.append(null,"STAFF_PASSWORD_RESET",row.id,null,null,"username="+row.username);
         return view(accounts.selectByPrimaryKey(row.id));
     }
+    /** Links a work account to its WeCom member id so callbacks and syncs can name the member; an empty value clears it. */
+    @Transactional
+    public StaffAccountResponse setWecom(SetStaffWecomRequest req){
+        log.info("set staff wecom id={}",req.id());access.manager();HealthAccount row=accounts.selectByPrimaryKey(req.id());
+        Checks.found(row!=null&&CurrentAccount.get().hospitalId().equals(row.hospitalId)&&PatientAccess.STAFF.contains(row.roleCode));
+        if(Checks.text(req.wecomUserId())){HealthAccountExample duplicate=new HealthAccountExample();duplicate.eq("hospital_id",row.hospitalId).eq("wecom_user_id",req.wecomUserId()).ne("id",row.id);
+            Checks.require(accounts.countByExample(duplicate)==0,"WeCom member already linked to another account / 该企业微信成员账号已登记在其他工作账号上");}
+        HealthAccount patch=new HealthAccount();patch.wecomUserId=req.wecomUserId();patch.modifier=CurrentAccount.get().userId().toString();update(row,patch);
+        audit.append(null,"STAFF_WECOM_UPDATED",row.id,null,Checks.text(req.wecomUserId())?"LINKED":"CLEARED","username="+row.username);
+        return view(accounts.selectByPrimaryKey(row.id));
+    }
     /** Only doctor, nurse and operator accounts of the manager's own hospital can be changed here. */
     private HealthAccount managed(Long id){
         HealthAccount row=accounts.selectByPrimaryKey(id);
@@ -76,5 +87,5 @@ public class StaffAccountService {
         HealthAccountExample ex=new HealthAccountExample();ex.eq("id",row.id).eq("hospital_id",row.hospitalId);
         Checks.conflict(accounts.updateByExampleSelective(patch,ex)==1);
     }
-    private static StaffAccountResponse view(HealthAccount a){return new StaffAccountResponse(a.id,a.username,a.realName,a.roleCode,a.department,a.enabled,a.gmtCreate);}
+    private static StaffAccountResponse view(HealthAccount a){return new StaffAccountResponse(a.id,a.username,a.realName,a.roleCode,a.department,a.enabled,a.gmtCreate,Checks.text(a.wecomUserId)?a.wecomUserId:null);}
 }

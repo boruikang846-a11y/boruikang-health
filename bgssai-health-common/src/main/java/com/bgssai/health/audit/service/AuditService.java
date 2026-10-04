@@ -20,6 +20,12 @@ public class AuditService {
         row.patientId=patientId;row.action=action;row.resourceId=resourceId;row.beforeState=before;row.afterState=after;row.detail=detail;row.creator=actor.userId().toString();
         events.insertSelective(row);log.info("audit action={} actorId={} resourceId={}",action,actor.userId(),resourceId);
     }
+    /** Events that arrive without a logged-in account (WeChat callbacks); the actor is recorded as 0. */
+    public void appendSystem(Long hospitalId,Long patientId,String action,Long resourceId,String before,String after,String detail) {
+        AuditEvent row=new AuditEvent(); row.hospitalId=hospitalId; row.actorId=0L;
+        row.patientId=patientId;row.action=action;row.resourceId=resourceId;row.beforeState=before;row.afterState=after;row.detail=detail;row.creator="wechat-callback";
+        events.insertSelective(row);log.info("audit action={} actorId=0 resourceId={}",action,resourceId);
+    }
     public Paged<AuditResponse> query(AuditQueryRequest req) {
         log.info("query audits patientId={}",req.patientId());access.staff(); access.require(req.patientId());
         AuditEventExample ex=new AuditEventExample();ex.eq("hospital_id",CurrentAccount.get().hospitalId()).eq("patient_id",req.patientId());

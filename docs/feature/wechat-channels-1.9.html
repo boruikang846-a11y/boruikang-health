@@ -1,0 +1,30 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>1.9 企业微信与公众号患者沟通 · BGSSAI Health</title><style>
+body{font:16px/1.7 system-ui,"Microsoft YaHei",sans-serif;margin:0;background:#f3f7fa;color:#173443}main{max-width:1100px;margin:auto;padding:48px 24px}h1{font-size:34px;line-height:1.25}p{max-width:780px}.badge{display:inline-block;padding:5px 12px;background:#d8f3eb;color:#126653;border-radius:99px;font-size:13px}.flow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:35px 0;padding:0;list-style:none;counter-reset:s}.flow li{counter-increment:s;background:#fff;border:1px solid #dae6eb;border-radius:18px;padding:18px;box-shadow:0 8px 25px #1542570d}.flow li:before{content:counter(s);display:block;color:#06876b;font-size:22px;font-weight:700}.flow h2{font-size:16px;margin:8px 0}.flow p{color:#56707b;font-size:13px;margin:0}.who{display:inline-block;font-size:12px;border-radius:6px;padding:1px 8px;margin-top:8px;background:#e3f6ef;color:#1f7a5d}.who.wx{background:#e8f0ff;color:#2358c9}.box{border-radius:18px;padding:22px;background:#fff;border:1px solid #dae6eb;margin-top:16px}.note{border-left:4px solid #dc9946;padding:12px 18px;background:#fff8e9;max-width:none}table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:10px;border:1px solid #dae6eb;text-align:left;vertical-align:top}@media(max-width:900px){.flow{grid-template-columns:1fr 1fr}}@media(max-width:560px){.flow{grid-template-columns:1fr}h1{font-size:26px}}
+</style></head><body><main><span class="badge">1.9 企业微信与公众号患者沟通</span><h1>工作人员点发送，系统才调用微信接口，<br>结果如实保存</h1><p>1.9 把医院企业微信和公众号接进现有系统：工作人员点击发送时调用微信官方接口，保存接口返回的真实结果。临床建议仍须责任医生本人在系统里审核通过后才能发送；短信和没有接入的渠道继续用 1.5 的“人工已发”登记。</p>
+<ol class="flow">
+<li><h2>填写凭证</h2><p>企业微信、公众号各一张卡片；密钥只写不读，不回显。</p><span class="who">运营主管 / 平台管理员</span></li>
+<li><h2>测试连接</h2><p>真实取一次凭证：成功显示“已接通”，失败显示微信返回的错误码；只保存未测试是“已配置 · 未验证”。</p><span class="who">运营主管 / 平台管理员</span></li>
+<li><h2>配置回调</h2><p>把回调地址配到微信后台。签名不对返回 403、不落数据；重复推送只记一次。</p><span class="who wx">微信 → 系统</span></li>
+<li><h2>活码与成员账号</h2><p>给渠道生成企微活码和公众号带参二维码，给工作账号登记企业微信成员账号。</p><span class="who">运营主管</span></li>
+<li><h2>患者扫码</h2><p>患者扫码加企业微信好友或关注公众号，微信把事件推到回调地址。</p><span class="who wx">患者 / 微信</span></li>
+<li><h2>联系人待绑定</h2><p>系统生成“微信联系人”，带上来源渠道和添加成员，还没有对应到患者档案。</p><span class="who wx">系统</span></li>
+<li><h2>核实并绑定</h2><p>核实身份后人工绑定患者档案；不按手机号、昵称、UnionID 自动合并。解绑要写原因。</p><span class="who">运营人员 / 护士 / 主管</span></li>
+<li><h2>发送三类消息</h2><p>文字（公众号要求 48 小时内有互动；企业微信建群发任务，成员确认后发出）、公众号模板消息、医生已审核的正文（取自任务，页面不能改）。</p><span class="who">运营人员 / 护士 / 主管</span></li>
+<li><h2>患者回复</h2><p>公众号文字来信入库，标为“待处理”，列表显示未处理条数。</p><span class="who wx">患者 / 微信</span></li>
+<li><h2>处理或转咨询</h2><p>回复、标记已处理；已绑定患者的来信可转成咨询任务，沿用起草、责任医生审核、联系流程。</p><span class="who">运营人员 / 护士 / 主管</span></li>
+<li><h2>时间轴与留痕</h2><p>微信收发并入患者时间轴和档案“微信沟通”页签；发送、绑定、配置变更都写操作留痕。</p><span class="who wx">系统</span></li>
+</ol>
+<section class="box"><h2>角色分工</h2><table><tr><th>角色</th><th>在 1.9 里做什么</th></tr>
+<tr><td>运营主管</td><td>配置接入、测试连接、同步联系人、生成活码、登记成员账号；查看和处理全院联系人与消息</td></tr>
+<tr><td>运营人员、护士</td><td>查看待绑定联系人和自己负责患者的联系人；绑定、发送、处理消息</td></tr>
+<tr><td>责任医生</td><td>审核随访与咨询正文；在自己负责的患者档案里只读查看微信沟通记录，不能发送</td></tr>
+<tr><td>平台管理员</td><td>只配置接入与测试连接，不能看联系人和消息</td></tr></table></section>
+<section class="box"><h2>不做与边界</h2><ul>
+<li>不做会话存档、企微客户群、朋友圈、企业标签同步、按标签群发、定时推送、自动回复、AI 对话、网页授权、小程序、菜单管理、图片与文件收发。</li>
+<li>未开通会话存档，系统读不到企业微信里的聊天内容，只同步好友关系和添加、删除事件。</li>
+<li>不向未绑定的联系人发送已审核正文。</li>
+<li>发送成功只表示微信接口受理，不代表患者已读，不能代替联系结果登记。</li>
+<li>企业认证、可信 IP、模板申请、客户联系权限由医院在微信后台完成，系统只如实显示接口返回。</li>
+<li>模拟通道只用于 local、test、dev 演示，全程标注，不代表已接通。演示数据全部虚构。</li></ul>
+<p class="note">消息状态：发送中 → 已发出 / 待成员确认 / 失败（保存微信错误码）；来信：待处理 → 已处理。删除好友或取消关注后联系人标为“已失联”，记录保留。</p></section>
+<p>相关文档：<a href="wechat-channels-1.9.md">需求与验收</a> · <a href="../api/wechat-channels-1.9.md">接口契约</a> · <a href="../demo-static/web/admin/wechat-channels-1.9.html">交互原型</a></p></main></body></html>

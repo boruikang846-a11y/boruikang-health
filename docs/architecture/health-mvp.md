@@ -89,3 +89,17 @@ HospitalGateway 定义获取医院批次的接口；MockHospitalGateway 返回�
 服务分层：`SlaResolver` 只依赖 `sla_config`，供 `OrgService`、`OutreachService`、`ReferralService` 与 `InvitationService` 共用，避免 PatientService 与 OrgService 之间的循环依赖；`OutreachService` 在患者行锁内开、关首触任务并升级失联异常（`Propagation.MANDATORY`）；`PatientService.advance()` 只允许阶段向前推进且不越过人工态（PAUSED 及之后），各台账动作通过它同步患者阶段；`AppointmentService` 通过 `TaskWriter` 镜像复诊任务；`EnrollmentService.activate()` 展开方案节点为任务；`MetricService` 以有界样本（5000 行）在内存里算十项指标、漏斗、按人绩效、日统计与队列，不落库。ExampleBase 增加 `le/gt/isNull/isNotNull`。
 
 指标与 SLA 全部可按医院配置；默认口径见需求文档。控制器由 `tools` 中的生成脚本统一产出一接口一类。演示种子由 `tools/generate-ledger-seed.py` 生成，日期按参数绝对化，H2 与 MySQL 文本一致。
+
+## 1.9 企业微信与公众号
+
+新增 `wechat` 领域包。`WechatGateway` 定义对微信平台的调用；`LiveWechatGateway` 用固定主机调用企业微信与公众号官方接口，按配置缓存 access_token（公众号用 stable_token），凭证被拒时刷新一次；`MockWechatGateway` 不联网，返回带 `mock` 前缀的结果。`WechatConfigService` 按配置的 `channel_mode` 选择网关，模拟通道只在 `health.wechat.mock-allowed=true` 且非 prod 时可用。
+
+数据：`integration_config` 增加 app_id、callback_token、aes_key、channel_mode、verify_status、verified_at、last_error；新表 `wechat_contact`（`(hospital_id, channel, external_id)` 唯一，`patient_id=0` 表示待绑定）与 `wechat_message`（`(hospital_id, request_key)` 唯一）。联系人上冗余待处理条数、最后互动时间与最近消息摘要，列表不必扫消息表。微信身份与患者档案只通过人工绑定关联。
+
+事务与网络：`WechatLedger` 集中所有短事务（入站入库、发送前校验并写 SENDING、发送结果回写、绑定解绑、转咨询），锁顺序固定为联系人行 → 患者行。网络调用都在事务之外：发送先落 SENDING 再调接口，结果用条件更新回写；同步先拉完再入库；活码先调接口再更新渠道。
+
+回调：四个公开 Controller 用原始 Servlet 读写（请求体上限 64 KiB，返回纯文本），不经过 JSON 转换器。`WechatInboundService` 先按医院取配置并校验签名，企业微信与公众号安全模式再用 AES-256-CBC 解密并核对 corp id / app id；XML 解析禁用 DTD 和外部实体。回调没有登录账号，医院取自路径，审计操作人记 0。事件幂等键入库即去重，微信重推不重复记账。
+
+发送规则在服务端判定：已审核正文从任务读取并核对审核人是当前责任医生；公众号文字检查 48 小时互动；模板消息字段逐行解析；未替换的 {占位} 被拒绝。发送不改变任务状态，联系结果仍走 1.3 的登记。患者时间轴合并微信收发。
+
+前端新增 `/wechat` 与患者档案页签；任务抽屉、渠道、账号、模板、外部接入各加入口。HEALTH-USER 仅新增纯前端的互动演示。
