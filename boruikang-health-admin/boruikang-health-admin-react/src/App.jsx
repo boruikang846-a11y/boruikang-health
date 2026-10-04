@@ -18,13 +18,13 @@ import Packages from './pages/Packages'
 import Referrals from './pages/Referrals'
 import Accounts from './pages/Accounts'
 import { DoctorHome, DoctorReports, DoctorTasks } from './pages/Doctor'
-import Wechat from './pages/Wechat'
-import { FunnelPlotOutlined, PhoneOutlined, CarryOutOutlined, GiftOutlined, SwapOutlined, WechatOutlined } from '@ant-design/icons'
+import WechatChannel from './pages/Wechat'
+import { FunnelPlotOutlined, PhoneOutlined, CarryOutOutlined, GiftOutlined, SwapOutlined, WechatOutlined, WechatWorkOutlined } from '@ant-design/icons'
 
 const navigation = [
   ['/workbench', '运营工作台', DashboardOutlined], ['/screening', '患者池', FunnelPlotOutlined], ['/patients', '患者中心', TeamOutlined],
   ['/invitations', '邀约记录', PhoneOutlined], ['/appointments', '预约到诊', CarryOutOutlined],
-  ['/followups', '随访与咨询', ScheduleOutlined], ['/wechat', '微信沟通', WechatOutlined], ['/alerts', '异常处理', AlertOutlined],
+  ['/followups', '随访与咨询', ScheduleOutlined], ['/wecom', '企业微信', WechatWorkOutlined], ['/official-account', '公众号', WechatOutlined], ['/alerts', '异常处理', AlertOutlined],
   ['/revisits', '复诊跟踪', CalendarOutlined], ['/packages', '服务包与方案', GiftOutlined], ['/referrals', '转诊', SwapOutlined], ['/knowledge', '宣教与服务内容', ReadOutlined],
   ['/channels', '渠道管理', QrcodeOutlined], ['/reports', '随访统计与复盘', BarChartOutlined],
   ['/hospital', '医院数据', QrcodeOutlined], ['/accounts', '医护账号', IdcardOutlined], ['/settings', '运营设置', SettingOutlined], ['/overview', '系统介绍', HeartOutlined],
@@ -113,7 +113,7 @@ export default function App() {
       <Route path="/screening" element={<Screening />} /><Route path="/invitations" element={<Invitations />} /><Route path="/appointments" element={<Appointments />} /><Route path="/packages" element={<Packages />} /><Route path="/referrals" element={<Referrals />} />
       <Route path="/followups" element={<Tasks />} /><Route path="/alerts" element={<Tasks taskType="ALERT" />} /><Route path="/revisits" element={<Tasks taskType="REVISIT" />} />
       <Route path="/hospital" element={<Hospital />} /><Route path="/knowledge" element={<Knowledge />} /><Route path="/channels" element={<Channels />} /><Route path="/reports" element={<Reports />} /><Route path="/settings" element={<Settings />} />
-      <Route path="/accounts" element={<Accounts />} /><Route path="/wechat" element={<Wechat />} />
+      <Route path="/accounts" element={<Accounts />} /><Route path="/wecom" element={<WechatChannel provider="WE_COM" key="WE_COM" />} /><Route path="/official-account" element={<WechatChannel provider="WECHAT_OFFICIAL" key="WECHAT_OFFICIAL" />} />
       <Route path="/doctor" element={<DoctorHome />} /><Route path="/doctor/reviews" element={<DoctorTasks mode="reviews" key="reviews" />} /><Route path="/doctor/reports" element={<DoctorReports />} />
       <Route path="/doctor/results" element={<DoctorTasks mode="results" key="results" />} /><Route path="/doctor/alerts" element={<DoctorTasks mode="alerts" key="alerts" />} />
       <Route path="*" element={<Navigate to={account ? home(account.role_code) : '/login'} replace />} />

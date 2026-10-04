@@ -34,7 +34,7 @@ function scripts(t) {
       { role: 'team', bubbles: [{ who: 'card', title: t('复诊提醒', 'Return-visit reminder'), rows: [[t('提醒事项', 'Reminder'), t('复诊提醒', 'Return visit')], [t('时间', 'Time'), t('10 月 8 日 上午', '8 October, morning')], [t('备注', 'Note'), t('请按医生安排复诊，改期请联系健康管理团队', 'Please attend as arranged; contact the care team to reschedule')]] }],
         title: t('发送模板消息', 'A template message is sent'), body: t('复诊、随访等提醒用公众号模板消息发送。工作人员在后台选择模板、填写内容后发出，系统保存微信返回的结果，失败会如实显示。', 'Reminders go out as Official Account template messages. Staff choose a template and fill in the fields; the system keeps what WeChat returned and shows a failure as a failure.') },
       { role: 'system', bubbles: [{ who: 'patient', text: t('请问复诊需要带哪些资料？', 'What should I bring to the return visit?') }],
-        title: t('来信进入待处理', 'The message waits for staff'), body: t('患者回复进入后台「微信沟通」的待处理，并显示未处理条数。', 'The reply appears in the staff workspace as waiting, with a count of unanswered messages.') },
+        title: t('来信进入待处理', 'The message waits for staff'), body: t('患者回复进入后台「公众号」页面的待处理，并显示未处理条数。', 'The reply appears in the staff workspace as waiting, with a count of unanswered messages.') },
       { role: 'team', bubbles: [{ who: 'team', text: t('请带身份证、医保卡、出院小结和近期检查报告。', 'Please bring your ID, insurance card, discharge summary and recent test reports.') }],
         title: t('48 小时内文字答复', 'Text reply within 48 hours'), body: t('患者 48 小时内有互动时，可以用文字答复；超过 48 小时只能发模板消息。', 'A text reply is possible while the patient has interacted within 48 hours; after that only template messages can be sent.') },
       { role: 'team', bubbles: [{ who: 'patient', text: t('最近有点头晕，需要调药吗？', 'I have felt a little dizzy lately. Should my medicine change?') }],

@@ -243,4 +243,13 @@ class WechatChannelHttpTest {
         assertEquals("REMOVED",contact("WE_COM","wm-unit-1",operator).path("relation").asText());
         assertEquals(400,status("/wechat/messages/send",Map.of("contact_id",id,"kind","TEXT","content","好友已删除","request_key",UUID.randomUUID().toString()),operator));
     }
+
+    /** WeCom and the Official Account are separate menu pages; refreshing either one still loads the console. */
+    @Test void eachChannelHasItsOwnConsolePage() throws Exception {
+        for(String page:new String[]{"/wecom","/official-account"}) {
+            var response=http.send(HttpRequest.newBuilder(URI.create("http://127.0.0.1:"+port+page)).GET().build(),HttpResponse.BodyHandlers.ofString());
+            assertEquals(200,response.statusCode(),page);
+            assertTrue(response.body().contains("<div id=\"root\">"),page+" serves the console");
+        }
+    }
 }

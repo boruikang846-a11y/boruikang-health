@@ -58,12 +58,12 @@ MANUAL/TEMPLATE/AI 均生成待审核草稿。列表隐藏内部 note，授权�
 
 | 页面 | API | 行为 |
 | --- | --- | --- |
-| wechat | A/wechat/contacts/query、sync、bind、unbind、handle、A/wechat/messages/query、send、refresh、consult、A/wechat/mock/inbound、A/integrations | 会话列表、绑定、三类发送、刷新群发结果、转咨询、模拟来信；见 wechat-channels-1.9.md |
+| wecom、official-account | A/wechat/contacts/query（channel 固定为本页通道）、sync、bind、unbind、handle、A/wechat/messages/query、send、refresh、consult、A/wechat/mock/inbound、A/integrations | 会话列表、绑定、三类发送、刷新群发结果、转咨询、模拟事件；企业微信与公众号各一页，见 wechat-channels-1.9.md |
 | settings 外部接入 | A/integrations、A/integrations/wechat/save、verify | 企业微信、公众号凭证与真实连接测试 |
 | settings 模板 | A/templates/query、save | 新增公众号模板消息（微信模板 ID）与欢迎语 |
 | channels | A/channels/wechat-qr | 企业微信"联系我"与公众号带参二维码 |
 | accounts | A/accounts/wecom | 登记企业微信成员账号 |
-| patients/:id 微信沟通页签、时间轴 | A/wechat/contacts/query（patient_id）、A/wechat/messages/query、A/patients/timeline | 医生只读，运营可发 |
+| patients/:id 企业微信、公众号页签、时间轴 | A/wechat/contacts/query（patient_id、channel）、A/wechat/messages/query、A/patients/timeline | 医生只读，运营可发 |
 | followups 抽屉 | A/wechat/contacts/query、A/wechat/messages/send（APPROVED_ADVICE）、A/tasks/contact（method=WECHAT） | 微信发送已审核正文；联系方式新增微信 |
 | 微信服务器 | O/wecom/callback/{hospital_id}、O/wechat/callback/{hospital_id} | 公开回调，凭签名校验 |
 | 用户端 /#wechat | 无 | 页面内虚构演示，不请求后端 |
