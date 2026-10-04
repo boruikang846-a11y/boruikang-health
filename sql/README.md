@@ -32,3 +32,9 @@ DDL 使用 IF NOT EXISTS，只能初始化空库。发版采用全量口径：�
 `integration_config` 增加 app_id、callback_token、aes_key、channel_mode、verify_status、verified_at、last_error；`health_account` 增加 wecom_user_id；`intake_channel` 增加 wecom_config_id、wecom_qr_url、official_qr_url；`message_template` 增加 external_template_id。新表 `wechat_contact`、`wechat_message`，都写在 `DDL.sql` / `DDL-local.sql` 的建表语句里。发版仍是全量口径：备份后清库重建。
 
 基础 DML 新增两条停用的微信模板样例（欢迎语、公众号复诊提醒）。dev DML 新增标明模拟的企业微信、公众号配置（不含回调 Token，占位值不是任何真实凭证）、operator_a 的演示成员账号、启用的演示欢迎语与模板消息、5 个虚构微信联系人和 12 条收发记录。prod DML 不含任何微信配置。
+
+## 1.9 批量演示数据
+
+用户要求 dev 上"尽可能多的数据"。`tools/generate-bulk-seed.py` 生成 dev DML 末尾的 `-- BEGIN BULK DEMO DATA 1.9` 块（重跑只替换该块，不连库）：12 位各科责任医生（doctor_05–doctor_16）、2 位运营与 2 位护士账号及其企业微信成员账号，8 个机构、6 个活动、24 个渠道、24 条宣教、6 个微信与公众号模板；500 位患者（id 60001–60500）及其约 1500 份记录、2300 个任务、940 条联系记录、690 条用药、220 个签约、170 个预约、270 次邀约、56 个转诊、167 条已发消息；360 条患者池记录；761 个企业微信、公众号联系人（含待绑定与已失联）和 4265 条收发记录，规则与 1.9 一致：公众号文字只在患者 48 小时内有互动时发出，企业微信消息待成员确认，发送成功后来信标为已处理。
+
+全部虚构：姓名为随机组合，电话以 000 开头不可拨，微信 ID 与模板 ID 为编造值，临床文字标注演示。日期相对执行时间生成。固定 id 使用此前各块都没用过的号段，每行都是"不存在才插入"，所以既能随全量重建加载，也能在已有种子的库上单独执行这一块只新增数据，不改动已有行。
