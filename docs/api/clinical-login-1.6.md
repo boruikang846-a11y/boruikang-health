@@ -1,6 +1,6 @@
 # 1.6 医生、护士登录接口与数据契约
 
-沿用 `/bgssai/admin` 前缀、`Jwttoken` 头、`ApiResponse{code,message,success,result}` 与分页 `result={items,page_num,page_size,total_size}`；字段 snake_case；POST 参数全部在 body；每个接口一个 Controller。`经理`=MANAGER，`运营`=OPERATOR，`护士`=NURSE，`医生`=DOCTOR。所有写操作追加审计，乐观锁按 `version`。需求见 [1.6 需求](../feature/clinical-login-1.6.md)。
+沿用 `/boruikang/admin` 前缀、`Jwttoken` 头、`ApiResponse{code,message,success,result}` 与分页 `result={items,page_num,page_size,total_size}`；字段 snake_case；POST 参数全部在 body；每个接口一个 Controller。`经理`=MANAGER，`运营`=OPERATOR，`护士`=NURSE，`医生`=DOCTOR。所有写操作追加审计，乐观锁按 `version`。需求见 [1.6 需求](../feature/clinical-login-1.6.md)。
 
 ## 角色与范围
 

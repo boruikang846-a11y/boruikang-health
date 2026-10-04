@@ -1,8 +1,8 @@
-# bgssai-health
+# boruikang-health
 
 遵守用户的 GitHub PR-only 工作流。开发在独立 worktree 的 codex/* 分支；提交、push、draft PR 分别记录。未明确授权合并不得合并。dev/prod 均部署 develop。部署走 boruikang-workflows（Jenkins 文件夹 boruikang），发布脚本与说明都在那个仓，本仓不放部署文件。
 
-代码与目录规范以工作区 bgssai-skeleton/docs/BGSSAI-Standards.md、DIRECTORY-LAYOUT.md 为准。Java 21、Spring Boot 4、MyBatis Example、PageHelper、React 18、Vite、Ant Design 5；禁止 Lombok、Swagger、properties 占位符。每个接口一个 Controller，POST 参数在专属 DTO body，API snake_case，DTO 不返回 Entity。
+代码与目录规范以本仓现有模块结构和已有代码的写法为准。Java 21、Spring Boot 4、MyBatis Example、PageHelper、React 18、Vite、Ant Design 5；禁止 Lombok、Swagger、properties 占位符。每个接口一个 Controller，POST 参数在专属 DTO body，API snake_case，DTO 不返回 Entity。
 
 需求 → HTML 原型 → 设计与契约 → 代码与 SQL，四层版本一致。医患业务基线见 docs/feature/health-mvp.md，当前增量以 docs/feature/wechat-channels-1.9.md 为准（1.8 文件导入见 docs/feature/screening-file-import-1.8.md、docs/feature/patient-file-import-1.8.md，1.7 随访 AI 见 docs/feature/followup-ai-1.7.md）（1.6 医生护士登录、1.5 台账、1.4 托管运营修正保留为基线）。HEALTH-USER 只做企业微信、小程序、Web 公开介绍，不提供患者业务功能；微信互动只是页面内的虚构演示。既往会议作为后台业务依据。
 

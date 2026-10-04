@@ -1,6 +1,6 @@
 # 1.4 托管运营接口与数据契约
 
-沿用 `/bgssai/admin`、`Jwttoken` 和现有 `ApiResponse`；请求/响应字段用 snake_case。只有 `MANAGER`、`OPERATOR`、`PLATFORM_ADMIN` 能登录管理端；平台账号仍只可管理接入配置。旧 `DOCTOR`、`NURSE` 账号即使存在也不能登录。
+沿用 `/boruikang/admin`、`Jwttoken` 和现有 `ApiResponse`；请求/响应字段用 snake_case。只有 `MANAGER`、`OPERATOR`、`PLATFORM_ADMIN` 能登录管理端；平台账号仍只可管理接入配置。旧 `DOCTOR`、`NURSE` 账号即使存在也不能登录。
 
 | 接口 | 权限 | 契约/作用 |
 | --- | --- | --- |
