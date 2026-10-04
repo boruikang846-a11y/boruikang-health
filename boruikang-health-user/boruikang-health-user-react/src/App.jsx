@@ -21,7 +21,7 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('boruikang.lang', lang)
     document.documentElement.lang = lang
-    document.title = t('Boruikang Health 医患运营管理系统与患者端介绍', 'Boruikang Health | Connected care')
+    document.title = t('博瑞康 Health 医患运营管理系统与患者端介绍', 'Boruikang Health | Connected care')
   }, [lang])
   useReveal([lang])
   useEffect(() => {
@@ -40,7 +40,7 @@ export default function App() {
       t('当前提供患者服务介绍，适配手机与电脑。账号、咨询、健康记录等业务将待需求明确后分阶段建设。', 'This introduction works on phones and computers. Accounts, consultations and health records are planned for later phases after requirements are defined.'),
       t('当前仅开放介绍页面', 'Introduction available now')],
   ]
-  return <div className="site"><header className="site-header"><a className="brand" href="/"><span className="brand-icon"><HeartOutlined /></span><span>Boruikang <b>Health</b></span></a>
+  return <div className="site"><header className="site-header"><a className="brand" href="/"><span className="brand-icon"><HeartOutlined /></span><span>{t('博瑞康', 'Boruikang')} <b>Health</b></span></a>
     <nav aria-label={t('页面导航', 'Page navigation')}><a href="#overview">{t('系统全貌', 'System')}</a><a href="#modes">{t('服务模式', 'Channels')}</a><a href="#wechat">{t('微信互动', 'WeChat demo')}</a><a href="#journey">{t('服务流程', 'Care journey')}</a><a href="#roadmap">{t('上线规划', 'Roadmap')}</a></nav>
     <Button type="text" icon={<GlobalOutlined />} onClick={() => setLang(lang === 'en' ? 'zh-CN' : 'en')}>{lang === 'en' ? '中文' : 'English'}</Button>
   </header>
@@ -83,5 +83,5 @@ export default function App() {
       { key:'3',label:t('系统会自动诊断或自动回复患者吗？','Will the system diagnose or automatically reply to patients?'),children:<p>{t('不会。后台按医生审核、人工负责的方式设计：系统不独立诊断、开药或调整治疗方案，也不自动回复。微信消息只在工作人员点击发送时发出，涉及病情的内容须经责任医生审核。','No. The staff workspace is built around clinical review and human responsibility: it does not diagnose, prescribe, change treatment or reply automatically. WeChat messages go out only when a staff member clicks send, and clinical content requires the responsible doctor’s review.')}</p> },
       { key:'4',label:t('如何了解后续开放进展？','How can I learn about future availability?'),children:<p>{t('后续以本页面的建设进展与医院服务团队正式通知为准。当前没有预约名额或资料收集入口。','Refer to this roadmap and official announcements from your hospital care team. No waitlist or information collection form is available at this stage.')}</p> },
     ]} />
-  </section></main><footer className="site-footer"><a className="brand" href="/"><span className="brand-icon"><HeartOutlined /></span><span>Boruikang <b>Health</b></span></a><p>{t('医患运营管理系统 · 系统与患者端介绍','Patient relationship and care operations · Patient introduction')}</p><span>HEALTH MVP / {t('持续建设中','In development')}</span></footer></div>
+  </section></main><footer className="site-footer"><a className="brand" href="/"><span className="brand-icon"><HeartOutlined /></span><span>{t('博瑞康', 'Boruikang')} <b>Health</b></span></a><p>{t('苏州博瑞康医疗科技有限公司 · 医患运营管理系统', '苏州博瑞康医疗科技有限公司 · Patient relationship and care operations')}</p><span>HEALTH MVP / {t('持续建设中','In development')}</span></footer></div>
 }
