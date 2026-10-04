@@ -17,9 +17,9 @@ public class TimelineService {
     private static final Logger log=LoggerFactory.getLogger(TimelineService.class);
     private static final int PER_SOURCE=100;
     private final PatientAccess access;private final CareTaskMapper tasks;private final ContactAttemptMapper attempts;private final InvitationMapper invitations;private final AppointmentMapper appointments;
-    private final CareRecordMapper records;private final ReferralMapper referrals;private final ServiceEnrollmentMapper enrollments;private final MessageLogMapper messages;private final MedicationMapper medications;private final AuditEventMapper audits;
-    public TimelineService(PatientAccess access,CareTaskMapper tasks,ContactAttemptMapper attempts,InvitationMapper invitations,AppointmentMapper appointments,CareRecordMapper records,ReferralMapper referrals,ServiceEnrollmentMapper enrollments,MessageLogMapper messages,MedicationMapper medications,AuditEventMapper audits){
-        this.access=access;this.tasks=tasks;this.attempts=attempts;this.invitations=invitations;this.appointments=appointments;this.records=records;this.referrals=referrals;this.enrollments=enrollments;this.messages=messages;this.medications=medications;this.audits=audits;}
+    private final CareRecordMapper records;private final ReferralMapper referrals;private final ServiceEnrollmentMapper enrollments;private final MessageLogMapper messages;private final MedicationMapper medications;private final AuditEventMapper audits;private final WechatContactMapper wechatContacts;private final WechatMessageMapper wechatMessages;
+    public TimelineService(PatientAccess access,CareTaskMapper tasks,ContactAttemptMapper attempts,InvitationMapper invitations,AppointmentMapper appointments,CareRecordMapper records,ReferralMapper referrals,ServiceEnrollmentMapper enrollments,MessageLogMapper messages,MedicationMapper medications,AuditEventMapper audits,WechatContactMapper wechatContacts,WechatMessageMapper wechatMessages){
+        this.access=access;this.tasks=tasks;this.attempts=attempts;this.invitations=invitations;this.appointments=appointments;this.records=records;this.referrals=referrals;this.enrollments=enrollments;this.messages=messages;this.medications=medications;this.audits=audits;this.wechatContacts=wechatContacts;this.wechatMessages=wechatMessages;}
     public TimelineResponse timeline(TimelineQueryRequest req){
         log.info("timeline patientId={}",req.patientId());access.staff();Patient p=access.require(req.patientId());int limit=req.limit()==null?100:req.limit();
         List<TimelineEvent> events=new ArrayList<>();
@@ -47,6 +47,10 @@ public class TimelineService {
         for(MessageLog m:messages.selectByExample(mx))events.add(new TimelineEvent("MESSAGE",m.sentAt,"已发消息："+m.channel,(m.templateCode==null?"":"模板 "+m.templateCode+"；")+(m.content.length()>120?m.content.substring(0,120)+"...":m.content),m.id,m.channel));
         MedicationExample dx=new MedicationExample();dx.eq("hospital_id",p.hospitalId).eq("patient_id",p.id);dx.setOrderByClause("id DESC");PageHelper.startPage(1,PER_SOURCE,false);
         for(Medication d:medications.selectByExample(dx))events.add(new TimelineEvent("MEDICATION",d.gmtCreate,"用药："+d.drugName,(d.dosage==null?"":d.dosage+" ")+(d.frequency==null?"":d.frequency)+"，依从 "+d.adherence,d.id,d.status));
+        WechatContactExample wx=new WechatContactExample();wx.eq("hospital_id",p.hospitalId).eq("patient_id",p.id);wx.selectColumns("id");PageHelper.startPage(1,20,false);
+        List<Long> wechatIds=wechatContacts.selectByExample(wx).stream().map(c->c.id).toList();
+        if(!wechatIds.isEmpty()){WechatMessageExample wm=new WechatMessageExample();wm.eq("hospital_id",p.hospitalId).in("contact_id",wechatIds);wm.setOrderByClause("id DESC");PageHelper.startPage(1,PER_SOURCE,false);
+            for(WechatMessage w:wechatMessages.selectByExample(wm))events.add(new TimelineEvent("WECHAT",w.sentAt,("OUTBOUND".equals(w.direction)?"微信发出：":"微信收到：")+("WE_COM".equals(w.channel)?"企业微信":"公众号"),w.content.length()>120?w.content.substring(0,120)+"...":w.content,w.id,w.status));}
         AuditEventExample ux=new AuditEventExample();ux.eq("hospital_id",p.hospitalId).eq("patient_id",p.id).in("action",List.of("PATIENT_UPDATED","PATIENT_LIFECYCLE_ADVANCED","TASK_REASSIGNED","LOST_CONTACT_ESCALATED"));ux.setOrderByClause("id DESC");PageHelper.startPage(1,PER_SOURCE,false);
         for(AuditEvent u:audits.selectByExample(ux))events.add(new TimelineEvent("AUDIT",u.gmtCreate,u.action,(u.beforeState==null?"":u.beforeState+" -> ")+(u.afterState==null?"":u.afterState)+(u.detail==null?"":"；"+u.detail),u.id,u.afterState));
         events.sort(Comparator.comparing((TimelineEvent e)->e.at()==null?LocalDateTime.MIN:e.at()).reversed());

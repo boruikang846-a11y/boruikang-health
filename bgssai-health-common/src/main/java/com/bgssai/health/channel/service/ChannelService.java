@@ -3,7 +3,10 @@ import com.bgssai.health.audit.service.AuditService;
 import com.bgssai.health.auth.service.CurrentAccount;
 import com.bgssai.health.channel.dto.*;
 import com.bgssai.health.common.*;
+import com.bgssai.health.mapper.HealthAccountMapper;
 import com.bgssai.health.mapper.IntakeChannelMapper;
+import com.bgssai.health.wechat.service.WechatConfigService;
+import com.bgssai.health.wechat.service.WechatGateway;
 import com.bgssai.health.model.*;
 import com.bgssai.health.patient.service.PatientAccess;
 import com.bgssai.health.patient.service.PatientService;
@@ -18,8 +21,8 @@ import java.util.UUID;
 @Service
 public class ChannelService {
     private static final Logger log=LoggerFactory.getLogger(ChannelService.class);
-    private final IntakeChannelMapper channels;private final PatientAccess access;private final PatientService patients;private final AuditService audit;private final String userUrl;
-    public ChannelService(IntakeChannelMapper channels,PatientAccess access,PatientService patients,AuditService audit,@Value("${health.user-url}") String userUrl){this.channels=channels;this.access=access;this.patients=patients;this.audit=audit;this.userUrl=userUrl;}
+    private final IntakeChannelMapper channels;private final PatientAccess access;private final PatientService patients;private final AuditService audit;private final String userUrl;private final WechatConfigService wechat;private final HealthAccountMapper accounts;
+    public ChannelService(IntakeChannelMapper channels,PatientAccess access,PatientService patients,AuditService audit,@Value("${health.user-url}") String userUrl,WechatConfigService wechat,HealthAccountMapper accounts){this.channels=channels;this.access=access;this.patients=patients;this.audit=audit;this.userUrl=userUrl;this.wechat=wechat;this.accounts=accounts;}
     public Paged<ChannelResponse> query(Integer page,Integer size){
         log.info("query channels page={}",page);access.manager();IntakeChannelExample ex=new IntakeChannelExample();ex.eq("hospital_id",CurrentAccount.get().hospitalId());
         PageHelper.startPage(Paged.number(page),Paged.size(size));
@@ -38,11 +41,24 @@ public class ChannelService {
         IntakeChannelExample ex=new IntakeChannelExample();ex.eq("id",c.id).eq("hospital_id",c.hospitalId);channels.updateByExampleSelective(patch,ex);
         audit.append(null,"CHANNEL_TOGGLED",c.id,String.valueOf(c.active),String.valueOf(req.active()),"New enrollment availability");return view(channels.selectByPrimaryKey(c.id));
     }
+    /** Creates the WeCom "contact me" code or the Official Account parametric QR code of a channel; a scan then carries ch&lt;id&gt; back in the callback. */
+    public ChannelResponse wechatQr(WechatQrRequest req){
+        log.info("create channel wechat qr id={} provider={}",req.id(),req.provider());access.manager();IntakeChannel c=channels.selectByPrimaryKey(req.id());Checks.found(c!=null&&CurrentAccount.get().hospitalId().equals(c.hospitalId));
+        IntegrationConfig config=wechat.active(c.hospitalId,req.provider());String scene="ch"+c.id;IntakeChannel patch=new IntakeChannel();patch.modifier=CurrentAccount.get().userId().toString();
+        // The WeChat call is made before any database write.
+        if(WechatConfigService.WE_COM.equals(req.provider())){
+            HealthAccount owner=c.ownerId==null?null:accounts.selectByPrimaryKey(c.ownerId);
+            Checks.require(owner!=null&&Checks.text(owner.wecomUserId),"Link the channel owner's WeCom member id first / 请先在医护账号里给该渠道负责人登记企业微信成员账号");
+            WechatGateway.ContactWay way=wechat.gateway(config).wecomContactWay(config,owner.wecomUserId,scene);patch.wecomConfigId=way.configId();patch.wecomQrUrl=way.qrUrl();
+        }else patch.officialQrUrl=wechat.gateway(config).officialQr(config,scene);
+        IntakeChannelExample ex=new IntakeChannelExample();ex.eq("id",c.id).eq("hospital_id",c.hospitalId);channels.updateByExampleSelective(patch,ex);
+        audit.append(null,"CHANNEL_WECHAT_QR_CREATED",c.id,null,req.provider(),wechat.mock(config)?"simulated code":"code created");return view(channels.selectByPrimaryKey(c.id));
+    }
     public PublicChannelResponse resolve(String token){
         log.info("resolve public channel");Checks.require(token!=null&&token.matches("[a-zA-Z0-9-]{16,64}"),"Invalid channel");
         IntakeChannelExample ex=new IntakeChannelExample();ex.eq("token",token).eq("is_active",true);
         PageHelper.startPage(1,1,false);
         List<IntakeChannel> rows=channels.selectByExample(ex);Checks.found(!rows.isEmpty());IntakeChannel c=rows.getFirst();return new PublicChannelResponse(c.title,c.source,c.department,true);
     }
-    private ChannelResponse view(IntakeChannel c){return new ChannelResponse(c.id,c.title,c.source,c.department,c.doctorId,c.ownerId,c.token,c.active,userUrl+"/join/"+c.token);}
+    private ChannelResponse view(IntakeChannel c){return new ChannelResponse(c.id,c.title,c.source,c.department,c.doctorId,c.ownerId,c.token,c.active,userUrl+"/join/"+c.token,c.wecomQrUrl,c.officialQrUrl);}
 }

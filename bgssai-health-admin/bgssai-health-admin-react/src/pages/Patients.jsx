@@ -13,6 +13,7 @@ import { ReferralAction, ReferralDialog, referralActions } from './Referrals'
 import { MessageLogDialog } from './Configuration'
 import { ReportReviewDialog, ReportStatus } from './ReportReview'
 import FileImportDialog from './FileImportDialog'
+import { PatientWechat } from './Wechat'
 import { createPatientTemplate, parsePatientFile, patientImportColumns } from './patientImport'
 import { fileImportResult } from './fileImport'
 
@@ -131,7 +132,7 @@ export function Patients() {
 }
 function TimelineTab({ id }) {
   const state = useLoad(() => api('/patients/timeline', { patient_id: Number(id), limit: 200 }), [id])
-  const color = { TASK: 'blue', CONTACT: 'orange', INVITATION: 'purple', APPOINTMENT: 'green', RECORD: 'gray', REFERRAL: 'cyan', ENROLLMENT: 'gold', MESSAGE: 'default', MEDICATION: 'lime', AUDIT: 'default', PATIENT: 'blue', CONSENT: 'green' }
+  const color = { TASK: 'blue', CONTACT: 'orange', INVITATION: 'purple', APPOINTMENT: 'green', RECORD: 'gray', REFERRAL: 'cyan', ENROLLMENT: 'gold', MESSAGE: 'default', MEDICATION: 'lime', AUDIT: 'default', PATIENT: 'blue', CONSENT: 'green', WECHAT: 'green' }
   return <LoadState state={state}>{data => <><Timeline items={data.events.map((e, i) => ({ key: i, color: color[e.kind] || 'gray', children: <div><strong>{e.title}</strong> <Status value={e.status} /><div className="muted">{dateText(e.at)} · {e.kind}</div>{e.detail && <p className="pre-wrap">{e.detail}</p>}</div> }))} />{data.truncated && <p className="muted">仅显示最近 200 条。</p>}</>}</LoadState>
 }
 export function PatientDetail() {
@@ -179,8 +180,8 @@ export function PatientDetail() {
       { key: 'tags', label: '标签', children: patient.tags?.length ? patient.tags.map(t => <Tag key={t}>{t}</Tag>) : '—', span: 2 },
       { key: 'note', label: '内部备注', children: patient.note || '暂无', span: 2 },
     ]} /></Card>
-    <Card><Tabs activeKey={tab} onChange={value => { setTab(value); setPage(0) }} items={[{ key: 'timeline', label: '时间轴' }, { key: 'records', label: '就诊与健康记录' }, { key: 'tasks', label: '服务任务' }, { key: 'invitations', label: '邀约' }, { key: 'appointments', label: '预约到诊' }, { key: 'enrollments', label: '服务实例' }, { key: 'medications', label: '用药' }, { key: 'referrals', label: '转诊' }, { key: 'message-logs', label: '已发消息' }, { key: 'messages', label: '沟通记录' }, { key: 'audits', label: '操作留痕' }]} />
-      {tab === 'timeline' ? <TimelineTab id={id} key={revision} /> : tab === 'tasks' ? <Tasks patientId={Number(id)} compact /> : <>{tab === 'medications' && !doctor && <div className="toolbar"><Button icon={<PlusOutlined />} onClick={() => setMedication({ status: 'ACTIVE', source: 'HOSPITAL_RECORD', adherence: 'UNKNOWN' })}>登记用药</Button></div>}
+    <Card><Tabs activeKey={tab} onChange={value => { setTab(value); setPage(0) }} items={[{ key: 'timeline', label: '时间轴' }, { key: 'records', label: '就诊与健康记录' }, { key: 'tasks', label: '服务任务' }, { key: 'invitations', label: '邀约' }, { key: 'appointments', label: '预约到诊' }, { key: 'enrollments', label: '服务实例' }, { key: 'medications', label: '用药' }, { key: 'referrals', label: '转诊' }, { key: 'message-logs', label: '已发消息' }, { key: 'wechat', label: '微信沟通' }, { key: 'messages', label: '沟通记录' }, { key: 'audits', label: '操作留痕' }]} />
+      {tab === 'timeline' ? <TimelineTab id={id} key={revision} /> : tab === 'tasks' ? <Tasks patientId={Number(id)} compact /> : tab === 'wechat' ? <PatientWechat patientId={Number(id)} readOnly={doctor} /> : <>{tab === 'medications' && !doctor && <div className="toolbar"><Button icon={<PlusOutlined />} onClick={() => setMedication({ status: 'ACTIVE', source: 'HOSPITAL_RECORD', adherence: 'UNKNOWN' })}>登记用药</Button></div>}
       <DataTable state={history} page={page} setPage={setPage} columns={
         tab === 'records' ? [
           { title: '记录类型', dataIndex: 'record_type', render: value => <Status value={value} /> }, { title: '发生时间', dataIndex: 'occurred_at', render: dateText },

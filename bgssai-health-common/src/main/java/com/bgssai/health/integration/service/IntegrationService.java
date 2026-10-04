@@ -5,6 +5,7 @@ import com.bgssai.health.common.Checks;
 import com.bgssai.health.integration.dto.*;
 import com.bgssai.health.mapper.IntegrationConfigMapper;
 import com.bgssai.health.model.*;
+import com.bgssai.health.wechat.service.WechatConfigService;
 import com.github.pagehelper.PageHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,13 +19,14 @@ public class IntegrationService {
     private static final Logger log=LoggerFactory.getLogger(IntegrationService.class);
     public static final String DEEPSEEK="https://api.deepseek.com/chat/completions";
     private static final Set<String> DEEPSEEK_MODELS=Set.of("deepseek-flash","deepseek-v4-pro");
-    private final IntegrationConfigMapper configs;private final AuditService audit;
-    public IntegrationService(IntegrationConfigMapper configs,AuditService audit){this.configs=configs;this.audit=audit;}
+    private final IntegrationConfigMapper configs;private final AuditService audit;private final WechatConfigService wechat;
+    public IntegrationService(IntegrationConfigMapper configs,AuditService audit,WechatConfigService wechat){this.configs=configs;this.audit=audit;this.wechat=wechat;}
     public List<IntegrationResponse> list(){
         log.info("list integrations actorId={}",CurrentAccount.get().userId());Checks.permit(!"USER".equals(CurrentAccount.get().roleCode()));
         IntegrationConfig c=aiConfig();List<IntegrationResponse> out=new ArrayList<>();
         out.add(c==null||!endpointAllowed(c.endpoint)?new IntegrationResponse("AI",DEEPSEEK,"deepseek-flash",false,false,"NOT_CONFIGURED"):view(c));
-        for(String provider:List.of("WE_COM","WECHAT_OFFICIAL","HIS","WEEKLY_DELIVERY"))out.add(new IntegrationResponse(provider,"","",false,false,"NOT_CONNECTED"));
+        for(String provider:WechatConfigService.PROVIDERS)out.add(wechat.view(CurrentAccount.get().hospitalId(),provider));
+        for(String provider:List.of("HIS","WEEKLY_DELIVERY"))out.add(new IntegrationResponse(provider,"","",false,false,"NOT_CONNECTED"));
         return out;
     }
     @Transactional

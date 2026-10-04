@@ -5,6 +5,7 @@ import { PlusOutlined, PrinterOutlined, ReloadOutlined } from '@ant-design/icons
 import dayjs from 'dayjs'
 import ReportArchives from './ReportArchives'
 import { Campaigns, Orgs, Sla, Templates } from './Configuration'
+import { ChannelTag } from './Wechat'
 import { api, useLoad } from '../api'
 import { DataTable, dateText, doctorOptions, FormDialog, LoadState, names, options, ownerOptions, PageTitle, required, Status } from '../ui'
 import { Tabs } from 'antd'
@@ -55,15 +56,17 @@ export function Channels() {
   const [page, setPage] = useState(0)
   const [create, setCreate] = useState(false)
   const [detail, setDetail] = useState(null)
+  const [wechat, setWechat] = useState(null)
+  const [qrBusy, setQrBusy] = useState(null)
   const state = useLoad(() => account.role_code === 'MANAGER' ? api('/channels?page=' + page + '&size=10') : Promise.resolve({ items: [] }), [page])
   const staff = useLoad(() => api('/staff'))
   const clinicians = useLoad(() => api('/clinicians'))
   if (account.role_code !== 'MANAGER') return <Alert type="info" message="渠道管理由运营主管负责" />
-  return <><PageTitle title="渠道管理" subtitle="维护患者来源与服务团队；当前二维码仅用于展示患者服务介绍。" extra={<Button type="primary" icon={<PlusOutlined />} onClick={() => setCreate(true)}>创建渠道</Button>} />
+  return <><PageTitle title="渠道管理" subtitle="维护患者来源与服务团队。介绍二维码打开患者服务介绍；微信二维码用于加企业微信好友或关注公众号。" extra={<Button type="primary" icon={<PlusOutlined />} onClick={() => setCreate(true)}>创建渠道</Button>} />
     <Card><DataTable state={state} page={page} setPage={setPage} columns={[
       { title: '渠道名称', dataIndex: 'title' }, { title: '来源', dataIndex: 'source', render: value => names[value] }, { title: '科室', dataIndex: 'department' },
       { title: '状态', dataIndex: 'active', render: value => <Tag color={value ? 'green' : 'default'}>{value ? '已启用' : '已停用'}</Tag> },
-      { title: '操作', render: (_, row) => <Space><Button type="link" onClick={() => setDetail(row)}>介绍二维码</Button><Button type="link" danger={row.active} onClick={() => modal.confirm({
+      { title: '操作', render: (_, row) => <Space><Button type="link" onClick={() => setDetail(row)}>介绍二维码</Button><Button type="link" onClick={() => setWechat(row)}>微信二维码</Button><Button type="link" danger={row.active} onClick={() => modal.confirm({
         title: row.active ? '停用此渠道？' : '启用此渠道？', content: '管理后台保留渠道记录；公开介绍页面不采集患者信息。', okText: '确认', cancelText: '取消',
         onOk: async () => { try { await api('/channels/toggle', { id: row.id, active: !row.active }); state.reload() } catch (e) { message.error(e.message); throw e } },
       })}>{row.active ? '停用' : '启用'}</Button></Space> },
@@ -72,6 +75,13 @@ export function Channels() {
       <p>{detail?.title}</p>{detail && <div className="qr-wrap"><QRCode value={detail.enrollment_url} size={200} status={detail.active ? 'active' : 'expired'} /></div>}
       <p className="muted">当前二维码仅打开患者服务介绍页，不提供自助入组或个人数据采集。</p><Input.TextArea readOnly rows={3} value={detail?.enrollment_url} aria-label="介绍链接" />
       <Button className="mt" onClick={async () => { try { await navigator.clipboard.writeText(detail.enrollment_url); message.success('链接已复制') } catch { message.info('请选中上方链接手动复制') } }}>复制介绍链接</Button>
+    </Modal>
+    <Modal title={'微信二维码 · ' + (wechat?.title || '')} open={Boolean(wechat)} width={680} onCancel={() => setWechat(null)} footer={<Button onClick={() => setWechat(null)}>关闭</Button>}>
+      <p className="muted">患者扫码加企业微信好友或关注公众号后，「微信沟通」里的联系人会带上本渠道。企业微信活码使用渠道负责人登记的成员账号。</p>
+      <div className="integration-grid">{[['WE_COM', 'wecom_qr_url', '企业微信「联系我」'], ['WECHAT_OFFICIAL', 'official_qr_url', '公众号带参二维码']].map(([provider, field, title]) => <Card size="small" key={provider} title={title}>
+        {wechat?.[field] ? wechat[field].startsWith('mock://') ? <Alert type="warning" message="模拟二维码，不能扫码" description={wechat[field]} /> : provider === 'WE_COM' ? <div className="qr-wrap"><img src={wechat[field]} alt="企业微信联系我二维码" width={180} height={180} /></div> : <div className="qr-wrap"><QRCode value={wechat[field]} size={180} /></div> : <p className="muted">尚未生成</p>}
+        <Button className="mt" loading={qrBusy === provider} disabled={Boolean(qrBusy)} onClick={async () => { setQrBusy(provider); try { setWechat(await api('/channels/wechat-qr', { id: wechat.id, provider })); state.reload() } catch (e) { message.error(e.message) } finally { setQrBusy(null) } }}>{wechat?.[field] ? '重新生成' : '生成'}</Button>
+      </Card>)}</div>
     </Modal>
     <FormDialog title="创建渠道" open={create} initialValues={{ source: 'OUTPATIENT', department: '综合服务' }} onClose={() => setCreate(false)} onSubmit={async values => { await api('/channels/create', values); state.reload() }}>
       <Form.Item name="title" label="渠道名称" rules={required}><Input maxLength={120} /></Form.Item><div className="form-grid">
@@ -140,13 +150,51 @@ const deepseekModels = [
   { value: 'deepseek-flash', label: 'deepseek-flash（建议）' },
   { value: 'deepseek-v4-pro', label: 'deepseek-v4-pro' },
 ]
+const wechatFields = { WE_COM: ['企业 ID（CorpID）', '客户联系 Secret'], WECHAT_OFFICIAL: ['AppID', 'AppSecret'] }
+/** WeCom or Official Account credentials. "已接通" appears only after a real connection test succeeded. */
+function WechatIntegration({ item, canConfigure, onChanged }) {
+  const { message } = App.useApp()
+  const [editor, setEditor] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const wecom = item.provider === 'WE_COM'
+  const callback = window.location.origin + item.callback_path
+  async function verify() {
+    if (busy) return
+    setBusy(true)
+    try { const result = await api('/integrations/wechat/verify', { provider: item.provider }); if (result.status === 'CONNECTED') message.success('已接通：微信返回了有效凭证'); else message.error('连接失败：' + (result.last_error || '微信未返回凭证')); onChanged() }
+    catch (e) { message.error(e.message) } finally { setBusy(false) }
+  }
+  return <Card title={providers[item.provider]} extra={<ChannelTag item={item} />}>
+    <p>{wecom ? '患者加医院企业微信成员为好友后，系统同步好友关系与来源渠道。工作人员发起的消息以群发任务下发，成员在企业微信里确认后才发出。未开通会话存档，系统看不到聊天正文。' : '患者关注医院公众号后，可向其发送模板消息；患者 48 小时内有互动时可以发文字。患者来信进入「微信沟通」待处理。'}</p>
+    <Descriptions size="small" column={1} items={[
+      { key: 'app', label: wechatFields[item.provider][0], children: item.app_id || '未设置' },
+      { key: 'secret', label: wechatFields[item.provider][1], children: item.configured ? '已配置（不回显）' : '未配置' },
+      { key: 'mode', label: '通道类型', children: item.mode === 'MOCK' ? '模拟通道（不连接微信，仅演示）' : '正式接入' },
+      { key: 'callback', label: '回调地址', children: <span className="callback-url">{callback}</span> },
+      { key: 'ready', label: '回调 Token / AESKey', children: item.callback_ready ? '已配置（不回显）' : wecom ? '未配置（企业微信必填）' : '未配置' },
+      { key: 'verified', label: '连接测试', children: item.mode === 'MOCK' ? '模拟通道无需测试' : item.status === 'CONNECTED' ? dateText(item.verified_at) + ' 成功' : item.status === 'FAILED' ? dateText(item.verified_at) + ' 失败：' + (item.last_error || '') : item.configured ? '保存后尚未测试' : '—' },
+    ]} />
+    {canConfigure && <Space className="mt" wrap><Button onClick={() => setEditor(true)}>配置</Button><Button loading={busy} disabled={!item.configured || item.mode === 'MOCK'} onClick={verify}>测试连接</Button>
+      <Button type="link" onClick={async () => { try { await navigator.clipboard.writeText(callback); message.success('回调地址已复制') } catch { message.info('请选中上方地址手动复制') } }}>复制回调地址</Button></Space>}
+    <FormDialog title={'配置' + providers[item.provider]} open={editor} initialValues={{ app_id: item.app_id || '', mode: item.mode || 'LIVE', enabled: item.enabled }} onClose={() => setEditor(false)}
+      onSubmit={async values => { await api('/integrations/wechat/save', { provider: item.provider, app_id: values.app_id, secret: values.secret || '', callback_token: values.callback_token || '', aes_key: values.aes_key || '', mode: values.mode, enabled: Boolean(values.enabled) }); onChanged() }}>
+      <div className="form-grid"><Form.Item name="app_id" label={wechatFields[item.provider][0]} rules={[...required, { pattern: /^[A-Za-z0-9_-]{6,64}$/, message: '6–64 位字母、数字、下划线或短横线' }]}><Input maxLength={64} autoComplete="off" /></Form.Item>
+        <Form.Item name="secret" label={wechatFields[item.provider][1] + '（留空保留原值）'}><Input.Password maxLength={200} autoComplete="new-password" /></Form.Item>
+        <Form.Item name="callback_token" label="回调 Token（留空保留原值）" rules={[{ pattern: /^[A-Za-z0-9]{3,32}$/, message: '3–32 位字母数字' }]}><Input.Password maxLength={32} autoComplete="new-password" /></Form.Item>
+        <Form.Item name="aes_key" label={'EncodingAESKey（留空保留原值' + (wecom ? '' : '，明文模式可不填') + '）'} rules={[{ pattern: /^[A-Za-z0-9]{43}$/, message: '43 位字母数字' }]}><Input.Password maxLength={43} autoComplete="new-password" /></Form.Item>
+        <Form.Item name="mode" label="通道类型" rules={required}><Select options={[{ value: 'LIVE', label: '正式接入' }, ...(item.mock_allowed ? [{ value: 'MOCK', label: '模拟通道（仅演示）' }] : [])]} /></Form.Item>
+        <Form.Item name="enabled" label="启用" valuePropName="checked"><Switch /></Form.Item></div>
+      <Alert type="info" message={'把回调地址、Token、EncodingAESKey 填到' + (wecom ? '企业微信管理后台「客户联系 → API → 接收事件服务器」' : '公众号后台「基本配置 → 服务器配置」') + '，并把本服务器出口 IP 加入可信 IP / 白名单。保存不代表已接通，请再点「测试连接」。密钥只保存在服务端，不回显。'} />
+    </FormDialog>
+  </Card>
+}
 function Integrations() {
   const account = useOutletContext()
   const [editor, setEditor] = useState(null)
   const state = useLoad(() => api('/integrations'))
   const canConfigure = account.role_code === 'PLATFORM_ADMIN' || account.role_code === 'MANAGER'
   return <><div className="toolbar"><Button icon={<ReloadOutlined />} onClick={state.reload}>刷新</Button></div>
-    <LoadState state={state}>{data => <div className="integration-grid">{data.map(item => <Card key={item.provider} title={providers[item.provider]} extra={<Tag color={item.status === 'CONFIGURED_UNVERIFIED' ? 'gold' : 'default'}>{item.provider === 'AI' ? (item.status === 'CONFIGURED_UNVERIFIED' ? '已启用 · 待验证' : '未启用') : '未接入'}</Tag>}>
+    <LoadState state={state}>{data => <div className="integration-grid">{data.map(item => ['WE_COM', 'WECHAT_OFFICIAL'].includes(item.provider) ? <WechatIntegration key={item.provider} item={item} canConfigure={canConfigure} onChanged={state.reload} /> : <Card key={item.provider} title={providers[item.provider]} extra={<Tag color={item.status === 'CONFIGURED_UNVERIFIED' ? 'gold' : 'default'}>{item.provider === 'AI' ? (item.status === 'CONFIGURED_UNVERIFIED' ? '已启用 · 待验证' : '未启用') : '未接入'}</Tag>}>
       <p>{item.provider === 'AI' ? '按关联的出院小结或病历正文生成随访建议草稿。启用前不会外发。建议仍由责任医生审核，再由人工联系患者。' : item.provider === 'HIS' ? '已提供虚构医院 Mock，可在“医院数据”页联调导入。真实医院接口尚未接通，待提供接口、字段字典与授权。' : '待医院提供授权与接入资料。当前仅提供患者服务介绍，后台记录人工服务过程。'}</p>
       {item.provider === 'AI' && <><Descriptions size="small" column={1} items={[{ key: 'endpoint', label: '接口', children: item.endpoint || '未设置' }, { key: 'model', label: '模型', children: item.model_name || '未设置' }, { key: 'key', label: 'API Key', children: item.configured ? '已配置（不回显）' : '未配置' }]} />
         {canConfigure && <Button className="mt" onClick={() => setEditor(item)}>配置 DeepSeek</Button>}</>}
@@ -163,6 +211,6 @@ function Integrations() {
 export function Settings() {
   const account = useOutletContext()
   if (account.role_code === 'PLATFORM_ADMIN') return <><PageTitle title="接入设置" subtitle="区分配置状态与真实接通状态，按医院授权逐项联调。" /><Integrations /></>
-  return <><PageTitle title="运营设置" subtitle="机构网络、活动、SLA 时限、短信话术模板与外部接入，都由运营主管维护。" />
-    <Tabs items={[{ key: 'orgs', label: '机构', children: <Orgs /> }, { key: 'campaigns', label: '活动', children: <Campaigns /> }, { key: 'sla', label: 'SLA 时限', children: <Sla /> }, { key: 'templates', label: '短信与话术', children: <Templates /> }, { key: 'integrations', label: '外部接入', children: <Integrations /> }]} /></>
+  return <><PageTitle title="运营设置" subtitle="机构网络、活动、SLA 时限、短信话术与微信模板、外部接入，都由运营主管维护。" />
+    <Tabs items={[{ key: 'orgs', label: '机构', children: <Orgs /> }, { key: 'campaigns', label: '活动', children: <Campaigns /> }, { key: 'sla', label: 'SLA 时限', children: <Sla /> }, { key: 'templates', label: '短信、话术与微信', children: <Templates /> }, { key: 'integrations', label: '外部接入', children: <Integrations /> }]} /></>
 }

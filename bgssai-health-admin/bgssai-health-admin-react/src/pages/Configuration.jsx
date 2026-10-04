@@ -6,7 +6,8 @@ import dayjs from 'dayjs'
 import { api, useLoad } from '../api'
 import { DataTable, day, dayText, FormDialog, LoadState, names, options, ownerOptions, required, Status } from '../ui'
 
-const templateScenes = ['FIRST_CONTACT', 'HIGH_RISK', 'URGENT', 'FAMILY', 'ARRIVAL_REMINDER', 'FOLLOWUP_REMINDER', 'REVISIT_REMINDER', 'NO_SHOW', 'HESITANT', 'REFUSED', 'COMPLAINT', 'OTHER']
+const templateScenes = ['FIRST_CONTACT', 'HIGH_RISK', 'URGENT', 'FAMILY', 'ARRIVAL_REMINDER', 'FOLLOWUP_REMINDER', 'REVISIT_REMINDER', 'NO_SHOW', 'HESITANT', 'REFUSED', 'COMPLAINT', 'OTHER', 'WELCOME']
+const templateChannels = ['SMS', 'SCRIPT', 'WECHAT', 'MP_TEMPLATE']
 export function Orgs() {
   const account = useOutletContext()
   const [editor, setEditor] = useState(null)
@@ -80,20 +81,21 @@ export function Templates() {
   const state = useLoad(() => api('/templates/query', { page, size: 10, ...filters }), [page, JSON.stringify(filters)])
   const manager = account.role_code === 'MANAGER'
   const filter = (key, value) => { setFilters(previous => ({ ...previous, [key]: value === '' ? undefined : value })); setPage(0) }
-  return <Card title="短信与话术模板" extra={<Space><Button icon={<ReloadOutlined />} onClick={state.reload}>刷新</Button>{manager && <Button type="primary" icon={<PlusOutlined />} onClick={() => setEditor({ channel: 'SMS', scene: 'FIRST_CONTACT', active: true })}>新建模板</Button>}</Space>}>
-    <div className="toolbar"><Select aria-label="渠道" placeholder="全部渠道" allowClear style={{ width: 120 }} options={options(['SMS', 'SCRIPT', 'WECHAT'])} onChange={value => filter('channel', value)} /><Select aria-label="场景" placeholder="全部场景" allowClear style={{ width: 160 }} options={options(templateScenes)} onChange={value => filter('scene', value)} /></div>
+  return <Card title="短信、话术与微信模板" extra={<Space><Button icon={<ReloadOutlined />} onClick={state.reload}>刷新</Button>{manager && <Button type="primary" icon={<PlusOutlined />} onClick={() => setEditor({ channel: 'SMS', scene: 'FIRST_CONTACT', active: true })}>新建模板</Button>}</Space>}>
+    <div className="toolbar"><Select aria-label="渠道" placeholder="全部渠道" allowClear style={{ width: 170 }} options={options(templateChannels)} onChange={value => filter('channel', value)} /><Select aria-label="场景" placeholder="全部场景" allowClear style={{ width: 160 }} options={options(templateScenes)} onChange={value => filter('scene', value)} /></div>
     <DataTable state={state} page={page} setPage={setPage} columns={[
-      { title: '模板', dataIndex: 'title', render: (value, row) => <><strong>{value}</strong><div className="muted">{row.code} / {names[row.channel]} / {names[row.scene]}</div></> },
+      { title: '模板', dataIndex: 'title', render: (value, row) => <><strong>{value}</strong><div className="muted">{row.code} / {names[row.channel]} / {names[row.scene]}{row.external_template_id ? ' / 微信模板 ' + row.external_template_id : ''}</div></> },
       { title: '内容', dataIndex: 'content', render: value => <div className="pre-wrap">{value}</div> },
       { title: '状态', dataIndex: 'active', render: value => <Tag color={value ? 'green' : 'default'}>{value ? '启用' : '停用'}</Tag> },
       { title: '操作', render: (_, row) => manager && <Button type="link" onClick={() => setEditor(row)}>编辑</Button> },
     ]} />
     <FormDialog title={editor?.id ? '编辑模板' : '新建模板'} open={Boolean(editor)} initialValues={editor} onClose={() => setEditor(null)} onSubmit={async values => { await api('/templates/save', { ...values, id: editor.id, version: editor.version }); state.reload() }}>
       <div className="form-grid"><Form.Item name="code" label="编码" rules={required}><Input maxLength={40} disabled={Boolean(editor?.id)} /></Form.Item><Form.Item name="title" label="标题" rules={required}><Input maxLength={120} /></Form.Item>
-        <Form.Item name="channel" label="渠道" rules={required}><Select options={options(['SMS', 'SCRIPT', 'WECHAT'])} /></Form.Item><Form.Item name="scene" label="场景" rules={required}><Select options={options(templateScenes)} /></Form.Item></div>
+        <Form.Item name="channel" label="渠道" rules={required}><Select options={options(templateChannels)} /></Form.Item><Form.Item name="scene" label="场景" rules={required}><Select options={options(templateScenes)} /></Form.Item></div>
+      <Form.Item noStyle shouldUpdate={(a, b) => a.channel !== b.channel}>{({ getFieldValue }) => getFieldValue('channel') === 'MP_TEMPLATE' && <Form.Item name="external_template_id" label="微信模板 ID（公众号后台「模板消息」里申请通过的模板）" rules={[...required, { pattern: /^[A-Za-z0-9_-]{1,64}$/, message: '请粘贴公众号后台的模板 ID' }]} extra="内容每行一个字段，写成「字段=内容」，字段名与微信模板一致，例如 thing1=复诊提醒。"><Input maxLength={64} /></Form.Item>}</Form.Item>
       <Form.Item name="content" label="内容（用 {占位} 标记需替换处）" rules={required}><Input.TextArea rows={6} maxLength={4000} showCount /></Form.Item>
       <Form.Item name="active" label="启用" valuePropName="checked"><Switch /></Form.Item>
-      <Alert type="info" message="模板只供人工复制使用；系统不接短信网关，发送后在患者档案登记已发。" />
+      <Alert type="info" message="短信和话术模板只供人工复制使用，发送后在患者档案登记已发。微信与公众号模板可在「微信沟通」里带入并发送；场景选「欢迎语」的微信模板会在患者加好友或关注后原样发送一次，不能包含 {占位}。" />
     </FormDialog>
   </Card>
 }
@@ -102,9 +104,9 @@ export function MessageLogDialog({ open, patientId, taskId, onClose, onSaved }) 
   const key = React.useRef('')
   if (open && !key.current) key.current = crypto.randomUUID()
   return <FormDialog title="登记已发消息" open={open} initialValues={{ channel: 'SMS', sent_at: dayjs() }} onClose={() => { key.current = ''; onClose() }} onSubmit={async values => { await api('/message-logs/create', { ...values, patient_id: patientId, task_id: taskId, sent_at: values.sent_at.format('YYYY-MM-DDTHH:mm:ss'), request_key: key.current }); key.current = ''; onSaved() }}>
-    <Alert className="mb" type="warning" message="这里只登记已经通过短信平台、微信或电话发出的内容，系统不会发送。" />
+    <Alert className="mb" type="warning" message="这里只登记已经通过短信平台、个人微信或电话发出的内容，系统不会发送。通过企业微信、公众号发送请到「微信沟通」，结果会自动记录。" />
     <div className="form-grid"><Form.Item name="channel" label="渠道" rules={required}><Select options={options(['SMS', 'WECHAT', 'PHONE_NOTE'])} /></Form.Item><Form.Item name="sent_at" label="发送时间" rules={required}><DatePicker showTime style={{ width: '100%' }} /></Form.Item></div>
-    <LoadState state={templates}>{data => <Form.Item noStyle shouldUpdate>{form => <Form.Item name="template_code" label="使用模板"><Select allowClear options={data.items.filter(t => t.channel !== 'SCRIPT').map(t => ({ value: t.code, label: t.title }))} onChange={code => { const t = data.items.find(x => x.code === code); if (t) form.setFieldValue('content', t.content) }} /></Form.Item>}</Form.Item>}</LoadState>
+    <LoadState state={templates}>{data => <Form.Item noStyle shouldUpdate>{form => <Form.Item name="template_code" label="使用模板"><Select allowClear options={data.items.filter(t => ['SMS', 'WECHAT'].includes(t.channel) && t.scene !== 'WELCOME').map(t => ({ value: t.code, label: t.title }))} onChange={code => { const t = data.items.find(x => x.code === code); if (t) form.setFieldValue('content', t.content) }} /></Form.Item>}</Form.Item>}</LoadState>
     <Form.Item name="content" label="实际发送内容" rules={required}><Input.TextArea rows={4} maxLength={4000} /></Form.Item>
     <Form.Item name="evidence" label="发送凭证" rules={required}><Input maxLength={1000} placeholder="短信平台流水号或截图位置" /></Form.Item>
   </FormDialog>

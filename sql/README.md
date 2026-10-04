@@ -26,3 +26,9 @@ DDL 使用 IF NOT EXISTS，只能初始化空库。发版采用全量口径：�
 ## 1.5 运营台账
 
 新增 14 张台账表与患者、任务、联系记录的新列，全部写在 `DDL.sql` / `DDL-local.sql` 的建表语句里；`patient.service_package_id` 现在指向 `service_package`。发版按全量口径：备份后清库重建，先核对服务器 env 覆盖的真实库地址。基础 DML 新增 14 条短信与话术模板、5 档 SLA 默认值；dev DML 新增机构、活动、方案、服务包、患者池、邀约、预约、签约、转诊、用药与已发消息的虚构种子（`tools/generate-ledger-seed.py --date YYYY-MM-DD` 可重生成，标记块可重复执行）。演示患者 1001/1002/2001 的阶段与服务包引用随台账一并调整。
+
+## 1.9 企业微信与公众号
+
+`integration_config` 增加 app_id、callback_token、aes_key、channel_mode、verify_status、verified_at、last_error；`health_account` 增加 wecom_user_id；`intake_channel` 增加 wecom_config_id、wecom_qr_url、official_qr_url；`message_template` 增加 external_template_id。新表 `wechat_contact`、`wechat_message`，都写在 `DDL.sql` / `DDL-local.sql` 的建表语句里。发版仍是全量口径：备份后清库重建。
+
+基础 DML 新增两条停用的微信模板样例（欢迎语、公众号复诊提醒）。dev DML 新增标明模拟的企业微信、公众号配置（不含回调 Token，占位值不是任何真实凭证）、operator_a 的演示成员账号、启用的演示欢迎语与模板消息、5 个虚构微信联系人和 12 条收发记录。prod DML 不含任何微信配置。

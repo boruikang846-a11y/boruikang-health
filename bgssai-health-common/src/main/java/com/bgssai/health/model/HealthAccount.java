@@ -8,4 +8,5 @@ public class HealthAccount extends BaseRow {
     public String department;
     public String currentSessionId;
     public Boolean enabled;
+    public String wecomUserId;
 }

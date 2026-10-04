@@ -18,12 +18,13 @@ import Packages from './pages/Packages'
 import Referrals from './pages/Referrals'
 import Accounts from './pages/Accounts'
 import { DoctorHome, DoctorReports, DoctorTasks } from './pages/Doctor'
-import { FunnelPlotOutlined, PhoneOutlined, CarryOutOutlined, GiftOutlined, SwapOutlined } from '@ant-design/icons'
+import Wechat from './pages/Wechat'
+import { FunnelPlotOutlined, PhoneOutlined, CarryOutOutlined, GiftOutlined, SwapOutlined, WechatOutlined } from '@ant-design/icons'
 
 const navigation = [
   ['/workbench', '运营工作台', DashboardOutlined], ['/screening', '患者池', FunnelPlotOutlined], ['/patients', '患者中心', TeamOutlined],
   ['/invitations', '邀约记录', PhoneOutlined], ['/appointments', '预约到诊', CarryOutOutlined],
-  ['/followups', '随访与咨询', ScheduleOutlined], ['/alerts', '异常处理', AlertOutlined],
+  ['/followups', '随访与咨询', ScheduleOutlined], ['/wechat', '微信沟通', WechatOutlined], ['/alerts', '异常处理', AlertOutlined],
   ['/revisits', '复诊跟踪', CalendarOutlined], ['/packages', '服务包与方案', GiftOutlined], ['/referrals', '转诊', SwapOutlined], ['/knowledge', '宣教与服务内容', ReadOutlined],
   ['/channels', '渠道管理', QrcodeOutlined], ['/reports', '随访统计与复盘', BarChartOutlined],
   ['/hospital', '医院数据', QrcodeOutlined], ['/accounts', '医护账号', IdcardOutlined], ['/settings', '运营设置', SettingOutlined], ['/overview', '系统介绍', HeartOutlined],
@@ -85,7 +86,7 @@ function Shell({ account, logout }) {
     <div className="nav-caption">{account.role_code === 'DOCTOR' ? '医生工作台' : '院外连续服务'}</div>
     <Menu mode="inline" selectedKeys={[selected]} items={visible.map(([path, title, Icon]) => ({
       key: path, icon: <Icon />, label: <Link to={path}>{title}</Link>,
-    }))} /><div className="sidebar-foot"><span className="online-dot" /> 医患协作 / 1.8</div>
+    }))} /><div className="sidebar-foot"><span className="online-dot" /> 医患协作 / 1.9</div>
   </Layout.Sider><Layout><header className="topbar"><span className="muted">医患运营管理平台 <span className="topbar-divider">/</span> 工作空间</span>
     <Space><Tag>{names[account.role_code]}</Tag><Avatar size="small" style={{ background: '#e5efff', color: '#2469d9' }}>{account.real_name?.slice(0, 1)}</Avatar><span>{account.real_name}</span><Button type="text" icon={<KeyOutlined />} onClick={() => setPassword(true)}>修改密码</Button><Button type="text" icon={<LogoutOutlined />} onClick={logout}>退出</Button></Space>
   </header><main className="main-content"><div className="page-enter" key={location.pathname}><Outlet context={account} /></div></main></Layout>
@@ -112,7 +113,7 @@ export default function App() {
       <Route path="/screening" element={<Screening />} /><Route path="/invitations" element={<Invitations />} /><Route path="/appointments" element={<Appointments />} /><Route path="/packages" element={<Packages />} /><Route path="/referrals" element={<Referrals />} />
       <Route path="/followups" element={<Tasks />} /><Route path="/alerts" element={<Tasks taskType="ALERT" />} /><Route path="/revisits" element={<Tasks taskType="REVISIT" />} />
       <Route path="/hospital" element={<Hospital />} /><Route path="/knowledge" element={<Knowledge />} /><Route path="/channels" element={<Channels />} /><Route path="/reports" element={<Reports />} /><Route path="/settings" element={<Settings />} />
-      <Route path="/accounts" element={<Accounts />} />
+      <Route path="/accounts" element={<Accounts />} /><Route path="/wechat" element={<Wechat />} />
       <Route path="/doctor" element={<DoctorHome />} /><Route path="/doctor/reviews" element={<DoctorTasks mode="reviews" key="reviews" />} /><Route path="/doctor/reports" element={<DoctorReports />} />
       <Route path="/doctor/results" element={<DoctorTasks mode="results" key="results" />} /><Route path="/doctor/alerts" element={<DoctorTasks mode="alerts" key="alerts" />} />
       <Route path="*" element={<Navigate to={account ? home(account.role_code) : '/login'} replace />} />

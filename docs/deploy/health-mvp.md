@@ -51,3 +51,14 @@ dev 上复核：MySQL 建表/种子脚本、登录/退出、同院归属、任�
 - 按用户要求存于本机 `C:\Users\lzhao3730\Desktop\github\ssl\letsencrypt_dev.user.bgssai-health.com`：fullchain.pem、cert.pem、privkey.pem、account-key.pem、签发信息与续期脚本。私钥不进入本仓库；SSL 仓库通过本地 exclude 忽略该目录，Windows ACL 限制当前账号。
 - 通过 [ACME DNS-01](https://letsencrypt.org/docs/challenge-types/#dns-01-challenge) 校验签发，临时 TXT 已清理。当前未安装服务器证书、未配置自动续期；建议 11 月底前安排续期并部署更新。
 - 后续 Nginx 两域名可共用 fullchain.pem / privkey.pem，先检查证书 SAN、密钥匹配与 nginx 配置，再 reload；应用发布仍必须走 develop + Jenkins。
+
+## 1.9 企业微信与公众号接入
+
+应用不需要新的进程或端口。接入真实通道前要准备：
+
+1. Nginx：现有反代已把管理端域名的全部路径转给 HEALTH-ADMIN，回调路径 `/bgssai/open/` 不需要新增转发规则；只要确认该域名对公网可达（微信服务器要能打进来），前面没有 IP 白名单或登录拦截。回调必须走 HTTPS 的 443 端口，域名须已备案。
+2. 微信后台：企业微信"客户联系 → API"里拿到 Secret，把回调地址、Token、EncodingAESKey 填到"接收事件服务器"，可信 IP 加入服务器出口 IP；公众号"基本配置"里填服务器地址、Token、EncodingAESKey，把出口 IP 加入白名单，并申请需要的模板消息。
+3. 管理端：运营主管或平台管理员在"外部接入"填写凭证并保存，点"测试连接"看到"已接通"后启用；在"医护账号"登记企业微信成员账号；在"渠道管理"生成活码。
+4. 配置项 `health.wechat.mock-allowed`：local、test、dev 为 true，prod 为 false。dev 的演示种子把两个通道设为模拟通道；联调真实通道时在页面改成"正式接入"并填真实凭证即可，不需要改配置文件。
+
+真实凭证只在页面录入，不写入仓库、配置文件或 Jenkins 参数。当前没有真实通道接通。
