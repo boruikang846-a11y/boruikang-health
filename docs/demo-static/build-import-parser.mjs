@@ -4,13 +4,13 @@ import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 
 const require = createRequire(import.meta.url)
-const vitePackage = require.resolve('../../bgssai-health-admin/bgssai-health-admin-react/node_modules/vite/package.json')
+const vitePackage = require.resolve('../../boruikang-health-admin/boruikang-health-admin-react/node_modules/vite/package.json')
 const { build } = createRequire(vitePackage)('esbuild')
 const root = fileURLToPath(new URL('../../', import.meta.url))
 await build({
   stdin: {
     contents: "export { parsePatientFile, createPatientTemplate, normalizePatientRows } from './src/pages/patientImport.js'",
-    resolveDir: root + 'bgssai-health-admin/bgssai-health-admin-react',
+    resolveDir: root + 'boruikang-health-admin/boruikang-health-admin-react',
     sourcefile: 'patient-import-prototype-entry.js',
   },
   bundle: true,

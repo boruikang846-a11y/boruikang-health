@@ -1,6 +1,6 @@
 # HEALTH-MVP-1.2 页面与 API 映射
 
-前缀 A=/bgssai/admin。页面路径由各端 PAGE-FLOW.html 维护。
+前缀 A=/boruikang/admin。页面路径由各端 PAGE-FLOW.html 维护。
 
 | 页面 | API | 操作 |
 | --- | --- | --- |
@@ -68,4 +68,4 @@ MANUAL/TEMPLATE/AI 均生成待审核草稿。列表隐藏内部 note，授权�
 | 微信服务器 | O/wecom/callback/{hospital_id}、O/wechat/callback/{hospital_id} | 公开回调，凭签名校验 |
 | 用户端 /#wechat | 无 | 页面内虚构演示，不请求后端 |
 
-O 表示 `/bgssai/open` 前缀。
+O 表示 `/boruikang/open` 前缀。

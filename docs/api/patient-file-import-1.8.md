@@ -23,7 +23,7 @@ sequenceDiagram
 
 ## 新增接口
 
-`POST /bgssai/admin/patients/import`，独立 Controller，鉴权与限流沿用人工建档。
+`POST /boruikang/admin/patients/import`，独立 Controller，鉴权与限流沿用人工建档。
 
 ```json
 {

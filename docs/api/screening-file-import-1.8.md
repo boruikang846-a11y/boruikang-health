@@ -23,7 +23,7 @@ sequenceDiagram
 
 新增入口仅在 `/screening` 原页面内打开弹窗，不增加路由和后台接口。文件在浏览器解析，不上传二进制、不保存原文件。模板为空白“患者池”表和“填写说明”表，使用 ExcelJS `xlsx.writeBuffer()`；读取使用 `xlsx.load(ArrayBuffer)`，库只在用户读取 Excel 或下载模板时加载。已核对 [ExcelJS 官方文档](https://github.com/exceljs/exceljs#browser) 支持浏览器文档工作簿与上述 API。CSV 使用 Papa Parse 的引号/换行解析能力，编码由 TextDecoder 处理。
 
-复用 `POST /bgssai/admin/screenings/import`，body：
+复用 `POST /boruikang/admin/screenings/import`，body：
 
 ```json
 {

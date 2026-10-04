@@ -1,6 +1,6 @@
 # HEALTH 1.9 企业微信与公众号契约
 
-上游：[需求](../feature/wechat-channels-1.9.md)、[原型](../demo-static/web/admin/wechat-channels-1.9.html)。管理端接口前缀 `/bgssai/admin`，沿用 Jwttoken、snake_case、`ApiResponse` 与限流；回调接口前缀 `/bgssai/open`，不带登录，凭微信签名校验。
+上游：[需求](../feature/wechat-channels-1.9.md)、[原型](../demo-static/web/admin/wechat-channels-1.9.html)。管理端接口前缀 `/boruikang/admin`，沿用 Jwttoken、snake_case、`ApiResponse` 与限流；回调接口前缀 `/boruikang/open`，不带登录，凭微信签名校验。
 
 ```mermaid
 sequenceDiagram
@@ -30,7 +30,7 @@ sequenceDiagram
 `GET /integrations` 沿用。WE_COM、WECHAT_OFFICIAL 两项改为真实状态，响应新增字段（AI 项为空）：
 
 ```json
-{"provider":"WE_COM","enabled":true,"configured":true,"status":"CONNECTED","app_id":"ww0000000000000000","mode":"LIVE","callback_ready":true,"callback_path":"/bgssai/open/wecom/callback/1","verified_at":"2026-10-04T10:00:00","last_error":null,"mock_allowed":false}
+{"provider":"WE_COM","enabled":true,"configured":true,"status":"CONNECTED","app_id":"ww0000000000000000","mode":"LIVE","callback_ready":true,"callback_path":"/boruikang/open/wecom/callback/1","verified_at":"2026-10-04T10:00:00","last_error":null,"mock_allowed":false}
 ```
 
 `status`：未填 app_id 或 secret 为 NOT_CONFIGURED；已配置且 `mode=MOCK` 为 MOCK；其余按最近一次测试为 CONFIGURED_UNVERIFIED、CONNECTED 或 FAILED。是否启用由 `enabled` 单独表示。`callback_ready` 表示已保存回调 Token（企业微信还须有 AESKey）。`mock_allowed` 表示本环境允许选择模拟通道。密钥、Token、AESKey 不出现在任何响应中。
@@ -49,10 +49,10 @@ sequenceDiagram
 
 | 方法与路径 | 作用 |
 | --- | --- |
-| `GET /bgssai/open/wecom/callback/{hospital_id}` | 企业微信 URL 验证：校验 `msg_signature`，解密 `echostr` 后原样返回明文 |
-| `POST /bgssai/open/wecom/callback/{hospital_id}` | 企业微信事件：校验签名、解密，处理 `change_external_contact`，返回 `success` |
-| `GET /bgssai/open/wechat/callback/{hospital_id}` | 公众号 URL 验证：校验 `signature`，返回 `echostr` |
-| `POST /bgssai/open/wechat/callback/{hospital_id}` | 公众号消息与事件：明文或 `encrypt_type=aes`，返回 `success` |
+| `GET /boruikang/open/wecom/callback/{hospital_id}` | 企业微信 URL 验证：校验 `msg_signature`，解密 `echostr` 后原样返回明文 |
+| `POST /boruikang/open/wecom/callback/{hospital_id}` | 企业微信事件：校验签名、解密，处理 `change_external_contact`，返回 `success` |
+| `GET /boruikang/open/wechat/callback/{hospital_id}` | 公众号 URL 验证：校验 `signature`，返回 `echostr` |
+| `POST /boruikang/open/wechat/callback/{hospital_id}` | 公众号消息与事件：明文或 `encrypt_type=aes`，返回 `success` |
 
 通道未配置、未启用或签名不符返回 403；请求体超过 64 KiB 返回 413；XML 解析禁用 DTD 与外部实体。处理的事件：
 

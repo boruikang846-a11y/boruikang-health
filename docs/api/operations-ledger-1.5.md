@@ -1,6 +1,6 @@
 # 1.5 运营台账接口与数据契约
 
-沿用 `/bgssai/admin` 前缀、`Jwttoken` 头、`ApiResponse{code,message,success,result}` 与分页 `result={items,page_num,page_size,total_size}`；字段 snake_case；POST 参数全部在 body；每个接口一个 Controller；限流 120 次/分钟。`经理`=MANAGER，`运营`=OPERATOR。运营只能看到自己负责患者（患者池按 owner_id，邀约/预约/转诊/签约实例按患者归属）。所有写操作追加审计，乐观锁按 `version`。
+沿用 `/boruikang/admin` 前缀、`Jwttoken` 头、`ApiResponse{code,message,success,result}` 与分页 `result={items,page_num,page_size,total_size}`；字段 snake_case；POST 参数全部在 body；每个接口一个 Controller；限流 120 次/分钟。`经理`=MANAGER，`运营`=OPERATOR。运营只能看到自己负责患者（患者池按 owner_id，邀约/预约/转诊/签约实例按患者归属）。所有写操作追加审计，乐观锁按 `version`。
 
 ## 机构、活动、SLA、模板（设置）
 

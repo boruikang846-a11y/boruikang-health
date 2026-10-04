@@ -6,7 +6,7 @@
 
 ## 工程与运行
 
-骨架来源 bgssai-skeleton，Java 21 / Spring Boot 4.1.0 / MyBatis 4 / PageHelper / React 18 / Ant Design 5 / Vite 7，管理端 React Router 7（仍为 React 18）。前端依赖升级至 npm audit 无已知告警的补丁线，移除未使用的网络和状态库。保留 admin/admin 与 admin/admin-react、user/user 与 user/user-react 结构；增加 common Maven 模块，承载同一医患业务域的持久层和服务，避免两端维护两套状态机。两端 Controller 和静态前端独立打包；common 不单独部署。
+技术栈：Java 21 / Spring Boot 4.1.0 / MyBatis 4 / PageHelper / React 18 / Ant Design 5 / Vite 7，管理端 React Router 7（仍为 React 18）。前端依赖升级至 npm audit 无已知告警的补丁线，移除未使用的网络和状态库。保留 admin/admin 与 admin/admin-react、user/user 与 user/user-react 结构；增加 common Maven 模块，承载同一医患业务域的持久层和服务，避免两端维护两套状态机。两端 Controller 和静态前端独立打包；common 不单独部署。
 
 MySQL 8 为部署数据库，H2 MySQL 模式仅供本地自包含演示和集成测试，默认 local。MySQL 权威结构在 sql/DDL.sql，种子在 sql/DML.sql（业务模板）与 sql/dev/DML.sql（虚构账号和患者）。演示库不得含原始参考中的真实个人信息。非 local 环境在配置不完整时失败关闭。
 
@@ -64,7 +64,7 @@ HIS/EMR 字段参考《慢病系统所需数据说明》：医院患者号、病
 
 ## 2026-09-28 用户端范围调整
 
-患者端部署公开介绍 SPA，不注册任何 /bgssai/user 业务 Controller。只保留基础健康检查与静态页面服务。前端不调用患者 API，不储存会话；只记语言偏好。企业微信、小程序、患者 Web 均为规划渠道。管理端 /tasks/contact 仅保存人工完成的联系证据，更新 CONTACTED 并写 STAFF_TO_PATIENT 沟通留痕，不调用任何发送通道，account_id 是否存在不影响人工联系记录。患者消息/指标服务保留在共享领域中的已有基础代码，不在 user 部署中暴露，后续需求另行评审。
+患者端部署公开介绍 SPA，不注册任何 /boruikang/user 业务 Controller。只保留基础健康检查与静态页面服务。前端不调用患者 API，不储存会话；只记语言偏好。企业微信、小程序、患者 Web 均为规划渠道。管理端 /tasks/contact 仅保存人工完成的联系证据，更新 CONTACTED 并写 STAFF_TO_PATIENT 沟通留痕，不调用任何发送通道，account_id 是否存在不影响人工联系记录。患者消息/指标服务保留在共享领域中的已有基础代码，不在 user 部署中暴露，后续需求另行评审。
 
 
 ## 1.2 权限与图解

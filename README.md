@@ -1,6 +1,6 @@
-# BGSSAI Health
+# Boruikang Health
 
-医患运营管理 MVP，遵循 `bgssai-skeleton` 的 Java 21 / Spring Boot 4 / MyBatis Example / PageHelper / React 18 / Ant Design 5 结构。
+医患运营管理 MVP，采用 Java 21 / Spring Boot 4 / MyBatis Example / PageHelper / React 18 / Ant Design 5。
 
 - **HEALTH-ADMIN**：运营团队、院方医生和护士共用的工作台，按角色显示不同菜单。医生：查看报告（确认已阅、写意见）、审核随访意见、查收随访结果、处置升级异常、审核发布宣教。运营人员和护士：患者建档、出院报告关联、随访起草与提交审核、结构化人工联系与再次联系计划、异常响应与升级、复诊核实、邀约预约与服务包台账。运营主管另管医护账号、医院 Mock 数据导入、渠道与配置、运营履约率与日报周报归档。1.9 起可通过医院企业微信和公众号与患者沟通：好友和粉丝对应到患者档案，工作人员点击发送文字、模板消息或医生已审核的随访正文，患者来信进入待处理。
 - **HEALTH-USER**：以 HTML/CSS 图解介绍整个系统、团队分工、出院报告随访依据，以及企业微信、微信小程序、Web 三种模式，并用虚构对话分步演示企业微信和公众号怎样与患者互动；支持手机布局与中英文。没有患者注册、登录、入组、咨询、指标填报或消息 API。
@@ -11,21 +11,21 @@
 需要 JDK 21、Maven 3.9+、Node.js 22.12+（或 24 LTS）与 npm。从仓库根目录执行：
 
 ```powershell
-npm --prefix bgssai-health-admin/bgssai-health-admin-react ci
-npm --prefix bgssai-health-user/bgssai-health-user-react ci
-npm --prefix bgssai-health-admin/bgssai-health-admin-react run build:deploy
-npm --prefix bgssai-health-user/bgssai-health-user-react run build:deploy
+npm --prefix boruikang-health-admin/boruikang-health-admin-react ci
+npm --prefix boruikang-health-user/boruikang-health-user-react ci
+npm --prefix boruikang-health-admin/boruikang-health-admin-react run build:deploy
+npm --prefix boruikang-health-user/boruikang-health-user-react run build:deploy
 mvn -B verify
 ```
 
 在两个终端中分别启动，工作目录均为仓库根目录：
 
 ```powershell
-java -jar bgssai-health-admin/bgssai-health-admin/target/bgssai-health-admin-0.0.1-SNAPSHOT.jar --spring.profiles.active=local --server.port=8080
+java -jar boruikang-health-admin/boruikang-health-admin/target/boruikang-health-admin-0.0.1-SNAPSHOT.jar --spring.profiles.active=local --server.port=8080
 ```
 
 ```powershell
-java -jar bgssai-health-user/bgssai-health-user/target/bgssai-health-user-0.0.1-SNAPSHOT.jar --spring.profiles.active=local --server.port=8081
+java -jar boruikang-health-user/boruikang-health-user/target/boruikang-health-user-0.0.1-SNAPSHOT.jar --spring.profiles.active=local --server.port=8081
 ```
 
 管理端 `http://localhost:8080`，介绍页 `http://localhost:8081`。local 自动初始化 H2，数据保存在根目录 `.local-data/`，重启保留；两个进程共用同一演示库。演示账号仅用于 local 和授权的 dev 虚构数据环境，禁止用于真实医院或 prod。

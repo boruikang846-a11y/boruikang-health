@@ -1,6 +1,6 @@
 # HEALTH 1.7 随访建议生成契约
 
-前缀 A=`/bgssai/admin`。响应仍为 `{code,message,success,result}`。
+前缀 A=`/boruikang/admin`。响应仍为 `{code,message,success,result}`。
 
 | 方法与路径 | 变化 |
 | --- | --- |
