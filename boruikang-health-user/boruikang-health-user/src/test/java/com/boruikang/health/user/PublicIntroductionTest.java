@@ -22,7 +22,7 @@ class PublicIntroductionTest {
     @Test void publicIntroductionIsAccessibleWithoutAnAccount() throws Exception {
         var response=get("/");
         assertEquals(200,response.statusCode());
-        assertTrue(response.body().contains("Boruikang Health"));
+        assertTrue(response.body().contains("博瑞康 Health"));
         assertEquals(200,get("/join/demo-channel").statusCode());
         assertEquals(404,get("/login").statusCode());
         assertEquals(404,get("/patients/1001").statusCode());

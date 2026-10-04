@@ -49,10 +49,10 @@ function Login({ onLogin, account }) {
   const [error, setError] = useState(null)
   if (account) return <Navigate to={home(account.role_code)} replace />
   return <div className="login-page"><section className="login-story">
-    <div className="brand"><HeartOutlined /> Boruikang Health</div>
+    <div className="brand"><HeartOutlined /> 博瑞康 Health</div>
     <div><div className="eyebrow">CONTINUOUS CARE</div><h1>每一次随访，<br />都有下文。</h1><p>连接患者、医生与健康管理团队。<br />从入组到复诊，让院外服务有记录、可跟踪。</p>
       <div className="login-steps"><span>医生看报告</span><span>审核随访意见</span><span>团队持续跟进</span></div></div>
-    <small>医患运营管理平台 / HEALTH-ADMIN</small>
+    <small>苏州博瑞康医疗科技有限公司 · 医患运营管理平台</small>
   </section><section className="login-panel"><Card bordered={false}><Tag color="blue">医护与运营团队</Tag><h2>登录工作台</h2><p className="muted">使用分配给你的工作账号登录</p>
     {error && <Alert type="error" showIcon message={error} className="mb" />}
     <Form layout="vertical" onFinish={async values => {
@@ -82,7 +82,7 @@ function Shell({ account, logout }) {
   const visible = menuFor(account.role_code)
   const selected = visible.map(([path]) => path).filter(path => location.pathname === path || location.pathname.startsWith(path + '/')).sort((a, b) => b.length - a.length)[0]
   return <Layout className="app-shell"><Layout.Sider width={222} breakpoint="lg" collapsedWidth={64} className="sidebar">
-    <Link className="brand" to={visible[0][0]}><HeartOutlined /><span>Boruikang <b>Health</b></span></Link>
+    <Link className="brand" to={visible[0][0]}><HeartOutlined /><span>博瑞康 <b>Health</b></span></Link>
     <div className="nav-caption">{account.role_code === 'DOCTOR' ? '医生工作台' : '院外连续服务'}</div>
     <Menu mode="inline" selectedKeys={[selected]} items={visible.map(([path, title, Icon]) => ({
       key: path, icon: <Icon />, label: <Link to={path}>{title}</Link>,

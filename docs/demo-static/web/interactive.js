@@ -187,7 +187,7 @@ function render(){
   const publicRoute=['/login','/flow','/overview','/public'].includes(current.path);
   if(!account&&!publicRoute){go('/login');return}
   const allowed=publicRoute||menu().some(([p])=>current.path===p||current.path.startsWith(p+'/'));
-  $('#header').innerHTML='<div class="brand">Boruikang Health<small>完整交互原型 · 1.8 · 虚构演示数据</small></div><div class="row">'+link('页面流程','/flow')+(account?'<span>'+esc(account.name+' · '+roles[account.role])+'</span>'+button('修改演示密码','password')+button('切换角色','logout'):link('角色入口','/login'))+'</div>';
+  $('#header').innerHTML='<div class="brand">博瑞康 Health<small>完整交互原型 · 1.8 · 虚构演示数据</small></div><div class="row">'+link('页面流程','/flow')+(account?'<span>'+esc(account.name+' · '+roles[account.role])+'</span>'+button('修改演示密码','password')+button('切换角色','logout'):link('角色入口','/login'))+'</div>';
   $('#nav').innerHTML=account?'<small>'+esc(roles[account.role])+'</small>'+menu().map(([p,l])=>link(l,p,current.path===p||current.path.startsWith(p+'/')?'active':'')).join(''):link('角色入口','/login')+link('完整页面流程','/flow')+link('系统公开介绍','/public');
   let html='';
   if(!allowed)html=forbidden();

@@ -1,4 +1,6 @@
-# Boruikang Health
+# 博瑞康 Health
+
+苏州博瑞康医疗科技有限公司的医患运营管理系统。本仓是该公司的资产。
 
 医患运营管理 MVP，采用 Java 21 / Spring Boot 4 / MyBatis Example / PageHelper / React 18 / Ant Design 5。
 
