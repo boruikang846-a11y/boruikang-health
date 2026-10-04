@@ -95,7 +95,7 @@ export function Templates() {
       <Form.Item noStyle shouldUpdate={(a, b) => a.channel !== b.channel}>{({ getFieldValue }) => getFieldValue('channel') === 'MP_TEMPLATE' && <Form.Item name="external_template_id" label="微信模板 ID（公众号后台「模板消息」里申请通过的模板）" rules={[...required, { pattern: /^[A-Za-z0-9_-]{1,64}$/, message: '请粘贴公众号后台的模板 ID' }]} extra="内容每行一个字段，写成「字段=内容」，字段名与微信模板一致，例如 thing1=复诊提醒。"><Input maxLength={64} /></Form.Item>}</Form.Item>
       <Form.Item name="content" label="内容（用 {占位} 标记需替换处）" rules={required}><Input.TextArea rows={6} maxLength={4000} showCount /></Form.Item>
       <Form.Item name="active" label="启用" valuePropName="checked"><Switch /></Form.Item>
-      <Alert type="info" message="短信和话术模板只供人工复制使用，发送后在患者档案登记已发。微信与公众号模板可在「微信沟通」里带入并发送；场景选「欢迎语」的微信模板会在患者加好友或关注后原样发送一次，不能包含 {占位}。" />
+      <Alert type="info" message="短信和话术模板只供人工复制使用，发送后在患者档案登记已发。企业微信与公众号模板可在「企业微信」「公众号」页面里带入并发送；场景选「欢迎语」的微信模板会在患者加好友或关注后原样发送一次，不能包含 {占位}。" />
     </FormDialog>
   </Card>
 }
@@ -104,7 +104,7 @@ export function MessageLogDialog({ open, patientId, taskId, onClose, onSaved }) 
   const key = React.useRef('')
   if (open && !key.current) key.current = crypto.randomUUID()
   return <FormDialog title="登记已发消息" open={open} initialValues={{ channel: 'SMS', sent_at: dayjs() }} onClose={() => { key.current = ''; onClose() }} onSubmit={async values => { await api('/message-logs/create', { ...values, patient_id: patientId, task_id: taskId, sent_at: values.sent_at.format('YYYY-MM-DDTHH:mm:ss'), request_key: key.current }); key.current = ''; onSaved() }}>
-    <Alert className="mb" type="warning" message="这里只登记已经通过短信平台、个人微信或电话发出的内容，系统不会发送。通过企业微信、公众号发送请到「微信沟通」，结果会自动记录。" />
+    <Alert className="mb" type="warning" message="这里只登记已经通过短信平台、个人微信或电话发出的内容，系统不会发送。通过企业微信、公众号发送请到对应的「企业微信」「公众号」页面，结果会自动记录。" />
     <div className="form-grid"><Form.Item name="channel" label="渠道" rules={required}><Select options={options(['SMS', 'WECHAT', 'PHONE_NOTE'])} /></Form.Item><Form.Item name="sent_at" label="发送时间" rules={required}><DatePicker showTime style={{ width: '100%' }} /></Form.Item></div>
     <LoadState state={templates}>{data => <Form.Item noStyle shouldUpdate>{form => <Form.Item name="template_code" label="使用模板"><Select allowClear options={data.items.filter(t => ['SMS', 'WECHAT'].includes(t.channel) && t.scene !== 'WELCOME').map(t => ({ value: t.code, label: t.title }))} onChange={code => { const t = data.items.find(x => x.code === code); if (t) form.setFieldValue('content', t.content) }} /></Form.Item>}</Form.Item>}</LoadState>
     <Form.Item name="content" label="实际发送内容" rules={required}><Input.TextArea rows={4} maxLength={4000} /></Form.Item>

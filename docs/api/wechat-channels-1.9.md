@@ -7,7 +7,7 @@ sequenceDiagram
   participant WX as 微信服务器
   participant CB as 回调 Controller
   participant IN as WechatInboundService
-  participant UI as 微信沟通页
+  participant UI as 企业微信 / 公众号页
   participant MSG as WechatMessageService
   participant GW as WechatGateway（Live / Mock）
   participant DB as wechat_contact / wechat_message / audit_event

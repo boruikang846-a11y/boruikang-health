@@ -6,7 +6,15 @@ import dayjs from 'dayjs'
 import { api, useLoad } from '../api'
 import { DataTable, dateText, FormDialog, LoadState, names, PageTitle, required, Status } from '../ui'
 
-const channels = ['WE_COM', 'WECHAT_OFFICIAL']
+/** WeCom and the Official Account are separate menu pages; each says what its own channel can and cannot do. */
+export const channelPages = {
+  WE_COM: { path: '/wecom', title: '企业微信', who: '企业微信客户', join: '加企业微信好友',
+    subtitle: '患者加医院企业微信成员为好友后，在这里核实身份并绑定患者档案。消息以群发任务下发，成员在企业微信里确认后才发出。',
+    events: [{ value: 'FOLLOW', label: '加好友' }, { value: 'UNFOLLOW', label: '删好友' }], mockId: 'wm-demo-0006' },
+  WECHAT_OFFICIAL: { path: '/official-account', title: '公众号', who: '公众号粉丝', join: '关注公众号',
+    subtitle: '患者关注医院公众号后，在这里核实身份并绑定患者档案。患者来信进入待处理；48 小时内有互动可以回文字，否则发模板消息。',
+    events: [{ value: 'FOLLOW', label: '关注' }, { value: 'TEXT', label: '患者发来文字' }, { value: 'UNFOLLOW', label: '取消关注' }], mockId: 'openid-demo-0003' },
+}
 const kinds = { TEXT: '文字', TEMPLATE: '模板消息', APPROVED_ADVICE: '已审核正文', WELCOME: '欢迎语', EVENT: '关系事件' }
 const channelStatus = { NOT_CONFIGURED: ['default', '未配置'], CONFIGURED_UNVERIFIED: ['gold', '已配置 · 未验证'], CONNECTED: ['green', '已接通'], FAILED: ['red', '连接失败'], MOCK: ['gold', '模拟通道'] }
 /** Friends have a nickname; Official Account followers do not, so the tail of the openid tells them apart. */
@@ -109,21 +117,25 @@ function BindDialog({ contact, onClose, onSaved }) {
 }
 
 /** Follow, message or unfollow on a simulated channel, so the flow can be shown without WeChat. */
-function MockDialog({ open, onClose, onSaved }) {
-  return <FormDialog title="模拟一次微信事件" open={open} initialValues={{ provider: 'WECHAT_OFFICIAL', event: 'TEXT', external_id: 'openid-demo-0003' }} onClose={onClose} okText="模拟" onSubmit={async values => { await api('/wechat/mock/inbound', values); onSaved() }}>
+function MockDialog({ provider, open, onClose, onSaved }) {
+  const wecom = provider === 'WE_COM'
+  const page = channelPages[provider]
+  return <FormDialog title={'模拟一次' + page.title + '事件'} open={open} initialValues={{ event: wecom ? 'FOLLOW' : 'TEXT', external_id: page.mockId }} onClose={onClose} okText="模拟" onSubmit={async values => { await api('/wechat/mock/inbound', { ...values, provider }); onSaved() }}>
     <Alert className="mb" type="info" showIcon message="仅模拟通道可用。事件按真实回调同样的逻辑入库，记录带「模拟」标记，不连接微信。" />
-    <div className="form-grid"><Form.Item name="provider" label="通道" rules={required}><Select options={channels.map(value => ({ value, label: names[value] }))} /></Form.Item>
-      <Form.Item name="event" label="事件" rules={required}><Select options={[{ value: 'FOLLOW', label: '加好友 / 关注' }, { value: 'TEXT', label: '患者发来文字（仅公众号）' }, { value: 'UNFOLLOW', label: '删好友 / 取消关注' }]} /></Form.Item>
+    <div className="form-grid"><Form.Item name="event" label="事件" rules={required}><Select options={page.events} /></Form.Item>
       <Form.Item name="external_id" label="外部 ID（虚构）" rules={[...required, { pattern: /^[A-Za-z0-9_-]{4,64}$/, message: '4–64 位字母、数字、下划线或短横线' }]}><Input maxLength={64} /></Form.Item>
-      <Form.Item name="staff_user_id" label="企业微信成员账号（企微加好友时）"><Input maxLength={64} placeholder="例如 demo.operator.a" /></Form.Item></div>
-    <Form.Item name="text" label="来信内容"><Input.TextArea rows={2} maxLength={2000} placeholder="例如：请问复诊要带什么资料" /></Form.Item>
+      {wecom && <Form.Item name="staff_user_id" label="企业微信成员账号（加好友时）"><Input maxLength={64} placeholder="例如 demo.operator.a" /></Form.Item>}</div>
+    {!wecom && <Form.Item name="text" label="来信内容"><Input.TextArea rows={2} maxLength={2000} placeholder="例如：请问复诊要带什么资料" /></Form.Item>}
   </FormDialog>
 }
 
-export default function Wechat() {
+/** The 企业微信 or 公众号 menu page: that channel's contacts, binding, conversations and sending. */
+export default function WechatChannel({ provider }) {
   const account = useOutletContext()
   const { message, modal } = App.useApp()
   const manager = account.role_code === 'MANAGER'
+  const official = provider === 'WECHAT_OFFICIAL'
+  const channelPage = channelPages[provider]
   const [page, setPage] = useState(0)
   const [scope, setScope] = useState(manager ? 'ALL' : 'BOUND')
   const [filters, setFilters] = useState({})
@@ -131,31 +143,30 @@ export default function Wechat() {
   const [bind, setBind] = useState(null)
   const [mock, setMock] = useState(false)
   const [syncing, setSyncing] = useState(false)
-  const query = { page, size: 10, ...filters, bound: scope === 'ALL' ? undefined : scope === 'BOUND' }
+  const query = { page, size: 10, ...filters, channel: provider, bound: scope === 'ALL' ? undefined : scope === 'BOUND' }
   const state = useLoad(() => api('/wechat/contacts/query', query), [JSON.stringify(query)])
   const integrations = useLoad(() => api('/integrations'))
-  const wechat = (integrations.data || []).filter(item => channels.includes(item.provider))
+  const item = (integrations.data || []).find(row => row.provider === provider)
   const filter = (key, value) => { setFilters(previous => ({ ...previous, [key]: value === '' || value === false ? undefined : value })); setPage(0) }
   const current = open && (state.data?.items.find(row => row.id === open.id) || open)
-  async function sync(provider) {
+  async function sync() {
     if (syncing) return
     setSyncing(true)
-    try { const result = await api('/wechat/contacts/sync', { provider }); message.success(names[provider] + '同步完成：新增 ' + result.created + '，更新 ' + result.updated + (result.truncated ? '；超过 1000 条，其余未同步' : '')); state.reload() }
+    try { const result = await api('/wechat/contacts/sync', { provider }); message.success(channelPage.title + '同步完成：新增 ' + result.created + '，更新 ' + result.updated + (result.truncated ? '；超过 1000 条，其余未同步' : '')); state.reload() }
     catch (e) { message.error(e.message) } finally { setSyncing(false) }
   }
   const unbind = row => { let reason = ''; modal.confirm({ title: '解除「' + contactName(row) + '」与患者的绑定？', content: <Input.TextArea aria-label="解绑原因" rows={2} maxLength={300} placeholder="解绑原因（必填），例如：绑定错人" onChange={event => { reason = event.target.value }} />, okText: '解绑', cancelText: '取消',
     onOk: async () => { if (!reason.trim()) { message.warning('请填写解绑原因'); throw new Error('reason') } try { await api('/wechat/contacts/unbind', { id: row.id, version: row.version, reason }); state.reload() } catch (e) { message.error(e.message); throw e } } }) }
-  return <><PageTitle title="微信沟通" subtitle="企业微信好友与公众号粉丝在这里对应到患者档案。消息由工作人员点击发送，系统保存微信接口返回的真实结果。"
-    extra={manager && <Space wrap>{channels.map(provider => <Button key={provider} icon={<SyncOutlined />} loading={syncing} onClick={() => sync(provider)}>同步{names[provider]}</Button>)}{wechat.some(item => item.status === 'MOCK') && <Button onClick={() => setMock(true)}>模拟来信</Button>}</Space>} />
-    <LoadState state={integrations}>{() => <Alert className="mb" showIcon type={wechat.some(item => item.status === 'CONNECTED' && item.enabled) ? 'success' : 'info'} message={<Space wrap>{wechat.map(item => <span key={item.provider}>{names[item.provider]} <ChannelTag item={item} /></span>)}</Space>}
-      description={wechat.some(item => item.status === 'MOCK') ? '模拟通道只用于演示：发送、同步和活码都返回模拟结果，不连接微信，也不代表已接通。' : wechat.every(item => item.status === 'NOT_CONFIGURED') ? '尚未配置微信通道。运营主管可在「运营设置 → 外部接入」填写凭证并测试连接。' : '通道状态以「测试连接」和每次发送的真实返回为准。'} />}</LoadState>
+  return <><PageTitle title={channelPage.title} subtitle={channelPage.subtitle}
+    extra={manager && <Space wrap><Button icon={<SyncOutlined />} loading={syncing} onClick={sync}>同步{channelPage.title}</Button>{item?.status === 'MOCK' && <Button onClick={() => setMock(true)}>{official ? '模拟来信' : '模拟好友事件'}</Button>}</Space>} />
+    <LoadState state={integrations}>{() => item && <Alert className="mb" showIcon type={item.status === 'CONNECTED' && item.enabled ? 'success' : 'info'} message={<span>{channelPage.title} <ChannelTag item={item} /></span>}
+      description={item.status === 'MOCK' ? '模拟通道只用于演示：发送、同步和活码都返回模拟结果，不连接微信，也不代表已接通。' : item.status === 'NOT_CONFIGURED' ? '尚未配置' + channelPage.title + '。运营主管可在「运营设置 → 外部接入」填写凭证并测试连接。' : '通道状态以「测试连接」和每次发送的真实返回为准。'} />}</LoadState>
     <Card><div className="toolbar"><Segmented value={scope} onChange={value => { setScope(value); setPage(0) }} options={[...(manager ? [{ value: 'ALL', label: '全部' }] : []), { value: 'BOUND', label: manager ? '已绑定' : '我的患者' }, { value: 'UNBOUND', label: '待绑定' }]} />
-      <Select aria-label="通道" placeholder="全部通道" allowClear style={{ width: 130 }} options={channels.map(value => ({ value, label: names[value] }))} onChange={value => filter('channel', value)} />
       <Select aria-label="关系" placeholder="全部关系" allowClear style={{ width: 130 }} options={[{ value: 'ACTIVE', label: '关系有效' }, { value: 'REMOVED', label: '已失联' }]} onChange={value => filter('relation', value)} />
       <Input.Search placeholder="搜索昵称" allowClear style={{ width: 180 }} onSearch={value => filter('keyword', value)} />
-      <Space><Switch aria-label="仅看待处理" onChange={value => filter('pending', value)} />仅看待处理</Space><Button icon={<ReloadOutlined />} onClick={state.reload}>刷新</Button></div>
+      {official && <Space><Switch aria-label="仅看待处理" onChange={value => filter('pending', value)} />仅看待处理</Space>}<Button icon={<ReloadOutlined />} onClick={state.reload}>刷新</Button></div>
       <DataTable state={state} page={page} setPage={setPage} columns={[
-        { title: '微信联系人', render: (_, row) => <><Badge count={row.pending_count} size="small" offset={[8, 0]}><strong>{contactName(row)}</strong></Badge><div className="muted"><Tag>{names[row.channel]}</Tag>{row.mock && <Tag color="gold">模拟</Tag>}{row.relation !== 'ACTIVE' && <Tag>已失联</Tag>}</div></> },
+        { title: channelPage.who, render: (_, row) => <><Badge count={row.pending_count} size="small" offset={[8, 0]}><strong>{contactName(row)}</strong></Badge><div className="muted">{row.mock && <Tag color="gold">模拟</Tag>}{row.relation !== 'ACTIVE' && <Tag>{official ? '已取消关注' : '已删除好友'}</Tag>}</div></> },
         { title: '患者', render: (_, row) => row.patient_id ? <Link to={'/patients/' + row.patient_id}>{row.patient_name} #{row.patient_id}</Link> : <Tag color="gold">待绑定</Tag> },
         { title: '来源', render: (_, row) => <>{row.intake_channel_id ? '渠道 #' + row.intake_channel_id : '—'}<div className="muted">{row.staff_user_id ? '成员 ' + row.staff_user_id : ''}{row.followed_at ? ' ' + dateText(row.followed_at) : ''}</div></> },
         { title: '最近消息', render: (_, row) => <><div className="chat-preview">{row.last_message_preview || '—'}</div><div className="muted">{dateText(row.last_message_at)}</div></> },
@@ -163,18 +174,19 @@ export default function Wechat() {
       ]} /></Card>
     <ConversationDrawer contact={current} onClose={() => setOpen(null)} onChanged={state.reload} />
     <BindDialog contact={bind} onClose={() => setBind(null)} onSaved={state.reload} />
-    <MockDialog open={mock} onClose={() => setMock(false)} onSaved={state.reload} />
+    <MockDialog provider={provider} open={mock} onClose={() => setMock(false)} onSaved={state.reload} />
   </>
 }
 
-/** The "微信沟通" tab of a patient record. Doctors read; operations staff can open the conversation and send. */
-export function PatientWechat({ patientId, readOnly }) {
+/** The 企业微信 or 公众号 tab of a patient record. Doctors read; operations staff can open the conversation and send. */
+export function PatientWechat({ patientId, provider, readOnly }) {
   const [open, setOpen] = useState(null)
-  const state = useLoad(() => api('/wechat/contacts/query', { page: 0, size: 20, patient_id: patientId }), [patientId])
+  const channelPage = channelPages[provider]
+  const state = useLoad(() => api('/wechat/contacts/query', { page: 0, size: 20, patient_id: patientId, channel: provider }), [patientId, provider])
   const current = open && (state.data?.items.find(row => row.id === open.id) || open)
-  return <><LoadState state={state}>{data => data.items.length ? <div className="wechat-contacts">{data.items.map(row => <div className="context-block" key={row.id}><Space wrap><strong>{contactName(row)}</strong><Tag>{names[row.channel]}</Tag>{row.mock && <Tag color="gold">模拟</Tag>}<Tag color={row.relation === 'ACTIVE' ? 'green' : 'default'}>{row.relation === 'ACTIVE' ? '关系有效' : '已失联'}</Tag>{row.pending_count > 0 && <Tag color="orange">待处理 {row.pending_count}</Tag>}</Space>
+  return <><LoadState state={state}>{data => data.items.length ? <div className="wechat-contacts">{data.items.map(row => <div className="context-block" key={row.id}><Space wrap><strong>{contactName(row)}</strong>{row.mock && <Tag color="gold">模拟</Tag>}<Tag color={row.relation === 'ACTIVE' ? 'green' : 'default'}>{row.relation === 'ACTIVE' ? '关系有效' : '已失联'}</Tag>{row.pending_count > 0 && <Tag color="orange">待处理 {row.pending_count}</Tag>}</Space>
       <p className="muted">绑定于 {dateText(row.bound_at)} · 最近消息 {dateText(row.last_message_at)}</p><p className="chat-preview">{row.last_message_preview || '暂无消息'}</p><Button onClick={() => setOpen(row)}>{readOnly ? '查看会话' : '查看会话 / 发消息'}</Button></div>)}</div>
-    : <Alert type="info" showIcon message="这位患者还没有绑定微信联系人" description={readOnly ? '运营团队核实身份并绑定后，这里显示企业微信与公众号的沟通记录。' : <>患者加企业微信好友或关注公众号后，在 <Link to="/wechat">微信沟通</Link> 的「待绑定」里核实身份并绑定到本档案。</>} />}</LoadState>
+    : <Alert type="info" showIcon message={'这位患者还没有绑定' + channelPage.title} description={readOnly ? '运营团队核实身份并绑定后，这里显示' + channelPage.title + '的沟通记录。' : <>患者{channelPage.join}后，在 <Link to={channelPage.path}>{channelPage.title}</Link> 的「待绑定」里核实身份并绑定到本档案。</>} />}</LoadState>
     <ConversationDrawer contact={current} readOnly={readOnly} onClose={() => setOpen(null)} onChanged={state.reload} /></>
 }
 

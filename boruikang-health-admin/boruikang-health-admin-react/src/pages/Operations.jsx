@@ -77,7 +77,7 @@ export function Channels() {
       <Button className="mt" onClick={async () => { try { await navigator.clipboard.writeText(detail.enrollment_url); message.success('链接已复制') } catch { message.info('请选中上方链接手动复制') } }}>复制介绍链接</Button>
     </Modal>
     <Modal title={'微信二维码 · ' + (wechat?.title || '')} open={Boolean(wechat)} width={680} onCancel={() => setWechat(null)} footer={<Button onClick={() => setWechat(null)}>关闭</Button>}>
-      <p className="muted">患者扫码加企业微信好友或关注公众号后，「微信沟通」里的联系人会带上本渠道。企业微信活码使用渠道负责人登记的成员账号。</p>
+      <p className="muted">患者扫码加企业微信好友或关注公众号后，「企业微信」「公众号」页面里的联系人会带上本渠道。企业微信活码使用渠道负责人登记的成员账号。</p>
       <div className="integration-grid">{[['WE_COM', 'wecom_qr_url', '企业微信「联系我」'], ['WECHAT_OFFICIAL', 'official_qr_url', '公众号带参二维码']].map(([provider, field, title]) => <Card size="small" key={provider} title={title}>
         {wechat?.[field] ? wechat[field].startsWith('mock://') ? <Alert type="warning" message="模拟二维码，不能扫码" description={wechat[field]} /> : provider === 'WE_COM' ? <div className="qr-wrap"><img src={wechat[field]} alt="企业微信联系我二维码" width={180} height={180} /></div> : <div className="qr-wrap"><QRCode value={wechat[field]} size={180} /></div> : <p className="muted">尚未生成</p>}
         <Button className="mt" loading={qrBusy === provider} disabled={Boolean(qrBusy)} onClick={async () => { setQrBusy(provider); try { setWechat(await api('/channels/wechat-qr', { id: wechat.id, provider })); state.reload() } catch (e) { message.error(e.message) } finally { setQrBusy(null) } }}>{wechat?.[field] ? '重新生成' : '生成'}</Button>
@@ -165,7 +165,7 @@ function WechatIntegration({ item, canConfigure, onChanged }) {
     catch (e) { message.error(e.message) } finally { setBusy(false) }
   }
   return <Card title={providers[item.provider]} extra={<ChannelTag item={item} />}>
-    <p>{wecom ? '患者加医院企业微信成员为好友后，系统同步好友关系与来源渠道。工作人员发起的消息以群发任务下发，成员在企业微信里确认后才发出。未开通会话存档，系统看不到聊天正文。' : '患者关注医院公众号后，可向其发送模板消息；患者 48 小时内有互动时可以发文字。患者来信进入「微信沟通」待处理。'}</p>
+    <p>{wecom ? '患者加医院企业微信成员为好友后，系统同步好友关系与来源渠道。工作人员发起的消息以群发任务下发，成员在企业微信里确认后才发出。未开通会话存档，系统看不到聊天正文。' : '患者关注医院公众号后，可向其发送模板消息；患者 48 小时内有互动时可以发文字。患者来信进入「公众号」页面的待处理。'}</p>
     <Descriptions size="small" column={1} items={[
       { key: 'app', label: wechatFields[item.provider][0], children: item.app_id || '未设置' },
       { key: 'secret', label: wechatFields[item.provider][1], children: item.configured ? '已配置（不回显）' : '未配置' },

@@ -35,14 +35,14 @@ const contacts=[
 const tasks=[{id:3001,pid:1001,title:'随访 · D7 随访',ok:true,text:'您好，这里是健康管理团队。请按原医嘱继续执行；10 月 8 日复诊时请携带出院小结，如有不适请及时就诊。'},{id:3002,pid:1001,title:'咨询 · 复诊准备',ok:false,text:''}];
 const accounts=[{id:2,name:'演示责任医生',login:'doctor',r:'医生',wecom:''},{id:3,name:A,login:'operator_a',r:'运营人员',wecom:'wecom-demo-a'},{id:4,name:'演示运营专员乙',login:'operator_b',r:'运营人员',wecom:''},{id:5,name:'演示护士',login:'nurse',r:'护士',wecom:''}];
 const chans=[{id:1,name:'演示门诊渠道',acc:3,qr:{}},{id:2,name:'演示社区活动渠道',acc:4,qr:{}}];
-const demo={WE_COM:'ok',WECHAT_OFFICIAL:'ok',send:'ok'},filt={ch:'',bound:'',pending:false};
-let who='M',page='settings',cur=0,kind='TEXT',selTask=0,busy=false,taskSeq=3002,timer;
+const demo={WE_COM:'ok',WECHAT_OFFICIAL:'ok',send:'ok'},filt={bound:'',pending:false};
+let who='M',page='settings',ptab=W,cur=0,kind='TEXT',selTask=0,busy=false,taskSeq=3002,timer;
 
 const hm=()=>'今天 '+new Date().toTimeString().slice(0,5),one=(a,f)=>a.filter(f)[0],byId=id=>one(contacts,c=>c.id===id),acc=id=>one(accounts,a=>a.id===id);
 const can=r=>r.includes(who),usable=p=>cfg[p].enabled&&cfg[p].app_id&&cfg[p].secret,isMock=p=>cfg[p].mode==='MOCK',off=p=>CH[p]+'通道未配置或未启用，不调用接口。';
 const pend=c=>c.msgs.filter(m=>m.st==='RECEIVED').length,handle=c=>c.msgs.forEach(m=>{if(m.st==='RECEIVED')m.st='HANDLED'});
 const sees=c=>who==='M'||(who==='O'&&(!c.pid||patients[c.pid].mine))||(who==='D'&&c.pid===1001);
-const total=()=>contacts.filter(sees).reduce((n,c)=>n+pend(c),0);
+const total=()=>contacts.filter(c=>c.ch===O&&sees(c)).reduce((n,c)=>n+pend(c),0);
 const opt=(v,t,now)=>`<option value="${v}"${v===now?' selected':''}>${t}</option>`;
 const tg=(t,c='')=>`<span class="tag ${c}">${t}</span>`,btn=(t,fn,c='')=>`<button class="btn ${c}" onclick="${fn}">${t}</button>`,mu=t=>`<p class="muted">${t}</p>`;
 const tags=m=>tg(m.mock?'模拟':'演示','gold');
@@ -54,7 +54,7 @@ function setWho(v){who=v;if(v==='O'&&!filt.bound)filt.bound='1';render()}
 function setDemo(k,v){demo[k]=v}
 function setF(k,v){filt[k]=v;render()}
 function render(){const ps=PAGES.filter(p=>p[2].includes(who)),n=total();if(!ps.some(p=>p[0]===page))page=ps[0][0];
- $('#nav').innerHTML=ps.map(([k,t])=>`<button class="${k===page?'active':''}" onclick="go('${k}')">${t}${k==='wechat'&&n?` <span class="num">${n}</span>`:''}</button>`).join('');
+ $('#nav').innerHTML=ps.map(([k,t])=>`<button class="${k===page?'active':''}" onclick="go('${k}')">${t}${k==='official'&&n?` <span class="num">${n}</span>`:''}</button>`).join('');
  $('#page').innerHTML=one(ps,p=>p[0]===page)[3]();drawChat()}
 
 /* 外部接入 */
@@ -73,13 +73,13 @@ function verify(p){const c=cfg[p],ok=demo[p]==='ok';if(isMock(p))return toast('�
 function resetCfg(p){Object.assign(cfg[p],{app_id:'',secret:false,token:false,aes:false,enabled:false,mode:'LIVE',verified:'',error:''});render()}
 function copyPath(p){let ok=false;$('#path-'+p).select();try{ok=document.execCommand('copy')}catch(e){}toast(ok?'已复制回调路径。':'已选中回调路径，请按 Ctrl+C 复制。')}
 
-/* 微信沟通 */
+/* 企业微信、公众号：两个独立菜单，各自只看本通道 */
 function row(c){const l=c.msgs[c.msgs.length-1],n=pend(c),p=patients[c.pid],act=can('MO');
  return `<tr><td><b>${esc(c.nick)||'（公众号拿不到昵称）'}</b><div class="muted">${c.ext}</div></td><td>${tg(CH[c.ch])}${tags(c)}<div class="muted">来源 ${c.src}${c.staff?' · 添加成员 '+c.staff:''}</div></td><td>${c.active?tg('有效','green'):tg('已失联','red')}</td><td>${p?p.mask+' #'+c.pid:tg('待绑定','gold')}</td><td>${l?esc(l.text.slice(0,18)):'—'}<div class="muted">${l?l.time:''}</div></td><td>${n?`<span class="num">${n}</span>`:'—'}</td><td>${btn(act?'打开会话':'查看会话',`chat(${c.id})`)} ${!act?'':p?btn('解绑',`unbindOpen(${c.id})`,'danger'):btn('绑定患者',`bindOpen(${c.id})`)}</td></tr>`}
 const listTable=l=>`<table><tr><th>联系人</th><th>通道 / 来源</th><th>关系</th><th>患者</th><th>最近消息</th><th>待处理</th><th>操作</th></tr>${l.map(row).join('')||'<tr><td colspan="7">暂无匹配的联系人</td></tr>'}</table>`;
-function vWechat(){const m=who==='M',n=total(),seg=(v,t)=>`<span class="${filt.bound===v?'on':''}" onclick="setF('bound','${v}')">${t}</span>`;
- const l=contacts.filter(c=>sees(c)&&(!filt.ch||c.ch===filt.ch)&&(!filt.bound||(filt.bound==='1')===!!c.pid)&&(!filt.pending||pend(c)));
- return `<h1>微信沟通${n?` <span class="num">${n}</span> <span class="muted">条来信待处理</span>`:''}</h1><p>加好友、关注后生成微信联系人；核实身份后绑定患者档案，再发消息。${m?'运营主管看全院。':'运营人员、护士只看待绑定和自己负责患者的联系人。'}</p>${[W,O].filter(p=>!usable(p)).map(p=>`<div class="note">${off(p)}这个通道的联系人暂时不能发送。</div>`).join('')}<div class="card"><div class="toolbar"><select onchange="setF('ch',this.value)">${opt('','全部通道',filt.ch)}${opt(W,CH[W],filt.ch)}${opt(O,CH[O],filt.ch)}</select><span class="seg">${m?seg('','全部'):''}${seg('1',m?'已绑定':'已绑定（我负责的患者）')}${seg('0','待绑定')}</span><label><input type="checkbox"${filt.pending?' checked':''} onchange="setF('pending',this.checked)"> 仅看待处理</label>${m?btn('同步联系人','syncOpen()'):''}</div>${listTable(l)}</div>`}
+function vChannel(ch){const m=who==='M',w=ch===W,n=w?0:total(),seg=(v,t)=>`<span class="${filt.bound===v?'on':''}" onclick="setF('bound','${v}')">${t}</span>`;
+ const l=contacts.filter(c=>c.ch===ch&&sees(c)&&(!filt.bound||(filt.bound==='1')===!!c.pid)&&(w||!filt.pending||pend(c)));
+ return `<h1>${CH[ch]}${n?` <span class="num">${n}</span> <span class="muted">条来信待处理</span>`:''}</h1><p>${w?'患者加医院企业微信成员为好友后生成联系人；核实身份后绑定患者档案。消息以群发任务下发，成员在企业微信里确认后才发出。':'患者关注医院公众号后生成联系人；核实身份后绑定患者档案。患者来信进入待处理，48 小时内有互动可以回文字，否则发模板消息。'}${m?'运营主管看全院。':'运营人员、护士只看待绑定和自己负责患者的联系人。'}</p>${usable(ch)?'':`<div class="note">${off(ch)}这个通道的联系人暂时不能发送。</div>`}<div class="card"><div class="toolbar"><span class="seg">${m?seg('','全部'):''}${seg('1',m?'已绑定':'已绑定（我负责的患者）')}${seg('0','待绑定')}</span>${w?'':`<label><input type="checkbox"${filt.pending?' checked':''} onchange="setF('pending',this.checked)"> 仅看待处理</label>`}${m?btn('同步'+CH[ch],`syncOpen('${ch}')`):''}</div>${listTable(l)}</div>`}
 function chat(id){cur=id;kind='TEXT';selTask=0;render()}
 function chatClose(){cur=0;render()}
 function setKind(k){kind=k;render()}
@@ -95,7 +95,7 @@ function sendBox(c){const w=c.ch===W,why=block(c),t=one(tasks,x=>x.id===selTask&
  return `<div class="block"><h2>发送</h2><span class="seg">${['TEXT','TEMPLATE','APPROVED_ADVICE'].map(k=>`<span class="${k===kind?'on':''}" onclick="setKind('${k}')">${KIND[k]}</span>`).join('')}</span>${body}${why?`<p class="err">${why}</p>`:''}<div class="row"><select onchange="setDemo('send',this.value)">${opt('ok','演示：微信受理',demo.send)}${opt('fail','演示：微信返回错误',demo.send)}</select><button class="btn primary" onclick="doSend()"${why||busy?' disabled':''}>${w?'创建群发任务':'发送'}</button></div>${mu('发送成功只表示微信接口受理，不代表患者已读，不能代替联系结果登记。')}</div>`}
 function drawChat(){const d=$('#drawer'),c=byId(cur);if(!c||!sees(c)){cur=0;d.classList.remove('open');return}
  const act=can('MO'),p=patients[c.pid],w=c.ch===W,n=pend(c);
- d.innerHTML=`<div class="row between"><b>${CH[c.ch]}会话 · ${esc(c.nick)||c.ext}</b>${btn('关闭','chatClose()')}</div>${mu(`演示会话，未连接微信。${c.ext} · ${p?'已绑定 '+p.mask+' #'+c.pid:'待绑定'} · ${c.active?'关系有效':'已失联，记录保留'}${isMock(c.ch)?' · 模拟通道':''}`)}${w?'<div class="note">未开通会话存档：系统读不到成员与客户在企业微信里的聊天内容，这里只有好友关系事件和本系统发出的消息。</div>':''}<div>${c.msgs.map((m,i)=>bubble(c,m,i,act)).join('')||'<div class="ev">暂无记录</div>'}</div>${act?`<div class="row">${n?btn(`标记已处理（${n}）`,'markHandled()'):''}${who==='M'&&!w&&isMock(c.ch)&&c.active?btn('模拟一条患者来信','mockIn()'):''}</div>`+sendBox(c):mu('责任医生只读查看自己负责患者的微信沟通记录，不能发送、绑定或处理。')}`;d.classList.add('open')}
+ d.innerHTML=`<div class="row between"><b>${CH[c.ch]}会话 · ${esc(c.nick)||c.ext}</b>${btn('关闭','chatClose()')}</div>${mu(`演示会话，未连接微信。${c.ext} · ${p?'已绑定 '+p.mask+' #'+c.pid:'待绑定'} · ${c.active?'关系有效':'已失联，记录保留'}${isMock(c.ch)?' · 模拟通道':''}`)}${w?'<div class="note">未开通会话存档：系统读不到成员与客户在企业微信里的聊天内容，这里只有好友关系事件和本系统发出的消息。</div>':''}<div>${c.msgs.map((m,i)=>bubble(c,m,i,act)).join('')||'<div class="ev">暂无记录</div>'}</div>${act?`<div class="row">${n?btn(`标记已处理（${n}）`,'markHandled()'):''}${who==='M'&&!w&&isMock(c.ch)&&c.active?btn('模拟一条患者来信','mockIn()'):''}</div>`+sendBox(c):mu('责任医生只读查看自己负责患者的企业微信、公众号沟通记录，不能发送、绑定或处理。')}`;d.classList.add('open')}
 function doSend(){const c=byId(cur),w=c.ch===W,fail=demo.send==='fail';if(busy||block(c))return;let text=($('#txt')||{value:''}).value.trim(),tid=0;
  if(kind==='APPROVED_ADVICE'){const t=one(tasks,x=>x.id===selTask&&x.ok&&x.pid===c.pid);if(!t)return toast('请先选择责任医生审核通过的任务。');text=t.text;tid=t.id}
  else if(!text)return toast('请填写内容。');
@@ -111,17 +111,17 @@ function bindOpen(id){dlg(`<h2>绑定患者</h2>${mu(`联系人 ${byId(id).ext}�
 function bindSave(id){const c=byId(id);c.pid=+$('#f-pid').value;dlgClose();render();toast('演示：已绑定 '+patients[c.pid].mask+'，并写入患者留痕。')}
 function unbindOpen(id){dlg(`<h2>解绑</h2>${mu(`联系人 ${byId(id).ext}。解绑后回到待绑定，历史消息保留，并写入患者留痕。`)}<label>解绑原因（必填）<textarea id="f-why" rows="2" placeholder="例如：绑定错人"></textarea></label>`,`unbindSave(${id})`,'解绑')}
 function unbindSave(id){const c=byId(id),why=$('#f-why').value.trim();if(!why)return $('#err').textContent='请填写解绑原因';c.pid=0;dlgClose();render();toast('演示：已解绑，联系人回到待绑定。')}
-function syncOpen(){dlg(`<h2>同步联系人</h2><label>通道<select id="f-prov">${opt(W,CH[W])}${opt(O,CH[O])}</select></label>${mu('企业微信按已登记成员账号拉客户列表，公众号拉关注者列表。只新增和更新，不解绑；单次上限 1000 条，超出时提示。')}`,'syncRun()','同步')}
-function syncRun(){const p=$('#f-prov').value,n=contacts.filter(c=>c.ch===p).length;dlgClose();toast(usable(p)?`${isMock(p)?'模拟':'演示'}结果：扫描 ${n} 条，新增 0 条，更新 ${n} 条，未超过 1000 条上限。${NOAPI}`:off(p))}
+function syncOpen(p){dlg(`<h2>同步${CH[p]}</h2>${mu((p===W?'按已登记成员账号拉企业微信客户列表。':'拉公众号关注者列表。')+'只新增和更新，不解绑；单次上限 1000 条，超出时提示。')}`,`syncRun('${p}')`,'同步')}
+function syncRun(p){const n=contacts.filter(c=>c.ch===p).length;dlgClose();toast(usable(p)?`${isMock(p)?'模拟':'演示'}结果：扫描 ${n} 条，新增 0 条，更新 ${n} 条，未超过 1000 条上限。${NOAPI}`:off(p))}
 
 /* 渠道活码、成员账号、患者档案、任务抽屉 */
 function vChannels(){const m=who==='M';return `<h1>渠道管理 · 渠道活码</h1><p>给渠道生成企业微信“联系我”二维码和公众号带参二维码，参数为渠道编号；患者扫码后，联系人自动带上来源渠道。</p><div class="card"><table><tr><th>渠道</th><th>负责人</th><th>企微活码</th><th>公众号二维码</th></tr>${chans.map(x=>{const a=acc(x.acc);return `<tr><td><b>${x.name}</b><div class="muted">渠道参数 ch${x.id}</div></td><td>${a.name}<div class="muted">企业微信成员账号：${esc(a.wecom)||'未登记'}</div></td>${[W,O].map(p=>`<td>${x.qr[p]?`<div class="qr">${x.qr[p]}占位图<br>不是二维码<br>不可扫码<br>参数 ch${x.id}</div>`:'<span class="muted">未生成</span>'}${m?`<div class="row">${btn(p===W?'生成企微活码':'生成公众号二维码',`genQr(${x.id},'${p}')`)}</div>`:''}</td>`).join('')}</tr>`}).join('')}</table>${mu(m?'企业微信活码要求渠道负责人已登记成员账号。':'只有运营主管可以生成活码。')}</div>`}
 function genQr(id,p){const x=one(chans,c=>c.id===id),k=isMock(p)?'模拟':'演示';if(!usable(p))return toast(off(p));if(p===W&&!acc(x.acc).wecom)return toast('企业微信活码要求渠道负责人已登记成员账号，请先到“医护账号”登记。');x.qr[p]=k;render();toast(k+'结果：这里只画占位方块，没有向微信申请二维码。')}
 function vAccounts(){return `<h1>医护账号 · 企业微信成员账号</h1><p>运营主管给工作账号登记企业微信成员账号，回调与同步据此显示“添加成员”是系统里的谁。同院内不能重复，留空保存表示清除。</p><div class="card"><table><tr><th>姓名</th><th>角色</th><th>企业微信成员账号</th><th></th></tr>${accounts.map(a=>`<tr><td><b>${a.name}</b><div class="muted">账号 ${a.login}</div></td><td>${tg(a.r)}</td><td><input id="wc-${a.id}" value="${esc(a.wecom)}" placeholder="未登记，例如 wecom-demo-b"></td><td>${btn('保存',`saveWecom(${a.id})`)}</td></tr>`).join('')}</table></div>`}
 function saveWecom(id){const v=$('#wc-'+id).value.trim();if(v&&accounts.some(a=>a.id!==id&&a.wecom===v))return toast('这个成员账号已登记给其他账号，同院内不能重复。');acc(id).wecom=v;render();toast(v?'演示：已登记成员账号 '+v+'。':'演示：已清除成员账号。')}
-function vPatient(){return `<h1>演示患者一 的健康档案</h1><p>责任医生：演示责任医生 · 负责人：${A}。档案新增“微信沟通”页签。${who==='D'?'责任医生只读查看，不能发送。':''}</p><div class="tabs"><span>时间轴</span><span>服务任务</span><span class="on">微信沟通</span><span>操作留痕</span></div><div class="card">${listTable(contacts.filter(c=>c.pid===1001))}${mu('时间轴合并微信收发；发送、绑定、解绑写入操作留痕，留痕只记消息类型、状态和编号，不记正文。')}</div>`}
+function vPatient(){return `<h1>演示患者一 的健康档案</h1><p>责任医生：演示责任医生 · 负责人：${A}。档案新增“企业微信”“公众号”两个页签，各显示本通道已绑定的联系人。${who==='D'?'责任医生只读查看，不能发送。':''}</p><div class="tabs"><span>时间轴</span><span>服务任务</span>${[W,O].map(p=>`<span class="${p===ptab?'on':''}" onclick="ptab='${p}';render()">${CH[p]}</span>`).join('')}<span>操作留痕</span></div><div class="card">${listTable(contacts.filter(c=>c.pid===1001&&c.ch===ptab))}${mu('时间轴合并微信收发；发送、绑定、解绑写入操作留痕，留痕只记消息类型、状态和编号，不记正文。')}</div>`}
 function vTask(){return `<h1>任务抽屉 · 微信发送已审核正文</h1><p>随访或咨询任务“已审核”、且审核人是患者当前责任医生时，才能把审核通过的正文发给患者已绑定的微信联系人。</p>`+tasks.filter(t=>t.pid===1001).map(t=>`<div class="card">${tg(t.title.slice(0,2))}${tg(t.ok?'已审核':'待医生审核',t.ok?'green':'gold')}<h2 style="margin-top:10px">#${t.id} ${t.title} · 演*一</h2>${t.ok?mu('责任医生审核通过的正文（审核人：演示责任医生，是患者当前责任医生）')+`<div class="report">${esc(t.text)}</div>`:mu('正文还没有经责任医生审核通过，不能发送。')}<div class="row"><button class="btn primary"${t.ok?'':' disabled'} onclick="taskSend(${t.id})">微信发送已审核正文</button><span class="muted">发送不改变任务状态；联系结果仍在任务里登记，联系方式可选“微信”。</span></div></div>`).join('')}
 function taskSend(id){const c=one(contacts,x=>x.pid===1001&&x.active);if(!c)return toast('这位患者没有已绑定且关系有效的微信联系人。');cur=c.id;kind='APPROVED_ADVICE';selTask=id;render()}
-const PAGES=[['settings','外部接入','MOP',vSettings],['wechat','微信沟通','MO',vWechat],['channels','渠道管理 · 活码','MO',vChannels],['accounts','医护账号 · 成员账号','M',vAccounts],['patient','患者档案 · 微信沟通','MOD',vPatient],['task','任务抽屉 · 微信发送','MO',vTask]];
+const PAGES=[['settings','外部接入','MOP',vSettings],['wecom','企业微信','MO',()=>vChannel(W)],['official','公众号','MO',()=>vChannel(O)],['channels','渠道管理 · 活码','MO',vChannels],['accounts','医护账号 · 成员账号','M',vAccounts],['patient','患者档案 · 企业微信 / 公众号','MOD',vPatient],['task','任务抽屉 · 微信发送','MO',vTask]];
 render();
 </script></body></html>
