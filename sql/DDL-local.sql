@@ -1,4 +1,4 @@
--- HEALTH-MVP-1 / MySQL 8. Canonical schema, non-destructive initialization.
+-- HEALTH-2.0 / MySQL 8. Consolidated 1.x and journey schema; non-destructive initialization.
 CREATE TABLE IF NOT EXISTS health_account (
  id BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
  username VARCHAR(64) NOT NULL, password VARCHAR(200) NOT NULL, real_name VARCHAR(80) NOT NULL,

@@ -39,6 +39,12 @@ jobs:
           cache-dependency-path: |
             boruikang-health-admin/boruikang-health-admin-react/package-lock.json
             boruikang-health-user/boruikang-health-user-react/package-lock.json
+      - name: Verify implementation contract and offline prototype
+        run: |
+          node tools/sync-implementation-contract.cjs
+          node docs/demo-static/tests/platform-prototype.test.cjs
+          node docs/demo-static/tests/implementation-prototype.test.cjs
+          node docs/demo-static/tests/patient-upload.test.cjs
       - name: Build admin UI
         working-directory: boruikang-health-admin/boruikang-health-admin-react
         run: |

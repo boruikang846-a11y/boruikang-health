@@ -1,15 +1,14 @@
 const fs=require('fs'),vm=require('vm'),assert=require('assert'),path=require('path');
 process.chdir(path.resolve(__dirname,'../../..'));
 const el={},context=vm.createContext({structuredClone,URLSearchParams,TextDecoder,TextEncoder,Uint8Array,ArrayBuffer,Buffer,console,crypto:require('crypto').webcrypto,setTimeout,clearTimeout,location:{hash:''},window:{scrollTo(){},addEventListener(){}},document:{body:{dataset:{}},querySelector(s){return el[s]??={innerHTML:'',textContent:'',value:'',classList:{add(){},remove(){}},setAttribute(){},removeAttribute(){},showModal(){},close(){}}},addEventListener(){}}});
-for(const f of ['patient-import-files.js','patient-import.js','quality-wecom.js','platform-prototype.js','screening-sheet-data.js','screening-sheet.js','screening-cycle.js','screening-import.js','care-cycle.js','journey.js','interactive.js'])vm.runInContext(fs.readFileSync('docs/demo-static/web/'+f,'utf8'),context);
+for(const f of ['implementation-contract.js','patient-import-files.js','patient-import.js','quality-wecom.js','platform-prototype.js','screening-sheet-data.js','screening-sheet.js','screening-cycle.js','screening-import.js','care-cycle.js','journey.js','interactive.js'])vm.runInContext(fs.readFileSync('docs/demo-static/web/'+f,'utf8'),context);
 const run=s=>vm.runInContext(s,context);
 (async()=>{
  run('account=person(1);openPatientImport();loadPatientImportSample();patientImportState.step=2;patientImportState.settings.doctor_id="2";patientImportState.settings.owner_id="4";patientImportState.settings.patient_type="DISCHARGED";patientImportState.settings.source_scene="DISCHARGE"');
- await run('submitPatientImport()');assert.equal(run('demo.patients.length'),3,'no due date: batch blocked');
- run('patientImportState.settings.outreach_due="2026-10-06T09:00"');await run('submitPatientImport()');
+ await run('submitPatientImport()');
  assert.equal(run('lastPatientImport.created'),2);assert.equal(run('lastPatientImport.skipped'),1);assert.equal(run('lastPatientImport.taskCount'),2);
- assert.equal(run('demo.patients.at(-1).identity_status'),'PENDING');assert.equal(run('demo.patients.at(-1).service_consent'),false);assert.equal(run('demo.tasks.at(-1).due'),'2026-10-06T09:00');
- assert(el['#dialog-content'].innerHTML.includes('核验授权与服务交接'));
+ assert.equal(run('demo.patients.at(-1).identity_status'),'PENDING');assert.equal(run('demo.patients.at(-1).service_consent'),false);assert(Math.abs(Date.parse(run('demo.tasks.at(-1).due'))-Date.now()-168*3600000)<60000);assert.equal(run('demo.patients.at(-1).lifecycle'),'ENROLLED');
+ assert(el['#dialog-content'].innerHTML.includes('登记授权与责任分工'));
  run('openPatientImport();loadPatientImportSample();patientImportState.step=2;Object.assign(patientImportState.settings,{doctor_id:"2",owner_id:"4",outreach:false})');await run('submitPatientImport()');assert.equal(run('lastPatientImport.created'),0);assert.equal(run('lastPatientImport.skipped'),3);
  run('openPatientImport();loadPatientImportSample(true);patientImportState.step=2;Object.assign(patientImportState.settings,{doctor_id:"2",owner_id:"4",outreach:false})');await run('submitPatientImport()');assert.equal(run('patientImportState.step'),2);
  run('account=person(4);openPatientImport();loadPatientImportSample();patientImportState.step=2;Object.assign(patientImportState.settings,{doctor_id:"2",owner_id:"3",outreach:false})');await run('submitPatientImport()');assert.equal(run('patientImportState.step'),2,'operator cannot assign another owner');
@@ -20,5 +19,5 @@ const run=s=>vm.runInContext(s,context);
  const xb=fs.readFileSync('docs/demo-static/tests/fixtures/patients.xlsx');context.testFile={name:'patients.xlsx',size:xb.length,arrayBuffer:async()=>xb.buffer.slice(xb.byteOffset,xb.byteOffset+xb.byteLength)};const xp=await run('PatientImportFiles.parsePatientFile(testFile)');assert.equal(xp.entries.length,1);assert.equal(xp.entries[0].row.external_id,'XLSX-TEST-01');assert.equal(xp.entries[0].row.phone,'00000000016');assert.equal(xp.errors.length,0);
  context.testFile={...file,name:'invalid.xls'};await assert.rejects(()=>run('PatientImportFiles.parsePatientFile(testFile)'),/xlsx/);
  context.testFile={...file,size:6*1024*1024};await assert.rejects(()=>run('PatientImportFiles.parsePatientFile(testFile)'),/5 MiB/);
- console.log('Upload tests passed: XLSX/CSV parsing, leading zeros, format/size validation, due date, whole-batch error blocking, duplicates, role assignment, pending consent and journey handoff links.');
+ console.log('Upload tests passed: XLSX/CSV parsing, leading zeros, format/size validation, SLA deadline, whole-batch error blocking, duplicates, role assignment, pending consent and journey handoff links.');
 })().catch(e=>{console.error(e);process.exit(1)});
