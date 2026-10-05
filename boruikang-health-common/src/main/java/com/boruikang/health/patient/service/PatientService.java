@@ -36,6 +36,7 @@ public class PatientService {
         if (Checks.text(req.department())) ex.eq("department",req.department());
         if (Checks.text(req.lifecycle())) ex.eq("lifecycle",req.lifecycle());
         if (Checks.text(req.sourceScene())) ex.eq("source_scene",req.sourceScene());
+        if (Checks.text(req.patientType())) ex.eq("patient_type",req.patientType());
         if (req.orgId()!=null) ex.eq("org_id",req.orgId());
         if (req.ownerId()!=null) ex.eq("owner_id",req.ownerId());
         if (req.doctorId()!=null) ex.eq("doctor_id",req.doctorId());
@@ -59,6 +60,12 @@ public class PatientService {
         PageHelper.startPage(Paged.number(req.page()),Paged.size(req.size()));
         List<Patient> rows=patients.selectByExample(ex);
         return Paged.of(rows,r->view(r,true));
+    }
+    public PatientSummaryResponse summary() {
+        return new PatientSummaryResponse(patients.countByExample(access.scope()),
+            patients.countByExample(access.scope().eq("risk_level","UNKNOWN")),
+            patients.countByExample(access.scope().in("risk_level",List.of("HIGH","CRITICAL"))),
+            patients.countByExample(access.scope().eq("source_system","FILE_IMPORT")));
     }
     public PatientResponse detail(Long id) { log.info("patient detail patientId={}",id);access.staff();return view(access.require(id),false); }
     public PatientResponse profile() { log.info("patient profile accountId={}",CurrentAccount.get().userId());Patient p=access.own(false);return p==null?null:view(p,false); }

@@ -438,6 +438,44 @@
       ]
     ]
   },
+  "patientCentre": {
+    "types": [
+      "OUTPATIENT",
+      "INPATIENT",
+      "DISCHARGED",
+      "UNKNOWN"
+    ],
+    "queryFields": [
+      "page",
+      "size",
+      "keyword",
+      "risk_level",
+      "department",
+      "lifecycle",
+      "source_scene",
+      "org_id",
+      "owner_id",
+      "doctor_id",
+      "tag",
+      "overdue",
+      "open_alert",
+      "revisit_pending",
+      "created_from",
+      "created_to",
+      "contact_from",
+      "contact_to"
+    ],
+    "summaryFields": [
+      "patient_count",
+      "unknown_risk_count",
+      "high_risk_count",
+      "file_import_count"
+    ],
+    "summaryEndpoint": {
+      "method": "GET",
+      "path": "/boruikang/admin/patients/summary"
+    }
+  },
   "patientImport": {
     "maxBytes": 5242880,
     "maxRows": 500,

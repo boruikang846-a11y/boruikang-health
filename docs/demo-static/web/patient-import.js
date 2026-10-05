@@ -39,7 +39,7 @@ function patientImportResultCard(){
 }
 function openPatientImport(){
   if(!canOperate())return;
-  patientImportState={step:1,preview:null,file:null,error:'',busy:false,filter:'all',batch:'B'+Date.now()+'-'+crypto.randomUUID().slice(0,8),settings:{doctor_id:'',owner_id:String(account.id),patient_type:'UNKNOWN',source_scene:'MANUAL',org_id:'',outreach:true}};
+  patientImportState={step:1,preview:null,file:null,error:'',busy:false,filter:'all',batch:'B'+Date.now()+'-'+crypto.randomUUID().slice(0,8),settings:{doctor_id:'',owner_id:String(account.id),patient_type:implementationContract.patientCentre.types.includes(current.query.get('category'))?current.query.get('category'):'UNKNOWN',source_scene:'MANUAL',org_id:'',outreach:true}};
   renderPatientImport();$('#dialog').showModal();
 }
 function renderPatientImport(){
