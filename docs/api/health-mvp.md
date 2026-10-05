@@ -4,7 +4,7 @@
 
 所有响应 `{code,message,success,result}`，成功 code="0"。请求 JSON snake_case；鉴权头 `Jwttoken`。HTTP 401 失效会话，403 无权，404 不存在/不可见资源，409 状态或版本冲突，400 校验错误，429 限流。分页 result 为 `{items,page_num,page_size,total_size}`，请求 page 从 0 起、size 1–100。
 
-端前缀 A=`/bgssai/admin`。每个端点独立 Controller、独立请求 DTO（通用 IdRequest 除外）。写操作身份仅从令牌获取；写入时间按服务器处理时间，发生时间由记录字段提供。
+端前缀 A=`/boruikang/admin`。每个端点独立 Controller、独立请求 DTO（通用 IdRequest 除外）。写操作身份仅从令牌获取；写入时间按服务器处理时间，发生时间由记录字段提供。
 
 | 方法与路径 | 请求 / 主要响应 |
 | --- | --- |
@@ -41,7 +41,7 @@
 | POST A/integrations/save | provider=AI,endpoint,model_name,secret,enabled；仅 PLATFORM_ADMIN |
 
 完整字段与状态以 PRD、PAGE-FLOW 和 Request/Response DTO 为共同契约。临床数值限制仅为输入合理范围，不是诊断阈值；后端不自动下风险诊断。
-HEALTH-MVP-1.2：用户端仅公开介绍，没有 /bgssai/user 业务 API。旧患者 API 全部返回 404。CONTACTED 表示医护确认的人工联系记录，不能据此宣称任何患者通道已接通。
+HEALTH-MVP-1.2：用户端仅公开介绍，没有 /boruikang/user 业务 API。旧患者 API 全部返回 404。CONTACTED 表示医护确认的人工联系记录，不能据此宣称任何患者通道已接通。
 
 
 ## 医院接口模拟契约

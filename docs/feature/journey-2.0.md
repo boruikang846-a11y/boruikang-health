@@ -29,7 +29,7 @@
 
 管理端提供 `/journeys` 旅程列表、`/journeys/:id` 个案办理页、`/after-care` 主动干预工作台。患者详情可直接查看该患者旅程。工作台提供交接、计划草稿、异常/咨询、逾期统计和筛选。
 
-新增接口统一 POST `/bgssai/admin/journeys/`：
+新增接口统一 POST `/boruikang/admin/journeys/`：
 
 | 接口 | 用途 |
 | --- | --- |
@@ -74,3 +74,7 @@ java -jar 博瑞康全旅程患者管理后端V2.0.jar --spring.profiles.active=
 企业微信消息、真实 HIS/EMR、短信/电话、真实医院身份认证及生产部署尚未接通；现有 Mock、手工记录和本地演示不代表真实外部服务已接通。AI 医学内容仍需责任医生审批，不自动替医生作出结案或诊疗判断。本次交付完成全旅程主流程后端，医院现场接口联调、MySQL 专项与部署验收仍需后续实施。
 
 源码在独立 codex 分支开发，未合并到主干；本次未向远端推送或创建 PR。后续集成继续遵守仓库 PR-only 流程，部署沿用专用部署仓。
+
+## develop 集成验收（2026-10-05）
+
+已整合 develop 的 0101d5e（品牌与包名统一、微信渠道、批量虚构演示数据），全旅程模块迁移到 boruikang-health-* / com.boruikang.health 命名空间，API 路径为 /boruikang/admin/journeys。原接口前缀属于此前独立本地包。整合后的后端 118 项：101 通过、17 项 MySQL 专项跳过、无失败；管理端文件导入测试 12 项通过，React 构建通过。静态资源由合并后的代码重新生成。通过 GitHub PR 向 develop 提交，合并授权来自用户本次明确指令。

@@ -20,7 +20,7 @@
 
 并发测试通过两个独立 HTTP 请求同时提交相同 version，断言结果恰为一个 200、一个 409，并在请求提交后查询，确认只有一条沟通记录、一条人工联系审计。它不是仅通过测试事务回滚模拟的串行断言。
 
-实际 JAR 验证还确认：用户 `/join/demo-preview` 显示介绍；用户 `/login`、`/patients/1001` 与 `/bgssai/user/*` 的原业务路径返回 404；后台未登录返回 401。人工联系步骤不对外发送消息。
+实际 JAR 验证还确认：用户 `/join/demo-preview` 显示介绍；用户 `/login`、`/patients/1001` 与 `/boruikang/user/*` 的原业务路径返回 404；后台未登录返回 401。人工联系步骤不对外发送消息。
 
 前端依赖调整保留 React 18 / Ant Design 5，更新 Router 和 Vite 并移除未使用的依赖。参考 [Router 官方安全公告](https://github.com/remix-run/react-router/security/advisories/GHSA-wrjc-x8rr-h8h6)、[Router 7 DOM 兼容说明](https://api.reactrouter.com/v7/modules/react-router-dom.html)、[Vite 7 迁移说明](https://v7.vite.dev/guide/migration)。Node 版本要求已在 README 同步。
 

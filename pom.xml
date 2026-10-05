@@ -12,18 +12,18 @@
         <relativePath />
     </parent>
 
-    <!-- 聚合父 POM：统一管理管理端(bgssai-health-admin)与用户端(bgssai-health-user)两个后端模块 -->
-    <groupId>com.bgssai.health</groupId>
-    <artifactId>bgssai-health-parent</artifactId>
+    <!-- 聚合父 POM：统一管理管理端(boruikang-health-admin)与用户端(boruikang-health-user)两个后端模块 -->
+    <groupId>com.boruikang.health</groupId>
+    <artifactId>boruikang-health-parent</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <packaging>pom</packaging>
-    <name>bgssai-health-parent</name>
-    <description>BGSSAI 骨架聚合父工程：bgssai-health-admin 管理端 + bgssai-health-user 用户端；文档与 SQL 见仓库根 docs/、sql/</description>
+    <name>boruikang-health-parent</name>
+    <description>聚合父工程：boruikang-health-admin 管理端 + boruikang-health-user 用户端；文档与 SQL 见仓库根 docs/、sql/</description>
 
     <modules>
-        <module>bgssai-health-common</module>
-        <module>bgssai-health-user/bgssai-health-user</module>
-        <module>bgssai-health-admin/bgssai-health-admin</module>
+        <module>boruikang-health-common</module>
+        <module>boruikang-health-user/boruikang-health-user</module>
+        <module>boruikang-health-admin/boruikang-health-admin</module>
     </modules>
 
     <properties>

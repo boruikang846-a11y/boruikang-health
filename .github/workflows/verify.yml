@@ -17,6 +17,7 @@ jobs:
         env:
           MYSQL_ROOT_PASSWORD: health-ci-only
           MYSQL_ROOT_HOST: '%'
+          MYSQL_DATABASE: boruikang_health
         ports:
           - 3307:3306
         options: >-
@@ -36,15 +37,15 @@ jobs:
           node-version: '22'
           cache: npm
           cache-dependency-path: |
-            bgssai-health-admin/bgssai-health-admin-react/package-lock.json
-            bgssai-health-user/bgssai-health-user-react/package-lock.json
+            boruikang-health-admin/boruikang-health-admin-react/package-lock.json
+            boruikang-health-user/boruikang-health-user-react/package-lock.json
       - name: Build admin UI
-        working-directory: bgssai-health-admin/bgssai-health-admin-react
+        working-directory: boruikang-health-admin/boruikang-health-admin-react
         run: |
           npm ci
           npm run build:deploy
       - name: Build introduction UI
-        working-directory: bgssai-health-user/bgssai-health-user-react
+        working-directory: boruikang-health-user/boruikang-health-user-react
         run: |
           npm ci
           npm run build:deploy
@@ -53,7 +54,7 @@ jobs:
           MYSQL_CONTAINER: ${{ job.services.mysql.id }}
         run: |
           for sql in sql/DDL.sql sql/DML.sql sql/dev/DML.sql; do
-            docker exec -i "$MYSQL_CONTAINER" mysql --default-character-set=utf8mb4 -uroot -phealth-ci-only < "$sql"
+            docker exec -i "$MYSQL_CONTAINER" mysql --default-character-set=utf8mb4 -uroot -phealth-ci-only boruikang_health < "$sql"
           done
       - name: Verify Java modules and packaged resources
         run: mvn -B verify

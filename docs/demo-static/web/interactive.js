@@ -189,7 +189,7 @@ function render(){
   const publicRoute=['/login','/flow','/overview','/public','/patient-demo'].includes(current.path);
   if(!account&&!publicRoute){go('/login');return}
   const allowed=publicRoute||(current.path==='/in-care'&&(canOperate()||account?.role==='DOCTOR'))||menu().some(([p])=>current.path===p||current.path.startsWith(p+'/'));
-  $('#header').innerHTML='<div class="brand">BGSSAI Health<small>门诊与出院全旅程 · 诊后主动干预 · 3.4 原型 · 虚构演示数据</small></div><div class="row">'+link('患者 H5 演示','/patient-demo')+link('页面流程','/flow')+(account?'<span>'+esc(account.name+' · '+roles[account.role])+'</span>'+button('修改演示密码','password')+button('切换角色','logout'):link('角色入口','/login'))+'</div>';
+  $('#header').innerHTML='<div class="brand">博瑞康 Health<small>门诊与出院全旅程 · 诊后主动干预 · 3.4 原型 · 虚构演示数据</small></div><div class="row">'+link('患者 H5 演示','/patient-demo')+link('页面流程','/flow')+(account?'<span>'+esc(account.name+' · '+roles[account.role])+'</span>'+button('修改演示密码','password')+button('切换角色','logout'):link('角色入口','/login'))+'</div>';
   $('#nav').innerHTML=account?'<small>'+esc(roles[account.role])+'</small>'+careHubNav():link('角色入口','/login')+link('完整页面流程','/flow')+link('系统公开介绍','/public');
   let html='';
   if(!allowed)html=forbidden();
