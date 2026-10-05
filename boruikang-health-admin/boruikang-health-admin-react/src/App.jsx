@@ -8,6 +8,7 @@ import { api, setToken, token } from './api'
 import { FormDialog, names } from './ui'
 import { Dashboard, Patients, PatientDetail } from './pages/Patients'
 import Tasks from './pages/Tasks'
+import Journeys, { JourneyDetail, AfterCare } from './pages/Journeys'
 import Hospital from './pages/Hospital'
 import SystemOverview from './pages/SystemOverview'
 import { Knowledge, Channels, Reports, Settings } from './pages/Operations'
@@ -22,7 +23,7 @@ import WechatChannel from './pages/Wechat'
 import { FunnelPlotOutlined, PhoneOutlined, CarryOutOutlined, GiftOutlined, SwapOutlined, WechatOutlined, WechatWorkOutlined } from '@ant-design/icons'
 
 const navigation = [
-  ['/workbench', '运营工作台', DashboardOutlined], ['/screening', '患者池', FunnelPlotOutlined], ['/patients', '患者中心', TeamOutlined],
+  ['/journeys', '患者全旅程服务', HeartOutlined], ['/after-care', '诊后主动干预', ScheduleOutlined], ['/workbench', '运营工作台', DashboardOutlined], ['/screening', '患者池', FunnelPlotOutlined], ['/patients', '患者中心', TeamOutlined],
   ['/invitations', '邀约记录', PhoneOutlined], ['/appointments', '预约到诊', CarryOutOutlined],
   ['/followups', '随访与咨询', ScheduleOutlined], ['/wecom', '企业微信', WechatWorkOutlined], ['/official-account', '公众号', WechatOutlined], ['/alerts', '异常处理', AlertOutlined],
   ['/revisits', '复诊跟踪', CalendarOutlined], ['/packages', '服务包与方案', GiftOutlined], ['/referrals', '转诊', SwapOutlined], ['/knowledge', '宣教与服务内容', ReadOutlined],
@@ -30,6 +31,7 @@ const navigation = [
   ['/hospital', '医院数据', QrcodeOutlined], ['/accounts', '医护账号', IdcardOutlined], ['/settings', '运营设置', SettingOutlined], ['/overview', '系统介绍', HeartOutlined],
 ]
 const doctorNavigation = [
+  ['/journeys', '患者全旅程服务', HeartOutlined], ['/after-care', '诊后主动干预', ScheduleOutlined],
   ['/doctor', '医生工作台', DashboardOutlined], ['/doctor/reviews', '随访意见审核', AuditOutlined], ['/doctor/reports', '患者报告', FileSearchOutlined],
   ['/doctor/results', '随访结果查收', InboxOutlined], ['/doctor/alerts', '异常处置', AlertOutlined], ['/patients', '我的患者', TeamOutlined],
   ['/knowledge', '宣教审核', ReadOutlined], ['/overview', '系统介绍', HeartOutlined],
@@ -86,7 +88,7 @@ function Shell({ account, logout }) {
     <div className="nav-caption">{account.role_code === 'DOCTOR' ? '医生工作台' : '院外连续服务'}</div>
     <Menu mode="inline" selectedKeys={[selected]} items={visible.map(([path, title, Icon]) => ({
       key: path, icon: <Icon />, label: <Link to={path}>{title}</Link>,
-    }))} /><div className="sidebar-foot"><span className="online-dot" /> 医患协作 / 1.9</div>
+    }))} /><div className="sidebar-foot"><span className="online-dot" /> 医患协作 / 2.0</div>
   </Layout.Sider><Layout><header className="topbar"><span className="muted">医患运营管理平台 <span className="topbar-divider">/</span> 工作空间</span>
     <Space><Tag>{names[account.role_code]}</Tag><Avatar size="small" style={{ background: '#e5efff', color: '#2469d9' }}>{account.real_name?.slice(0, 1)}</Avatar><span>{account.real_name}</span><Button type="text" icon={<KeyOutlined />} onClick={() => setPassword(true)}>修改密码</Button><Button type="text" icon={<LogoutOutlined />} onClick={logout}>退出</Button></Space>
   </header><main className="main-content"><div className="page-enter" key={location.pathname}><Outlet context={account} /></div></main></Layout>
@@ -109,7 +111,7 @@ export default function App() {
   const allowed = account && reachable(account.role_code, location.pathname)
   return <Routes><Route path="/overview" element={<SystemOverview account={account} />} /><Route path="/login" element={<Login account={account} onLogin={result => { setAccount(result); navigate(home(result.role_code)) }} />} />
     <Route element={account ? allowed ? <Shell account={account} logout={async () => { try { await api('/logout', {}) } catch {} setToken(null); setAccount(null); navigate('/login') }} /> : <Navigate to={home(account.role_code)} replace /> : <Navigate to="/login" replace />}>
-      <Route path="/workbench" element={<Dashboard />} /><Route path="/patients" element={<Patients />} /><Route path="/patients/:id" element={<PatientDetail />} />
+      <Route path="/after-care" element={<AfterCare />} /><Route path="/journeys" element={<Journeys />} /><Route path="/journeys/:id" element={<JourneyDetail />} /><Route path="/workbench" element={<Dashboard />} /><Route path="/patients" element={<Patients />} /><Route path="/patients/:id" element={<PatientDetail />} />
       <Route path="/screening" element={<Screening />} /><Route path="/invitations" element={<Invitations />} /><Route path="/appointments" element={<Appointments />} /><Route path="/packages" element={<Packages />} /><Route path="/referrals" element={<Referrals />} />
       <Route path="/followups" element={<Tasks />} /><Route path="/alerts" element={<Tasks taskType="ALERT" />} /><Route path="/revisits" element={<Tasks taskType="REVISIT" />} />
       <Route path="/hospital" element={<Hospital />} /><Route path="/knowledge" element={<Knowledge />} /><Route path="/channels" element={<Channels />} /><Route path="/reports" element={<Reports />} /><Route path="/settings" element={<Settings />} />

@@ -3,7 +3,7 @@ import { Link, useNavigate, useOutletContext, useParams } from 'react-router-dom
 import { Alert, Button, Card, DatePicker, Descriptions, Form, Input, InputNumber, Select, Space, Statistic, Switch, Table, Tabs, Tag, Timeline } from 'antd'
 import { ArrowRightOutlined, PlusOutlined, ReloadOutlined, TeamOutlined, ScheduleOutlined, AlertOutlined, ClockCircleOutlined, UploadOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
-import { api, useLoad } from '../api'
+import { api, useLoad, uploadPatientFile } from '../api'
 import { countUp, DataTable, dateText, day, dayText, doctorOptions, FormDialog, LoadState, money, names, options, ownerOptions, PageTitle, required, stamp, Status } from '../ui'
 import Tasks from './Tasks'
 import { InvitationDialog } from './Invitations'
@@ -86,8 +86,8 @@ export function Patients() {
     {importResult && <Alert className="mb" type="success" showIcon closable onClose={() => setImportResult(null)} message={'批次 ' + importResult.import_batch + '：新增 ' + importResult.created + ' 条，跳过 ' + importResult.skipped + ' 条'} description={importResult.messages.length ? <ul>{importResult.messages.map((message, index) => <li key={index}>{message}</li>)}</ul> : null} />}
     {fileImportOpen && <FileImportDialog title="文件批量导入患者档案" columns={patientImportColumns} parseFile={parsePatientFile} createTemplate={createPatientTemplate} templateName="患者中心导入模板.xlsx"
       description="姓名、年龄、联系电话、科室、病种/管理原因必填。建议填写来源编号或证件号用于跨批次去重；手机号不会合并档案。确认后批量建档，风险待评估。"
-      initialValues={{ patient_type: 'UNKNOWN', source_scene: 'MANUAL', outreach: true, owner_id: account.user_id }} onClose={() => setFileImportOpen(false)} onSubmit={async (values, preview, importBatch) => {
-        const response = await api('/patients/import', { ...values, import_batch: importBatch, rows: preview.rows })
+      initialValues={{ patient_type: 'UNKNOWN', source_scene: 'MANUAL', outreach: true, owner_id: account.user_id }} onClose={() => setFileImportOpen(false)} onSubmit={async (values, preview, importBatch, file) => {
+        const response = await uploadPatientFile({ ...values, import_batch: importBatch }, file)
         setImportResult(fileImportResult(response, preview.entries)); state.reload()
       }}><div className="form-grid">
         <LoadState state={clinicians}>{data => <Form.Item name="doctor_id" label="统一责任医生" rules={required}><Select options={doctorOptions(data)} /></Form.Item>}</LoadState>
@@ -162,6 +162,7 @@ export function PatientDetail() {
   const history = useLoad(() => listTabs[tab] ? api(listTabs[tab], { page, size: 10, patient_id: Number(id) }) : tab === 'medications' ? api('/medications/query', { patient_id: Number(id) }).then(items => ({ items, total_size: items.length })) : Promise.resolve(null), [id, page, tab, revision])
   const refresh = () => setRevision(value => value + 1)
   return <><Link to="/patients" className="back-link">{doctor ? '返回我的患者' : '返回患者中心'}</Link><LoadState state={state}>{patient => <>
+    <p><Link to={'/journeys?patient=' + patient.id}>查看 / 建立此患者的就诊服务旅程 →</Link></p>
     <PageTitle title={patient.name + ' 的健康档案'} subtitle={patient.department + ' / ' + patient.disease} extra={!doctor && <Space wrap><Button onClick={() => setEdit(true)}>管理档案</Button><Button onClick={() => setConsent(true)}>登记知情同意</Button><Button onClick={() => setInvite(true)}>记录邀约</Button><Button onClick={() => setBook(true)}>登记预约</Button><Button onClick={() => setEnroll(true)}>签约服务包</Button><Button onClick={() => setRefer(true)}>发起转诊</Button><Button onClick={() => setMessage(true)}>登记已发消息</Button><Button onClick={() => setObserve(true)}>代录指标</Button><Button type="primary" icon={<PlusOutlined />} onClick={() => setRecordOpen(true)}>添加就诊记录</Button></Space>} />
     <Card className="mb"><Descriptions column={{ xs: 1, sm: 2, lg: 4 }} items={[
       { key: 'id', label: '档案编号', children: '#' + patient.id }, { key: 'age', label: '性别 / 年龄', children: (names[patient.gender] || '未填写') + ' / ' + patient.age + ' 岁' + (patient.birth_date ? ' / ' + patient.birth_date : '') },

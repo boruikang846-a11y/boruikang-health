@@ -274,3 +274,18 @@ button,a,input{outline-offset:4px}
 @media(max-width:720px){.stats-grid{gap:10px}.dashboard-grid,.integration-grid{grid-template-columns:1fr}.page-title{align-items:flex-start;flex-direction:column}.main-content{padding:22px 13px}.ant-card-body,.table-panel{padding:16px!important}.login-panel .ant-card .ant-card-body{padding:26px!important}.metric-icon{display:none}.metric-card{height:137px}.form-grid{grid-template-columns:1fr}.topbar .ant-avatar,.topbar .ant-tag,.topbar .ant-space>.ant-space-item:nth-child(3){display:none}.login-page{grid-template-columns:1fr}.login-story{min-height:auto;padding:28px}.login-story>div:nth-child(2),.login-story>small{display:none}.login-panel{padding:20px}.login-panel .ant-card{max-width:440px;width:100%}.bar-pair{gap:3px}.chart-bar{width:13px}.sidebar.ant-layout-sider{border-radius:0 20px 20px 0}.lg-orbs span{filter:blur(50px)}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}.lg-orbs span{animation:none}}
 @media print{.sidebar,.topbar,.no-print,.page-title>button,.page-title>.ant-space,.lg-orbs{display:none!important}.app-shell,.ant-layout,.main-content{display:block!important;background:white!important;padding:0!important;margin:0!important}.main-content{max-width:none}.ant-card{box-shadow:none;break-inside:avoid;background:white;-webkit-backdrop-filter:none;backdrop-filter:none;border-color:#e3e8ef}.ant-card::before,.ant-card::after{display:none}.stats-grid{grid-template-columns:repeat(4,1fr)}.ant-table-container{overflow:visible!important}body.lg-bg{background:white}}
+
+/* Hospital management reference: navy navigation and green operations. */
+:root{--accent:#299e60;--accent-2:#46b878;--accent-ink:#217b4c;--radius:8px;--radius-sm:6px;--radius-xs:4px;--glass-fill:#fff;--glass-fill-strong:#fff;--glass-border:#e8edf0;--glass-shadow:0 2px 6px #18314208;--glass-shadow-hover:0 3px 8px #18314212}
+body.lg-bg{background:#f2f5f6}.lg-orbs{display:none}
+.sidebar.ant-layout-sider{background:#26303f!important;border-radius:0;box-shadow:none;border:0}
+.sidebar .brand,.sidebar .brand small,.sidebar .ant-menu,.sidebar .sidebar-foot{color:#e4e9ef}
+.sidebar .ant-menu{background:transparent}.sidebar .ant-menu-item-selected{background:#299e60!important;color:white!important}
+.sidebar .ant-menu-item:not(.ant-menu-item-selected){color:#c5ced9}
+.topbar{background:#1d2632!important;border:0;box-shadow:none;border-radius:0;color:#fff}
+.topbar .muted,.topbar .ant-btn,.topbar .ant-avatar{color:#dfe6ee}.topbar .ant-btn{background:transparent;border-color:#5e6c7d}
+.ant-card,.table-panel{backdrop-filter:none!important;background:#fff!important;border:1px solid #e8edf0!important;border-radius:8px!important}
+.ant-card::before,.ant-card::after{display:none}.ant-card:hover,.metric-box:hover,.queue-item:hover{transform:none}
+.metric-card{background:#eaf7ef!important}.stats-grid>a:nth-child(2) .metric-card{background:#eef2fc!important}.stats-grid>a:nth-child(3) .metric-card{background:#f4f0fc!important}.stats-grid>a:nth-child(4) .metric-card{background:#eef8f6!important}
+.ant-table-thead>tr>th{background:#f4f6f7!important}.ant-table-tbody>tr>td:first-child a{color:#268e55}.care-summary{background:#f0f8f3!important}
+*:focus-visible{outline:2px solid #299e60;outline-offset:3px}

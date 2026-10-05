@@ -53,6 +53,14 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(429).header("Retry-After", String.valueOf(ex.getRetryAfterSeconds()))
             .body(ApiResponse.fail("429000", "Too many requests / 操作频繁，请稍后重试"));
     }
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiResponse<Void>> oversized(Exception ex) {
+        return ResponseEntity.status(413).body(ApiResponse.fail("413000", "文件超过 5 MiB 上传限制"));
+    }
+    @ExceptionHandler(org.springframework.web.multipart.support.MissingServletRequestPartException.class)
+    public ResponseEntity<ApiResponse<Void>> missingPart(Exception ex) {
+        return ResponseEntity.badRequest().body(ApiResponse.fail("50000001", "缺少文件或导入设置"));
+    }
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> unexpected(Exception ex) {
         log.error("request failed exceptionType={}", ex.getClass().getName());

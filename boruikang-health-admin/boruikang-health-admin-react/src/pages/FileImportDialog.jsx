@@ -9,11 +9,11 @@ export default function FileImportDialog({ title, description, columns, parseFil
   const [preview, setPreview] = useState(null), [fileName, setFileName] = useState('')
   const [reading, setReading] = useState(false), [busy, setBusy] = useState(false)
   const [downloading, setDownloading] = useState(false), [error, setError] = useState(null)
-  const sequence = useRef(0), submitting = useRef(false), batch = useRef('')
+  const sequence = useRef(0), submitting = useRef(false), batch = useRef(''), selectedFile = useRef(null)
   useEffect(() => () => { sequence.current++ }, [])
   const selectFile = async event => {
     const file = event.target.files?.[0], id = ++sequence.current
-    setPreview(null); setError(null); setFileName(file?.name || ''); setReading(Boolean(file))
+    selectedFile.current = file || null; setPreview(null); setError(null); setFileName(file?.name || ''); setReading(Boolean(file))
     if (!file) return
     batch.current = newImportBatch()
     try { const parsed = await parseFile(file); if (id === sequence.current) setPreview(parsed) }
@@ -38,7 +38,7 @@ export default function FileImportDialog({ title, description, columns, parseFil
     <Form form={form} layout="vertical" initialValues={initialValues} disabled={busy} onFinish={async values => {
       if (!canSubmit || submitting.current) return
       submitting.current = true; setBusy(true); setError(null)
-      try { await onSubmit(values, preview, batch.current); onClose() }
+      try { await onSubmit(values, preview, batch.current, selectedFile.current); onClose() }
       catch (failure) { setError(failure.message); submitting.current = false; setBusy(false) }
     }}>{children}<Form.Item label="选择导入文件"><Input type="file" aria-label="选择导入文件" accept=".xlsx,.csv" disabled={busy} onChange={selectFile} /></Form.Item></Form>
     {error && <Alert className="mb" type="error" showIcon message={error} />}

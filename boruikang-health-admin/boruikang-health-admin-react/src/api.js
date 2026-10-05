@@ -4,13 +4,22 @@ const key = 'health.admin.session'
 export function token() { return sessionStorage.getItem(key) }
 export function setToken(value) { value ? sessionStorage.setItem(key, value) : sessionStorage.removeItem(key) }
 export async function api(path, body) {
+  return request(path, body, false)
+}
+export async function uploadPatientFile(settings, file) {
+  const form = new FormData()
+  form.append('settings', new Blob([JSON.stringify(settings)], { type: 'application/json' }))
+  form.append('file', file)
+  return request('/patients/import_file', form, true)
+}
+async function request(path, body, multipart) {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), 45000)
   try {
     const response = await fetch('/boruikang/admin' + path, {
       method: body === undefined ? 'GET' : 'POST',
-      headers: { 'Content-Type': 'application/json', ...(token() ? { Jwttoken: token() } : {}) },
-      ...(body === undefined ? {} : { body: JSON.stringify(body) }), signal: controller.signal,
+      headers: { ...(!multipart ? { 'Content-Type': 'application/json' } : {}), ...(token() ? { Jwttoken: token() } : {}) },
+      ...(body === undefined ? {} : { body: multipart ? body : JSON.stringify(body) }), signal: controller.signal,
     })
     const data = await response.json()
     if (!response.ok || !data.success) {

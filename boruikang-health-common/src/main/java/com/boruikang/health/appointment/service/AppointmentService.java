@@ -23,10 +23,11 @@ import java.util.stream.Collectors;
 public class AppointmentService {
     private static final Logger log=LoggerFactory.getLogger(AppointmentService.class);
     private static final List<String> OPEN=List.of("BOOKED","REMINDED");
+    private final com.boruikang.health.journey.service.JourneyExecutionGuard journeyGuard;
     private final AppointmentMapper appointments;private final CareTaskMapper tasks;private final PatientMapper patients;private final InvitationMapper invitations;private final ReferralMapper referrals;
     private final PatientAccess access;private final AuditService audit;private final PatientService patientService;private final TaskWriter writer;
-    public AppointmentService(AppointmentMapper appointments,CareTaskMapper tasks,PatientMapper patients,InvitationMapper invitations,ReferralMapper referrals,PatientAccess access,AuditService audit,PatientService patientService,TaskWriter writer){
-        this.appointments=appointments;this.tasks=tasks;this.patients=patients;this.invitations=invitations;this.referrals=referrals;this.access=access;this.audit=audit;this.patientService=patientService;this.writer=writer;}
+    public AppointmentService(AppointmentMapper appointments,CareTaskMapper tasks,PatientMapper patients,InvitationMapper invitations,ReferralMapper referrals,PatientAccess access,AuditService audit,PatientService patientService,TaskWriter writer,com.boruikang.health.journey.service.JourneyExecutionGuard journeyGuard){
+        this.journeyGuard=journeyGuard;this.appointments=appointments;this.tasks=tasks;this.patients=patients;this.invitations=invitations;this.referrals=referrals;this.access=access;this.audit=audit;this.patientService=patientService;this.writer=writer;}
     public Paged<AppointmentResponse> query(AppointmentQueryRequest req){
         log.info("query appointments status={} from={}",req.status(),req.from());access.staff();var actor=CurrentAccount.get();
         AppointmentExample ex=new AppointmentExample();ex.eq("hospital_id",actor.hospitalId());
@@ -75,7 +76,7 @@ public class AppointmentService {
     public AppointmentResponse transition(TransitionAppointmentRequest req){
         log.info("transition appointment id={} action={}",req.id(),req.action());access.operations();Appointment a=appointments.selectByPrimaryKey(req.id());
         Checks.found(a!=null&&CurrentAccount.get().hospitalId().equals(a.hospitalId));Patient p=access.lock(a.patientId);Checks.conflict(req.version().equals(a.version));
-        LocalDateTime at=req.at()==null?LocalDateTime.now():req.at();CareTask task=a.taskId==null?null:tasks.selectByPrimaryKey(a.taskId);CareTask taskPatch=new CareTask();
+        LocalDateTime at=req.at()==null?LocalDateTime.now():req.at();CareTask task=a.taskId==null?null:tasks.selectByPrimaryKey(a.taskId);journeyGuard.check(task);CareTask taskPatch=new CareTask();
         Appointment patch=new Appointment();String taskAction=null;
         switch(req.action()){
             case "REMIND"->{Checks.conflict("BOOKED".equals(a.status));Checks.require(Checks.text(req.evidence()),"Record how the reminder was sent / 请记录提醒方式与凭证");patch.status="REMINDED";patch.reminderSentAt=at;taskPatch.reminderSentAt=at;}
