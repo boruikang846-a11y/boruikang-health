@@ -26,14 +26,15 @@ import java.util.stream.Collectors;
 public class TaskService {
     public static final List<String> TERMINAL=List.of("COMPLETED","CANCELLED");
     private static final Logger log=LoggerFactory.getLogger(TaskService.class);
+    private final com.bgssai.health.journey.service.JourneyExecutionGuard journeyGuard;
     private final CareTaskMapper tasks;private final PatientMapper patients;private final CareRecordMapper records;
     private final CareMessageMapper messages;private final KnowledgeEntryMapper knowledge;private final PatientAccess access;
     private final AuditService audit;private final TaskWriter writer;private final AiDraftService ai;private final ContactAttemptMapper attempts;private final PatientService patientService;private final com.bgssai.health.record.service.RecordService recordService;
     public static final List<String> FAILED_CONTACT=List.of("NO_ANSWER","BUSY","WRONG_NUMBER","REFUSED","IDENTITY_UNVERIFIED","FAMILY_ANSWERED","NOT_COOPERATIVE","DECEASED","OTHER");
     private static final List<String> ATTEMPT_TYPES=List.of("FOLLOWUP","CONSULTATION","OUTREACH");
     public TaskService(CareTaskMapper tasks,PatientMapper patients,CareRecordMapper records,CareMessageMapper messages,
-        KnowledgeEntryMapper knowledge,PatientAccess access,AuditService audit,TaskWriter writer,AiDraftService ai,ContactAttemptMapper attempts,PatientService patientService,com.bgssai.health.record.service.RecordService recordService) {
-        this.tasks=tasks;this.patients=patients;this.records=records;this.messages=messages;this.knowledge=knowledge;
+        KnowledgeEntryMapper knowledge,PatientAccess access,AuditService audit,TaskWriter writer,AiDraftService ai,ContactAttemptMapper attempts,PatientService patientService,com.bgssai.health.record.service.RecordService recordService,com.bgssai.health.journey.service.JourneyExecutionGuard journeyGuard) {
+        this.journeyGuard=journeyGuard;this.tasks=tasks;this.patients=patients;this.records=records;this.messages=messages;this.knowledge=knowledge;
         this.access=access;this.audit=audit;this.writer=writer;this.ai=ai;this.attempts=attempts;this.patientService=patientService;this.recordService=recordService;
     }
     public Paged<TaskResponse> query(TaskQueryRequest req) {
@@ -274,7 +275,7 @@ public class TaskService {
     }
     private CareTask load(Long id,Integer version) {
         access.staff();CareTask t=tasks.selectByPrimaryKey(id);Checks.found(t!=null&&CurrentAccount.get().hospitalId().equals(t.hospitalId));access.require(t.patientId);
-        Checks.conflict(version.equals(t.version));return t;
+        Checks.conflict(version.equals(t.version));journeyGuard.check(t);return t;
     }
     private KnowledgeEntry publishedReference(Long id,Long hospitalId) {
         KnowledgeEntry k=knowledge.selectByPrimaryKey(id);Checks.require(k!=null&&hospitalId.equals(k.hospitalId)&&"EDUCATION".equals(k.kind)&&"PUBLISHED".equals(k.status),"Choose doctor-reviewed education or leave the reference empty / 请选择医生已审核的宣教，或不选参考资料");return k;
