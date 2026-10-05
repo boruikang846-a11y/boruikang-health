@@ -3,7 +3,7 @@ import { Link, useNavigate, useOutletContext, useParams } from 'react-router-dom
 import { Alert, Button, Card, DatePicker, Descriptions, Form, Input, InputNumber, Select, Space, Statistic, Switch, Table, Tabs, Tag, Timeline } from 'antd'
 import { ArrowRightOutlined, PlusOutlined, ReloadOutlined, TeamOutlined, ScheduleOutlined, AlertOutlined, ClockCircleOutlined, UploadOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
-import { api, useLoad } from '../api'
+import { api, useLoad, uploadPatientFile } from '../api'
 import { countUp, DataTable, dateText, day, dayText, doctorOptions, FormDialog, LoadState, money, names, options, ownerOptions, PageTitle, required, stamp, Status } from '../ui'
 import Tasks from './Tasks'
 import { InvitationDialog } from './Invitations'
@@ -85,8 +85,8 @@ export function Patients() {
     {importResult && <Alert className="mb" type="success" showIcon closable onClose={() => setImportResult(null)} message={'批次 ' + importResult.import_batch + '：新增 ' + importResult.created + ' 条，跳过 ' + importResult.skipped + ' 条'} description={importResult.messages.length ? <ul>{importResult.messages.map((message, index) => <li key={index}>{message}</li>)}</ul> : null} />}
     {fileImportOpen && <FileImportDialog title="文件批量导入患者档案" columns={patientImportColumns} parseFile={parsePatientFile} createTemplate={createPatientTemplate} templateName="患者中心导入模板.xlsx"
       description="姓名、年龄、联系电话、科室、病种/管理原因必填。建议填写来源编号或证件号用于跨批次去重；手机号不会合并档案。确认后批量建档，风险待评估。"
-      initialValues={{ patient_type: 'UNKNOWN', source_scene: 'MANUAL', outreach: true, owner_id: account.user_id }} onClose={() => setFileImportOpen(false)} onSubmit={async (values, preview, importBatch) => {
-        const response = await api('/patients/import', { ...values, import_batch: importBatch, rows: preview.rows })
+      initialValues={{ patient_type: 'UNKNOWN', source_scene: 'MANUAL', outreach: true, owner_id: account.user_id }} onClose={() => setFileImportOpen(false)} onSubmit={async (values, preview, importBatch, file) => {
+        const response = await uploadPatientFile({ ...values, import_batch: importBatch }, file)
         setImportResult(fileImportResult(response, preview.entries)); state.reload()
       }}><div className="form-grid">
         <LoadState state={clinicians}>{data => <Form.Item name="doctor_id" label="统一责任医生" rules={required}><Select options={doctorOptions(data)} /></Form.Item>}</LoadState>
