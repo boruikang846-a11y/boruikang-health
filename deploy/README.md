@@ -9,7 +9,7 @@
 本仓对发布的约定只有三条：
 
 1. 目录保持 `boruikang-health-<端>/boruikang-health-<端>`（Maven 模块）与 `boruikang-health-<端>/boruikang-health-<端>-react`（前端，`npm run build:deploy` 把产物同步进后端 `static/`）；改目录或模块名时同步改发布仓 `products.json`。
-2. 数据库用户名、口令、JWT 密钥由目标机 `/etc/boruikang/boruikang-health-<端>.env` 注入；dev/prod properties 中对应值留空，口令和密钥不进 Git。dev 两端使用华为云墨西哥城二 RDS 内网 `192.168.0.217:3306/boruikang`，上线前须配置 `SPRING_DATASOURCE_USERNAME`、`SPRING_DATASOURCE_PASSWORD` 并确认实例提供 TLS。
+2. dev 两端使用 `101.44.27.60:3306/boruikang`，启用 TLS；按用户要求，dev 的 `root` 账号与口令直接保存在两端 `application-dev.properties` 中。目标机 `/etc/boruikang/boruikang-health-<端>.env` 的 `SPRING_DATASOURCE_*` 优先级更高，发布前须同步这些覆盖值。JWT 密钥仍由该环境文件注入，prod 数据库配置仍独立管理。
 3. SQL 只保留全量 `sql/DDL.sql`、`sql/DML.sql`、`sql/<env>/DML.sql`，不写增量迁移；表结构变了按「备份 → 清库 → init database → deploy」发版。
 
 初次部署的历史记录见 `docs/deploy/health-mvp.md`。
