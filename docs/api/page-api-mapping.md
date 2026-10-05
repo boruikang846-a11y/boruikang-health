@@ -1,4 +1,6 @@
-# HEALTH-MVP-1.2 页面与 API 映射
+# HEALTH 2.0 页面与 API 映射
+
+当前全量口径见 [同步基线](../contracts/README.md)，全旅程字段及 Controller 见 [生成契约](journey-2.0.md)。下方 1.x 表保留兼容接口，角色和 SOP 的历史表述按 1.6 / 2.0 修正。
 
 前缀 A=/boruikang/admin。页面路径由各端 PAGE-FLOW.html 维护。
 
@@ -10,7 +12,7 @@
 | patients、patients/:id | A/patients/query、create、update、A/patients/{id}、A/staff | 建档、分派、医生分层 |
 | patients/:id 时间轴 | A/records/query、create、A/messages/query、A/audits/query | 原记录、人工沟通与审计 |
 | followups、alerts、revisits | A/tasks/query、A/tasks/{id}、create、claim、draft、submit-review、review、contact、transition | 版本保护的任务处理抽屉 |
-| knowledge | A/knowledge/query、save、publish | 运营团队制定/发布 SOP；医生只读 SOP，审核发布宣教/服务包 |
+| knowledge | A/knowledge/query、save、publish | 服务内容草稿、责任医生审核发布宣教；正式 SOP 是系统外使用流程 |
 | channels | A/channels、A/channels/create、toggle | 经理维护渠道，二维码本地生成 |
 | reports | A/reports/weekly | 日期范围统计、浏览器打印 |
 | hospital | A/hospital/status、mock/query、sync、A/staff | 经理预览/同步虚构医院数据、查看幂等结果 |
@@ -69,3 +71,15 @@ MANUAL/TEMPLATE/AI 均生成待审核草稿。列表隐藏内部 note，授权�
 | 用户端 /#wechat | 无 | 页面内虚构演示，不请求后端 |
 
 O 表示 `/boruikang/open` 前缀。
+
+## 2.0 当前全旅程与诊后队列
+
+| 页面 | API | 行为 |
+| --- | --- | --- |
+| /journeys | A/journeys/query、create | 两类事件旅程、状态/患者筛选，FULL / AFTER_CARE |
+| /journeys/:id | A/journeys/detail、handoff_accept、step、status、plan_draft、plan_review、case_open、case_action、no_revisit | 本人接单、本次原报告、计划审批与任务、问题四阶段、复诊及满意度结案 |
+| /after-care | A/journeys/summary、cases_query | 五项统计、跨旅程问题队列、类型/状态/超时筛选 |
+| /patients/:id 旅程 | A/journeys/query（patient_id） | 同一患者多次就诊历史 |
+| /patients 文件上传 | A/patients/import-file、import | 服务端 CSV / XLSX 解析及整批校验，首次联系按 SLA，无手填截止字段 |
+
+前缀 A=/boruikang/admin，新增旅程接口全部 POST。变更需 id/version/request_id；退出不算正常结案，撤回本用途授权停止所有未结束旅程，安全事项可继续处置。

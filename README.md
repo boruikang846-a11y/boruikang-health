@@ -61,6 +61,10 @@ manager 可从侧栏“医院数据”预览并同步 Mock：2 位虚构患者�
 
 系统图解可从管理端 `/overview` 或登录页“了解整个系统与团队分工”打开。用户端保持介绍页，无患者业务接口。
 
+## HEALTH 2.0 当前全量口径
+
+[四层同步基线](docs/contracts/README.md)、[全旅程需求](docs/feature/journey-2.0.md)、[全旅程 API](docs/api/journey-2.0.md)、[当前原型](docs/demo-static/web/index.html)。已实现门诊与出院事件旅程、本人交接、报告快照、个案计划审核生成任务、跨旅程咨询/异常/投诉队列、医生查收、独立复诊核验、满意度与结案、暂停/退出/撤回授权。完整扫码自助入组、患者 H5 及独立 AI 计划等旧探索稿仍属后续设计。
+
 ## 文档与发布
 
 - [范围与验收标准](docs/feature/health-mvp.md)、[参考资料吸收](docs/project/reference-intake.md)
@@ -80,4 +84,4 @@ GitHub 通过 draft PR 交付，目标 `develop`；明确获得合并授权后�
 
 ## 本轮托管运营修正与后续边界
 
-[需求](docs/feature/managed-operations-1.4.md)、[API](docs/api/managed-operations-1.4.md)、[操作图解](docs/feature/managed-operations-1.4.html)。1.5 运营台账（患者池、邀约、预约到诊、服务包与方案、转诊、模板与短信登记、十项指标、工作台队列）见 [需求](docs/feature/operations-ledger-1.5.md)、[API](docs/api/operations-ledger-1.5.md)、[流程图解](docs/feature/operations-ledger-1.5.html)、[交互原型](docs/demo-static/web/admin/operations-ledger-1.5.html)。发版为全量口径：备份后清库，按 sql/DDL.sql → DML.sql → dev/DML.sql 重建。节点日期均人工确认；系统无自动诊断、用药调整或未经批准的医学阈值。患者侧业务与扫码自助入组未开放；微信身份只由工作人员核实后绑定（1.9）。筛查干预、上下转诊、完整患者全病程视图及服务包激活/履约仍待迭代，现有内容条目不代表全科室可执行知识规则。报告外发为人工交付凭证登记，没有自动发送。
+[需求](docs/feature/managed-operations-1.4.md)、[API](docs/api/managed-operations-1.4.md)、[操作图解](docs/feature/managed-operations-1.4.html)。1.5 运营台账（患者池、邀约、预约到诊、服务包与方案、转诊、模板与短信登记、十项指标、工作台队列）见 [需求](docs/feature/operations-ledger-1.5.md)、[API](docs/api/operations-ledger-1.5.md)、[流程图解](docs/feature/operations-ledger-1.5.html)、[交互原型](docs/demo-static/web/admin/operations-ledger-1.5.html)。发版为全量口径：备份后清库，按 sql/DDL.sql → DML.sql → dev/DML.sql 重建。节点日期均人工确认；系统无自动诊断、用药调整或未经批准的医学阈值。患者侧业务与扫码自助入组未开放；微信身份只由工作人员核实后绑定（1.9）。完整筛查干预与长期专病管理仍待迭代；现有转诊和服务包台账、门诊/出院旅程按对应 1.5 / 2.0 契约实施，现有内容条目不代表全科室可执行知识规则。报告外发为人工交付凭证登记，没有自动发送。

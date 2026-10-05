@@ -6,7 +6,7 @@
 
 代码与目录规范以本仓现有模块结构和已有代码的写法为准。Java 21、Spring Boot 4、MyBatis Example、PageHelper、React 18、Vite、Ant Design 5；禁止 Lombok、Swagger、properties 占位符。每个接口一个 Controller，POST 参数在专属 DTO body，API snake_case，DTO 不返回 Entity。
 
-需求 → HTML 原型 → 设计与契约 → 代码与 SQL，四层版本一致。医患业务基线见 docs/feature/health-mvp.md，当前增量以 docs/feature/wechat-channels-1.9.md 为准（1.8 文件导入见 docs/feature/screening-file-import-1.8.md、docs/feature/patient-file-import-1.8.md，1.7 随访 AI 见 docs/feature/followup-ai-1.7.md）（1.6 医生护士登录、1.5 台账、1.4 托管运营修正保留为基线）。HEALTH-USER 只做企业微信、小程序、Web 公开介绍，不提供患者业务功能；微信互动只是页面内的虚构演示。既往会议作为后台业务依据。
+需求 → HTML 原型 → 设计与契约 → 代码与 SQL，四层版本一致。当前全量口径与差异裁决见 docs/contracts/README.md；当前增量以 docs/feature/journey-2.0.md 为准，原型入口 docs/demo-static/web/index.html，机器契约 docs/contracts/health-2.0.json 从 Java、React 与 SQL 生成。医患业务基线见 docs/feature/health-mvp.md，保留 1.9 微信通道、1.8 文件导入、1.7 随访 AI、1.6 医护登录与 1.5 台账；1.4 的医护不登录口径已被 1.6 替代。HEALTH-USER 只做企业微信、小程序、Web 公开介绍，不提供患者业务功能；微信互动只是页面内的虚构演示。既往会议作为后台业务依据。
 
 医院全托管业务由我方运营团队登录处理；2026-09-30 起院方医生、护士也登录（用户拍板）：医生负责查看报告和审核随访意见，并查收随访结果、处置升级异常、审核发布宣教；护士与运营人员一样处理分配给自己的患者。临床建议必须经患者的责任医生本人在系统里审核通过后才能人工联系，运营人员不得代医生登记审核、查收或处置。未配置的外部服务不得显示已接通。数据库只使用虚构演示数据，禁止复制参考资料中的真实患者。审计只追加。
 

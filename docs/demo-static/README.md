@@ -1,3 +1,15 @@
+# HEALTH 2.0 当前实现原型
+
+[当前入口](web/index.html) · [完整交互](web/interactive.html) · [四层同步基线](../contracts/README.md) · [验证记录](../review/prototype-sync-2.0.md)。
+
+以 2026-10-05 已合并到 develop 的全旅程实现为准。统一患者旅程、诊后队列、微信双菜单、文件导入 SLA、临床本人审核与结案约束。原型全为虚构内存演示；正式 React / Java 持久化系统见仓库 README。HEALTH-USER 仅公开介绍。
+
+原型阶段、状态、请求字段、导航来自生成的 implementation-contract.js。变更代码或 SQL 后运行 `node tools/sync-implementation-contract.cjs --write`，默认不加 --write 为漂移检查。CI 同时执行三个原型行为测试。
+
+以下保留历史原型开发记录；3.x 是探索稿编号，尚未实现的扫码入组、患者 H5、独立 AI 计划和质量中心不属于当前交付范围。旧记录的运行包、本地地址及未推送状态不是当前状态。
+
+---
+
 # 患者上传与诊后主动干预原型3.3
 
 患者中心新增突出上传入口，完善首次联系日期、待核验授权、导入结果与旅程服务衔接。见 [开发顺序及上传说明](../plans/2026-10-05-patient-upload-3.3.md)。验证：node docs/demo-static/tests/patient-upload.test.cjs。
