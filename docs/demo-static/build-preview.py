@@ -14,7 +14,7 @@ args = parser.parse_args()
 web = Path(__file__).resolve().parent / "web"
 html = (web / "interactive.html").read_text(encoding="utf-8")
 css = (web / "interactive.css").read_text(encoding="utf-8")
-scripts = ["patient-import-files.js", "patient-import.js", "interactive.js"]
+scripts = ["patient-import-files.js", "patient-import.js", "quality-wecom.js", "platform-prototype.js", "screening-sheet-data.js", "screening-sheet.js", "screening-cycle.js", "screening-import.js", "care-cycle.js", "interactive.js"]
 html = html.replace('<link rel="stylesheet" href="interactive.css">', "<style>" + css + "</style>")
 for filename in scripts:
     js = (web / filename).read_text(encoding="utf-8")

@@ -1,0 +1,81 @@
+// Model and markup smoke checks; not a browser E2E test.
+process.chdir(require('path').resolve(__dirname, '../../..'));
+const fs=require('fs'),vm=require('vm'),assert=require('assert');
+const elements={};const listeners={};
+const context=vm.createContext({structuredClone,URLSearchParams,console,setTimeout:()=>0,clearTimeout:()=>{},location:{hash:''},window:{scrollTo(){},addEventListener(){}},document:{body:{dataset:{}},querySelector(s){return elements[s]??=(s==='#main h1'?{textContent:''}:{innerHTML:'',textContent:'',classList:{add(){},remove(){}}})},addEventListener(name,fn){(listeners[name]??=[]).push(fn)}}});
+for(const file of ['quality-wecom.js','platform-prototype.js','screening-sheet-data.js','screening-sheet.js','screening-cycle.js','screening-import.js','care-cycle.js','interactive.js'])vm.runInContext(fs.readFileSync('docs/demo-static/web/'+file,'utf8'),context);
+let count=0;
+for(const role of [1,2,3,4,5])for(const path of ['/wecom','/wecom?tab=access','/wecom?tab=receipts','/quality','/quality?tab=tests','/quality?tab=safety','/quality?tab=issues','/quality?tab=uat']){
+vm.runInContext(`account=person(${role});location.hash=${JSON.stringify('#'+path)};render()`,context);
+const html=elements['#main'].innerHTML;assert(html.length>0);
+if([3,4].includes(role)&&path.startsWith('/quality'))assert(!html.includes('质量保障中心'));
+if(role===5&&path.startsWith('/wecom'))assert(!html.includes('演示患者一'));
+count++;
+}
+vm.runInContext("account=person(1);location.hash='#/quality';render()",context);
+listeners.click[0]({target:{closest:()=>({dataset:{action:'qa-gate'}})}});
+assert(elements['#notice'].textContent.includes('发布阻断'));
+vm.runInContext("location.hash='#/wecom?tab=receipts';render()",context);
+listeners.click[0]({target:{closest:()=>({dataset:{action:'qa-send',id:'2003'}})}});
+assert(elements['#notice'].textContent.includes('已阻断'));
+console.log(`${count} role/route renders and 2 safety blocking checks passed`);
+for(const role of [1,2,3,4,5])for(const path of ['/ai-reports','/risk-review','/care-plans','/longitudinal','/analytics']){vm.runInContext(`account=person(${role});location.hash=${JSON.stringify('#'+path)};render()`,context);assert(elements['#main'].innerHTML.length);if(role===5)assert(!elements['#main'].innerHTML.includes('虚构出院报告 A'));count++;}
+vm.runInContext("account=person(4);location.hash='#/care-plans?patient=1001';render();platformAction('platform-generate',1001)",context);assert(elements['#notice'].textContent.includes('请先'));
+elements['#platform-report-note']={value:'核对虚构原报告'};
+vm.runInContext("platformAction('platform-report',1001);platformAction('platform-generate',1001)",context);
+assert(vm.runInContext('platformState().plans.length',context)===1);
+elements['#platform-plan-text']={value:vm.runInContext('platformState().plans[0].text',context)};elements['#platform-review-note']={value:'核对虚构报告，审核演示内容'};
+vm.runInContext("platformAction('platform-approve',1001)",context);assert(elements['#notice'].textContent.includes('仅责任医生'));
+vm.runInContext("account=person(6);platformAction('platform-approve',1001)",context);assert(vm.runInContext('platformState().plans[0].status',context)==='DRAFT');
+vm.runInContext("account=person(2);platformAction('platform-approve',1001)",context);assert(vm.runInContext('platformState().plans[0].status',context)==='APPROVED');
+vm.runInContext("location.hash='#/patient-demo?tab=plan';render();platformAction('platform-consent',0)",context);assert(elements['#main'].innerHTML.includes('版本 v1'));
+elements['#platform-plan-text'].value+='修订';vm.runInContext("account=person(4);platformAction('platform-save-plan',1001);render()",context);assert(vm.runInContext('platformState().plans[0].status',context)==='DRAFT');assert(elements['#main'].innerHTML.includes('暂无医生审核通过'));
+vm.runInContext("platformAction('platform-revoke',0)",context);assert(elements['#main'].innerHTML.includes('欢迎体验'));
+console.log('25 additional role/route checks; report prerequisites, owner review, approval visibility, version invalidation and consent revocation passed');
+elements['#dialog']={close(){},showModal(){}};
+for(const role of [1,2,3,4,5,6])for(const path of ['/screening','/screening?tab=network','/screening?tab=intervention','/screening?tab=review','/screening/5101']){vm.runInContext(`account=person(${role});location.hash=${JSON.stringify('#'+path)};render()`,context);assert(elements['#main'].innerHTML);if([5,6].includes(role))assert(!elements['#main'].innerHTML.includes('虚构筛查对象甲'));}
+vm.runInContext("account=person(4);screeningAction('screen-review',5101,{level:'RED',note:'越权尝试'})",context);assert(vm.runInContext("screeningState().rows[0].level",context)==='PENDING');
+vm.runInContext("account=person(2);screeningAction('screen-review',5101,{level:'RED',note:'虚构原心电复核依据'})",context);assert(vm.runInContext("screeningState().rows[0].level",context)==='RED');
+vm.runInContext("account=person(4);screeningAction('screen-book',5101,{at:'2026-10-05T10:00',note:'不能普通预约代替处置'})",context);assert(vm.runInContext("screeningState().rows[0].stage",context)==='INTERVENE');
+vm.runInContext("account=person(2);screeningAction('screen-handoff',5101,{at:'2026-10-02T15:00',note:'虚构医生承接与到诊凭证'})",context);assert(vm.runInContext("screeningState().rows[0].stage",context)==='HANDOFF');
+vm.runInContext("account=person(4);screeningAction('screen-arrive',5101,{note:'虚构到诊凭证已核实'})",context);
+vm.runInContext("account=person(4);screeningAction('screen-enroll',5101,{due:'2026-10-06T10:00',note:'越权入组'})",context);assert(vm.runInContext("screeningState().rows[0].stage",context)==='ARRIVED');
+vm.runInContext("account=person(2);screeningAction('screen-enroll',5101,{due:'2026-10-06T10:00',note:'医生确认虚构管理需求'})",context);
+assert(vm.runInContext("screeningState().rows[0].stage",context)==='ENROLLED');
+assert(vm.runInContext("demo.tasks.some(t=>t.patient===screeningState().rows[0].patient&&demo.records.some(r=>r.id===t.record&&r.patient===t.patient))",context));
+const patientCount=vm.runInContext('demo.patients.length',context);vm.runInContext("screeningAction('screen-enroll',5101,{due:'2026-10-06T10:00',note:'重复提交'})",context);assert(vm.runInContext('demo.patients.length',context)===patientCount);
+vm.runInContext("account=person(1);screeningAction('screen-sync');screeningAction('screen-sync')",context);assert(vm.runInContext('screeningState().rows.length',context)===5);
+vm.runInContext("account=person(3);screeningAction('screen-contact',5102,{result:'FAILED',note:'虚构未接通'})",context);assert(vm.runInContext("screeningState().rows[1].stage",context)==='INTERVENE');
+vm.runInContext("screeningAction('screen-contact',5102,{result:'FAILED',note:'虚构未接通',retry:'2026-10-03T10:00'})",context);assert(vm.runInContext("screeningState().rows[1].stage",context)==='RETRY');
+console.log('30 screening role/route checks; clinician stratification, critical handoff, enrollment lineage, idempotency and retry requirements passed');
+assert(vm.runInContext('screeningSheetData.records.length',context)===64);
+for(const [label,count] of [['高危',18],['危急',4],['中危',16],['低危',26]])assert(vm.runInContext(`screeningSheetData.records.filter(x=>x.risk===${JSON.stringify(label)}).length`,context)===count);
+assert(vm.runInContext('screeningSheetData.records.filter(x=>x.arrival===\'已到诊\').length',context)===52);
+assert(vm.runInContext('screeningSheetData.records.filter(x=>x.appointmentRecorded).length',context)===14);
+for(const role of [1,2,3,4,5,6])for(const path of ['/screening?tab=ledger','/screening?tab=reconcile','/screening/6101']){vm.runInContext(`account=person(${role});location.hash=${JSON.stringify('#'+path)};render()`,context);assert(elements['#main'].innerHTML);if([3,5,6].includes(role)&&path==='/screening/6101')assert(!elements['#main'].innerHTML.includes('演示对象001'));}
+vm.runInContext("account=person(1);location.hash='#/screening?tab=reconcile';render()",context);assert(elements['#main'].innerHTML.includes('暂停计算'));assert(elements['#main'].innerHTML.includes('85.94%'));assert(elements['#main'].innerHTML.includes('21.88%'));
+vm.runInContext("account=person(4);location.hash='#/screening/6101';render();sheetAction('sheet-contact',6101,{round:'1',result:'FAILED',note:'虚构未接通'})",context);assert(elements['#notice'].textContent.includes('下次联系'));
+vm.runInContext("sheetAction('sheet-doctor',6101,{note:'越权复核尝试'})",context);assert(!vm.runInContext('sheetState().records[0].doctorNote',context));
+vm.runInContext("sheetAction('sheet-contact',6101,{round:'1',result:'FAILED',note:'虚构未接通',next:'2026-10-07T10:00'})",context);assert(vm.runInContext('sheetState().records[0].notes.length',context)===1);
+console.log('18 source-ledger role/route checks; 64-row distribution, KPI discrepancy, physician permission and repeat-contact requirements passed');
+vm.runInContext("account=person(1);location.hash='#/screening';render()",context);
+for(const label of ['性别 / 年龄','报告结论','电话','虚构号码'])assert(elements['#main'].innerHTML.includes(label));
+assert(vm.runInContext("screeningSheetData.records.every(x=>['男','女','未填写'].includes(x.gender)&&/^0000000\\d{4}$/.test(x.phone)&&x.reportConclusion.startsWith('【虚构演示结论】'))",context));
+vm.runInContext("location.hash='#/screening/6101';render()",context);assert(elements['#main'].innerHTML.includes('不可用于联系'));assert(elements['#main'].innerHTML.includes('报告结论：'));
+console.log('Ledger and detail demographics, fictional phone and report labels passed');
+vm.runInContext("account=person(1);location.hash='#/data-ingestion';render();ingestAction('ingest-sample');ingestAction('ingest-confirm')",context);
+assert(vm.runInContext('ingestState().batches.at(-1).duplicates',context)===64);
+const importedCount=vm.runInContext('sheetState().records.length',context);
+vm.runInContext("ingestAction('ingest-external');ingestAction('ingest-confirm');ingestAction('ingest-confirm')",context);
+assert(vm.runInContext('sheetState().records.length',context)===importedCount+1);
+assert(vm.runInContext('ingestState().batches.at(-1).duplicates',context)===1);
+vm.runInContext("ingestAction('ingest-timeout')",context);assert(vm.runInContext('sheetState().records.length',context)===importedCount+1);
+const batchCount=vm.runInContext('ingestState().batches.length',context);vm.runInContext("account=person(4);ingestAction('ingest-sample');ingestAction('ingest-confirm')",context);assert(vm.runInContext('ingestState().batches.length',context)===batchCount);
+console.log('Preloaded actual Excel batch, 64-row duplicate replay, external Mock idempotency, timeout and import permissions passed');
+for(const role of [1,2,3,4,5,6])for(const path of ['/enrollment','/in-care','/in-care?tab=risk','/in-care?tab=plans','/in-care?tab=archive',...['invitations','appointments','packages','referrals','followups','alerts','revisits','knowledge'].map(t=>'/after-care?tab='+t)]){vm.runInContext(`account=person(${role});location.hash=${JSON.stringify('#'+path)};render()`,context);assert(elements['#main'].innerHTML);if(role===5)assert(!elements['#main'].innerHTML.includes('演示患者一'));}
+vm.runInContext("account=person(4);location.hash='#/enrollment';render();cycleAction('cycle-handoff',1001)",context);assert(!vm.runInContext('enrollmentRows().find(x=>x.id===1001).assigned',context));
+vm.runInContext("cycleAction('cycle-scan-patient',1001);cycleAction('cycle-verify',1001,{note:'虚构本人身份与授权已核实'});cycleAction('cycle-handoff',1001)",context);assert(vm.runInContext('enrollmentRows().find(x=>x.id===1001).assigned',context));
+const before=vm.runInContext('demo.patients.length',context);vm.runInContext("cycleAction('cycle-scan-patient',1001);cycleAction('cycle-handoff',1001)",context);assert(vm.runInContext('demo.patients.length',context)===before);
+vm.runInContext("cycleAction('cycle-revoke',1001);cycleAction('cycle-handoff',1001)",context);assert(!vm.runInContext('enrollmentRows().find(x=>x.id===1001).assigned',context));
+vm.runInContext("account=person(1);cycleAction('cycle-scan-patient',106101);cycleAction('cycle-verify',106101,{note:'虚构导入对象核验与本人授权',target:'NEW'});cycleAction('cycle-handoff',106101)",context);assert(vm.runInContext('enrollmentRows().find(x=>x.id===106101).assigned',context));assert(vm.runInContext("demo.patients.at(-1).risk",context)==='待评估');
+console.log('78 combined hub/role renders; service authorization, repeat-scan, revoke and imported-patient onboarding passed');

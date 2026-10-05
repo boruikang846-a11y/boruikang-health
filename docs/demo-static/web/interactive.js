@@ -21,8 +21,8 @@ const initial={
 };
 let demo=structuredClone(initial),account=null,current={path:'/login',query:new URLSearchParams()},noticeTimer;
 demo.accounts.forEach(a=>a.password='HealthDemo@2026!');
-const operations=[['/workbench','运营工作台'],['/screening','患者池'],['/patients','患者中心'],['/invitations','邀约记录'],['/appointments','预约到诊'],['/packages','服务包与方案'],['/referrals','转诊台账'],['/followups','随访工作台'],['/alerts','异常响应'],['/revisits','复诊跟踪'],['/knowledge','宣教内容'],['/channels','渠道管理'],['/reports','随访统计与复盘'],['/hospital','医院数据'],['/accounts','医护账号'],['/settings','运营设置'],['/overview','系统介绍']];
-const doctors=[['/doctor','医生工作台'],['/doctor/reports','患者报告'],['/doctor/reviews','随访意见审核'],['/doctor/results','随访结果查收'],['/doctor/alerts','异常处置'],['/patients','我的患者'],['/knowledge','宣教审核'],['/overview','系统介绍']];
+const operations=[['/enrollment','全量扫码服务入组'],['/in-care','诊中患者管理'],['/after-care','诊后主动干预管理'],['/workbench','运营工作台'],['/screening','诊前筛查中心'],['/data-ingestion','数据接入测试'],['/patients','患者中心'],['/invitations','邀约记录'],['/appointments','预约到诊'],['/packages','服务包与方案'],['/referrals','转诊台账'],['/followups','随访工作台'],['/alerts','异常响应'],['/revisits','复诊跟踪'],['/knowledge','宣教内容'],['/channels','渠道管理'],['/reports','随访统计与复盘'],['/hospital','医院数据'],['/accounts','医护账号'],['/ai-reports','报告解析复核'],['/risk-review','风险复核'],['/care-plans','AI 管理计划'],['/longitudinal','长期健康档案'],['/analytics','运营分析'],['/wecom','企业微信协作'],['/quality','质量保障中心'],['/settings','运营设置'],['/overview','系统介绍']];
+const doctors=[['/enrollment','扫码服务入组'],['/in-care','诊中患者管理'],['/after-care','诊后主动干预管理'],['/screening','诊前风险复核'],['/doctor','医生工作台'],['/doctor/reports','患者报告'],['/doctor/reviews','随访意见审核'],['/doctor/results','随访结果查收'],['/doctor/alerts','异常处置'],['/patients','我的患者'],['/knowledge','宣教审核'],['/ai-reports','报告解析复核'],['/risk-review','风险复核'],['/care-plans','AI 管理计划'],['/longitudinal','长期健康档案'],['/analytics','运营分析'],['/wecom','企业微信协作'],['/quality','医学安全与验收'],['/overview','系统介绍']];
 const $=s=>document.querySelector(s);
 const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const link=(label,path,cls='')=>'<a class="'+esc(cls)+'" href="#'+esc(path)+'">'+esc(label)+'</a>';
@@ -39,7 +39,7 @@ const patients=()=>demo.patients.filter(mine);
 const pool=()=>demo.pool.filter(x=>manager()||x.owner===account?.id);
 const tasks=()=>demo.tasks.filter(t=>mine(patient(t.patient)));
 const home=()=>account.role==='DOCTOR'?'/doctor':account.role==='PLATFORM_ADMIN'?'/settings':'/workbench';
-const menu=()=>account.role==='DOCTOR'?doctors:account.role==='PLATFORM_ADMIN'?[['/settings','接入设置'],['/overview','系统介绍']]:manager()?operations:operations.filter(([p])=>!['/channels','/accounts'].includes(p));
+const menu=()=>account.role==='DOCTOR'?doctors:account.role==='PLATFORM_ADMIN'?[['/settings','接入设置'],['/wecom','企业微信接入'],['/quality','质量保障中心'],['/overview','系统介绍']]:manager()?operations:operations.filter(([p])=>!['/channels','/accounts','/quality','/analytics','/data-ingestion'].includes(p));
 function toast(text){clearTimeout(noticeTimer);$('#notice').textContent=text;$('#notice').classList.add('visible');noticeTimer=setTimeout(()=>$('#notice').classList.remove('visible'),4500)}
 function go(path){if(location.hash==='#'+path)render();else location.hash=path}
 function audit(text,p=0){demo.audits.unshift({at:new Date().toLocaleString('zh-CN'),patient:Number(p),text:account.name+'：'+text})}
@@ -147,7 +147,7 @@ function collection(type,id,titleOverride=''){
   }
   return page(titleOverride||info[0],info[1],extra+'<div class="toolbar">'+(canOperate()?button('新增'+info[0],actions[type],'','primary'):'')+link('查看患者关联记录','/patients','btn')+'</div>'+card('',table(['患者','服务记录','状态','操作'],rows.map(x=>[patientCell(x.patient),esc(x.name||x.at||x.direction+' · '+x.target),tag(x.status),link('详情与下一步','/'+type+'/'+x.id,'btn')]))));
 }
-function screening(){
+function legacyScreening(){
   return page('患者池','医院 Mock 或人工补充的筛查对象，人工判定后进入建档流程。','<div class="toolbar">'+(canOperate()?button('补充筛查对象','new-pool','','primary'):'')+'</div>'+card('',table(['筛查对象','来源','判定','下一步'],pool().map(x=>[esc(x.name),esc(x.source),tag(x.status),x.status==='ENROLLED'?link('查看已建档患者','/patients/'+x.patient,'btn'):canOperate()?button('判定并建档','enroll-pool',x.id,'primary'):'—'])))+'<div class="note">演示对象均为虚构。高危判定需要工作人员登记依据，没有自动医学阈值。</div>');
 }
 function knowledge(){
@@ -184,17 +184,21 @@ function forbidden(){return page('当前角色无权访问','请返回自己的�
 function notFound(){return page('没有找到这个原型页面','可从流程总览进入现有页面。',link('打开完整流程','/flow','btn primary'))}
 function render(){
   const raw=location.hash.slice(1)||'/login',pos=raw.indexOf('?');current={path:pos<0?raw:raw.slice(0,pos),query:new URLSearchParams(pos<0?'':raw.slice(pos+1))};
-  const publicRoute=['/login','/flow','/overview','/public'].includes(current.path);
+  const publicRoute=['/login','/flow','/overview','/public','/patient-demo'].includes(current.path);
   if(!account&&!publicRoute){go('/login');return}
   const allowed=publicRoute||menu().some(([p])=>current.path===p||current.path.startsWith(p+'/'));
-  $('#header').innerHTML='<div class="brand">BGSSAI Health<small>完整交互原型 · 1.8 · 虚构演示数据</small></div><div class="row">'+link('页面流程','/flow')+(account?'<span>'+esc(account.name+' · '+roles[account.role])+'</span>'+button('修改演示密码','password')+button('切换角色','logout'):link('角色入口','/login'))+'</div>';
-  $('#nav').innerHTML=account?'<small>'+esc(roles[account.role])+'</small>'+menu().map(([p,l])=>link(l,p,current.path===p||current.path.startsWith(p+'/')?'active':'')).join(''):link('角色入口','/login')+link('完整页面流程','/flow')+link('系统公开介绍','/public');
+  $('#header').innerHTML='<div class="brand">BGSSAI Health<small>全量扫码 · 诊中管理 · 诊后干预 · 3.0 原型 · 虚构演示数据</small></div><div class="row">'+link('患者 H5 演示','/patient-demo')+link('页面流程','/flow')+(account?'<span>'+esc(account.name+' · '+roles[account.role])+'</span>'+button('修改演示密码','password')+button('切换角色','logout'):link('角色入口','/login'))+'</div>';
+  $('#nav').innerHTML=account?'<small>'+esc(roles[account.role])+'</small>'+careHubNav():link('角色入口','/login')+link('完整页面流程','/flow')+link('系统公开介绍','/public');
   let html='';
   if(!allowed)html=forbidden();
-  else if(current.path==='/login')html=login();
+  else if(current.path==='/patient-demo')html=patientDemoPage();
+  else if(current.path==='/login')html=platformEntry()+login();
   else if(current.path==='/flow')html=flow();
-  else if(current.path==='/overview'||current.path==='/public')html=overview(current.path==='/public');
-  else if(current.path==='/workbench'||current.path==='/doctor')html=dashboard(current.path==='/doctor');
+  else if(current.path==='/overview'||current.path==='/public')html=platformEntry()+overview(current.path==='/public');
+  else if(current.path==='/workbench'||current.path==='/doctor')html=collaborationBanner()+dashboard(current.path==='/doctor');
+  else if(current.path==='/enrollment')html=enrollmentPage();
+  else if(current.path==='/in-care')html=inCarePage();
+  else if(current.path==='/after-care')html=afterCarePage();
   else if(current.path==='/patients')html=patientList();
   else if(/^\/patients\/\d+$/.test(current.path))html=patientDetail(current.path.split('/').pop());
   else if(current.path==='/followups')html=taskList();
@@ -207,10 +211,14 @@ function render(){
   else if(/^\/(doctor\/)?alerts\/\d+$/.test(current.path))html=alertDetail(current.path.split('/').pop(),current.path.startsWith('/doctor'));
   else if(current.path==='/revisits')html=collection('appointments',undefined,'复诊跟踪');
   else if(/^\/(invitations|appointments|packages|referrals)(\/\d+)?$/.test(current.path))html=collection(current.path.split('/')[1],current.path.split('/')[2]);
-  else if(current.path==='/screening')html=screening();
+  else if(current.path==='/data-ingestion')html=ingestionPage();
+  else if(current.path==='/screening'||/^\/screening\/\d+$/.test(current.path))html=screening();
   else if(current.path==='/knowledge')html=knowledge();
   else if(current.path==='/hospital')html=hospital();
   else if(current.path==='/accounts')html=accounts();
+  else if(['/ai-reports','/risk-review','/care-plans','/longitudinal','/analytics'].includes(current.path))html=platformModulePage();
+  else if(current.path==='/wecom')html=wecomPage();
+  else if(current.path==='/quality')html=qualityPage();
   else if(current.path==='/settings')html=settings();
   else if(current.path.startsWith('/reports'))html=reports();
   else if(current.path==='/channels')html=page('渠道管理','渠道介绍仅展示系统，不采集或绑定患者。',card('',table(['渠道','状态','打开'],demo.channels.map(c=>[esc(c.name),tag(c.active?'启用':'停用'),link('查看公开介绍','/public','btn')+button(c.active?'停用渠道':'启用渠道','toggle-channel',c.id)]))));
@@ -235,7 +243,7 @@ function requireAction(kind,id){
 document.addEventListener('click',event=>{
   const b=event.target.closest('[data-action]');if(!b)return;
   const action=b.dataset.action,id=b.dataset.id||'';
-  if(action.startsWith('patient-import-'))return;
+  if(action.startsWith('patient-import-')||action.startsWith('qa-')||action.startsWith('platform-')||action.startsWith('screen-')||action.startsWith('sheet-')||action.startsWith('ingest-')||action.startsWith('cycle-'))return;
   if(action==='close'){$('#dialog').close();return}
   if(action==='reset'){demo=structuredClone(initial);demo.accounts.forEach(a=>a.password='HealthDemo@2026!');lastPatientImport=null;account=null;go('/login');render();toast('已重置虚构演示数据。');return}
   if(action==='login'){const a=person($('#login-'+id).value);if(!a?.active){toast('该演示账号已停用。');return}account=a;go(home());return}
@@ -286,6 +294,7 @@ document.addEventListener('click',event=>{
 });
 document.addEventListener('submit',event=>{
   const f=event.target.closest('[data-form]');if(!f)return;event.preventDefault();
+  if(f.dataset.form.startsWith('screen-')||f.dataset.form.startsWith('sheet-')||f.dataset.form.startsWith('cycle-'))return;
   const action=f.dataset.form,id=f.dataset.id||'',v=Object.fromEntries(new FormData(f));Object.keys(v).forEach(k=>v[k]=v[k].trim());
   if(action==='search'){go('/patients?q='+encodeURIComponent(v.q)+'&risk='+encodeURIComponent(v.risk));return}
   if(Array.from(f.elements).some(e=>e.required&&e.name&&e.type!=='checkbox'&&!v[e.name])){toast('请填写完整内容，不能只输入空格。');return}
