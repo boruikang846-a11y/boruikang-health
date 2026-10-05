@@ -9,12 +9,12 @@ import App from './App'
 
 createRoot(document.getElementById('root')).render(
   <ConfigProvider locale={zhCN} theme={{
-    token: { colorPrimary: '#299e60', colorInfo: '#299e60', colorText: '#1f2f47', colorTextSecondary: '#4b5d78', borderRadius: 6, borderRadiusLG: 8,
-      colorBgContainer: 'rgba(255,255,255,0.55)', colorBgElevated: 'rgba(255,255,255,0.88)', colorBgLayout: 'transparent', colorBorderSecondary: 'rgba(255,255,255,0.7)',
-      fontFamily: 'ui-sans-serif, -apple-system, BlinkMacSystemFont, "SF Pro Text", Inter, "PingFang SC", "Microsoft YaHei", sans-serif' },
-    components: { Layout: { bodyBg: 'transparent', siderBg: 'transparent', headerBg: 'transparent', triggerBg: 'transparent', triggerColor: '#4b5d78' },
-      Menu: { itemBg: 'transparent', subMenuItemBg: 'transparent', itemSelectedBg: 'rgba(47,111,237,0.14)', itemSelectedColor: '#1f55c8', itemHoverBg: 'rgba(255,255,255,0.6)', itemHoverColor: '#1f55c8', itemBorderRadius: 14, itemHeight: 44, itemMarginInline: 0, itemMarginBlock: 6, activeBarBorderWidth: 0 },
-      Card: { headerBg: 'transparent' }, Table: { headerBg: 'transparent', rowHoverBg: 'rgba(255,255,255,0.55)' } },
+    token: { colorPrimary: '#299e60', colorInfo: '#299e60', colorText: '#26343c', colorTextSecondary: '#647580', borderRadius: 4, borderRadiusLG: 5,
+      colorBgContainer: '#ffffff', colorBgElevated: '#ffffff', colorBgLayout: '#f1f5f5', colorBorder: '#dce5e1', colorBorderSecondary: '#e7edeb',
+      fontFamily: '"PingFang SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, sans-serif' },
+    components: { Layout: { bodyBg: '#f1f5f5', siderBg: '#26303f', headerBg: '#1d2632', triggerBg: '#334256', triggerColor: '#ffffff' },
+      Menu: { itemBg: 'transparent', subMenuItemBg: 'transparent', itemColor: '#c7d0da', itemSelectedBg: '#299e60', itemSelectedColor: '#ffffff', itemHoverBg: '#334256', itemHoverColor: '#ffffff', itemBorderRadius: 3, itemHeight: 42, itemMarginInline: 0, itemMarginBlock: 4, activeBarBorderWidth: 0 },
+      Card: { headerBg: '#ffffff', headerHeight: 50 }, Table: { headerBg: '#f4f7f6', rowHoverBg: '#f0f9f3' } },
   }}>
     <AntApp><BrowserRouter><App /></BrowserRouter></AntApp>
   </ConfigProvider>,

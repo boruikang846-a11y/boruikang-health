@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { Link, useNavigate, useOutletContext, useParams } from 'react-router-dom'
+import React, { useEffect, useState } from 'react'
+import { Link, useNavigate, useOutletContext, useParams, useSearchParams } from 'react-router-dom'
 import { Alert, Button, Card, DatePicker, Descriptions, Form, Input, InputNumber, Select, Space, Statistic, Switch, Table, Tabs, Tag, Timeline } from 'antd'
 import { ArrowRightOutlined, PlusOutlined, ReloadOutlined, TeamOutlined, ScheduleOutlined, AlertOutlined, ClockCircleOutlined, UploadOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
@@ -19,6 +19,8 @@ import { fileImportResult } from './fileImport'
 
 const lifecycles = ['ENROLLED', 'CONTACTED', 'BOOKED', 'ARRIVED', 'MANAGING', 'REVISIT_DUE', 'PAUSED', 'TRANSFERRED', 'LOST', 'CLOSED']
 const scenes = ['ECG_NETWORK', 'EXAM', 'COMMUNITY_SCREENING', 'PRIMARY_REFERRAL', 'OUTPATIENT', 'INPATIENT', 'DISCHARGE', 'CAMPAIGN', 'MANUAL']
+const patientCategories = [{ key: 'ALL', label: '全部患者' }, { key: 'OUTPATIENT', label: '门诊患者' }, { key: 'INPATIENT', label: '住院患者' }, { key: 'DISCHARGED', label: '出院患者' }]
+const patientTypeOptions = options(['OUTPATIENT', 'INPATIENT', 'DISCHARGED']).concat({ value: 'UNKNOWN', label: '未指定' })
 export function Dashboard() {
   const account = useOutletContext()
   const state = useLoad(() => api('/dashboard'))
@@ -60,7 +62,7 @@ function StaffFields({ staff, clinicians, disabled }) {
     <Form.Item name="owner_id" label="负责人（运营人员或护士）" rules={required}><Select disabled={disabled} options={ownerOptions(staff)} /></Form.Item></div>
 }
 function ProfileFields({ orgs, clinicians }) {
-  return <><div className="form-grid"><Form.Item name="patient_type" label="患者类型"><Select options={options(['OUTPATIENT', 'INPATIENT', 'DISCHARGED', 'UNKNOWN'])} /></Form.Item><Form.Item name="source_scene" label="来源场景"><Select options={options(scenes)} /></Form.Item>
+  return <><div className="form-grid"><Form.Item name="patient_type" label="患者类型"><Select options={patientTypeOptions} /></Form.Item><Form.Item name="source_scene" label="来源场景"><Select options={options(scenes)} /></Form.Item>
     <Form.Item name="org_id" label="来源机构"><Select allowClear options={(orgs || []).filter(o => o.active).map(o => ({ value: o.id, label: o.name }))} /></Form.Item><Form.Item name="referrer_id" label="转介医生"><Select allowClear options={doctorOptions(clinicians)} /></Form.Item>
     <Form.Item name="id_card" label="证件号"><Input maxLength={18} /></Form.Item><Form.Item name="birth_date" label="出生日期"><DatePicker style={{ width: '100%' }} /></Form.Item>
     <Form.Item name="emergency_contact" label="紧急联系人"><Input maxLength={80} /></Form.Item><Form.Item name="emergency_phone" label="紧急联系电话"><Input maxLength={24} /></Form.Item>
@@ -71,48 +73,58 @@ function ProfileFields({ orgs, clinicians }) {
 export function Patients() {
   const account = useOutletContext()
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const category = patientCategories.some(item => item.key === searchParams.get('category')) ? searchParams.get('category') : 'ALL'
   const [page, setPage] = useState(0)
   const [filters, setFilters] = useState({})
   const [create, setCreate] = useState(false)
   const [fileImportOpen, setFileImportOpen] = useState(false)
   const [importResult, setImportResult] = useState(null)
-  const state = useLoad(() => api('/patients/query', { page, size: 10, ...filters }), [page, JSON.stringify(filters)])
+  useEffect(() => { setPage(0) }, [category])
+  const state = useLoad(() => api('/patients/query', { page, size: 10, ...filters, patient_type: category === 'ALL' ? undefined : category }), [page, category, JSON.stringify(filters)])
+  const summary = useLoad(() => api('/patients/summary'))
   const staff = useLoad(() => api('/staff'))
   const clinicians = useLoad(() => api('/clinicians'))
   const orgs = useLoad(() => api('/orgs'))
   const filter = (key, value) => { setFilters(previous => ({ ...previous, [key]: value === '' ? undefined : value })); setPage(0) }
   const doctor = account.role_code === 'DOCTOR'
-  return <><PageTitle title={doctor ? '我的患者' : '患者中心'} subtitle={doctor ? '您作为责任医生的患者。档案只读，报告与随访意见在左侧对应页面处理。' : '医院提供资料，责任医生负责医学判断，运营人员和护士负责日常随访。'} extra={!doctor && <Space wrap><Button icon={<UploadOutlined />} onClick={() => setFileImportOpen(true)}>文件批量导入</Button><Button type="primary" icon={<PlusOutlined />} onClick={() => setCreate(true)}>新建患者</Button></Space>} />
+  return <><PageTitle title={doctor ? '我的患者' : '患者中心'} subtitle={doctor ? '您作为责任医生的患者。档案只读，报告与随访意见在左侧对应页面处理。' : '统一管理门诊、住院与出院患者档案，承接医院资料和文件导入，分派责任医生与负责人。'} extra={!doctor && <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreate(true)}>新建患者</Button>} />
+    <Tabs className="patient-category-tabs" activeKey={category} items={patientCategories} onChange={value => { setPage(0); setSearchParams(previous => { const next = new URLSearchParams(previous); if (value === 'ALL') next.delete('category'); else next.set('category', value); return next }) }} />
+    <LoadState state={summary}>{data => <div className="patient-metrics">{[
+      ['可见患者', data.patient_count, '当前账号可见的健康档案'], ['待评估', data.unknown_risk_count, '等待责任医生评估'],
+      ['高风险', data.high_risk_count, '高风险及重点关注患者'], ['文件导入', data.file_import_count, '已通过文件导入建立的档案'],
+    ].map(([label, value, detail]) => <Card key={label}><Statistic title={label} value={value} /><small>{detail}</small></Card>)}</div>}</LoadState>
+    {!doctor && <section className="patient-import-entry"><div><h3>上传门诊、住院或出院患者名单</h3><p>Excel / CSV 上传 → 逐行校验与查重 → 分派医生和负责人 → 确认建档 → 核验授权与旅程服务。</p></div><Button type="primary" icon={<UploadOutlined />} onClick={() => setFileImportOpen(true)}>文件批量导入</Button></section>}
     {importResult && <Alert className="mb" type="success" showIcon closable onClose={() => setImportResult(null)} message={'批次 ' + importResult.import_batch + '：新增 ' + importResult.created + ' 条，跳过 ' + importResult.skipped + ' 条'} description={importResult.messages.length ? <ul>{importResult.messages.map((message, index) => <li key={index}>{message}</li>)}</ul> : null} />}
     {fileImportOpen && <FileImportDialog title="文件批量导入患者档案" columns={patientImportColumns} parseFile={parsePatientFile} createTemplate={createPatientTemplate} templateName="患者中心导入模板.xlsx"
       description="姓名、年龄、联系电话、科室、病种/管理原因必填。建议填写来源编号或证件号用于跨批次去重；手机号不会合并档案。确认后批量建档，风险待评估。"
-      initialValues={{ patient_type: 'UNKNOWN', source_scene: 'MANUAL', outreach: true, owner_id: account.user_id }} onClose={() => setFileImportOpen(false)} onSubmit={async (values, preview, importBatch, file) => {
+      initialValues={{ patient_type: category === 'ALL' ? 'UNKNOWN' : category, source_scene: 'MANUAL', outreach: true, owner_id: account.user_id }} onClose={() => setFileImportOpen(false)} onSubmit={async (values, preview, importBatch, file) => {
         const response = await uploadPatientFile({ ...values, import_batch: importBatch }, file)
-        setImportResult(fileImportResult(response, preview.entries)); state.reload()
+        setImportResult(fileImportResult(response, preview.entries)); state.reload(); summary.reload(); return response
       }}><div className="form-grid">
         <LoadState state={clinicians}>{data => <Form.Item name="doctor_id" label="统一责任医生" rules={required}><Select options={doctorOptions(data)} /></Form.Item>}</LoadState>
         <LoadState state={staff}>{data => <Form.Item name="owner_id" label="统一负责人" rules={required}><Select disabled={account.role_code !== 'MANAGER'} options={ownerOptions(data)} /></Form.Item>}</LoadState>
-        <Form.Item name="patient_type" label="患者类型" rules={required}><Select options={options(['OUTPATIENT', 'INPATIENT', 'DISCHARGED', 'UNKNOWN'])} /></Form.Item>
+        <Form.Item name="patient_type" label="患者类型" rules={required}><Select options={patientTypeOptions} /></Form.Item>
         <Form.Item name="source_scene" label="来源场景" rules={required}><Select options={options(scenes)} /></Form.Item>
         <LoadState state={orgs}>{data => <Form.Item name="org_id" label="来源机构"><Select allowClear options={data.filter(org => org.active).map(org => ({ value: org.id, label: org.name }))} /></Form.Item>}</LoadState>
       </div><Form.Item name="outreach" label="建档后开出首次联系任务（按 SLA 计算截止）" valuePropName="checked"><Switch /></Form.Item>
     </FileImportDialog>}
-    <Card><div className="toolbar"><Input.Search placeholder="搜索患者姓名" allowClear onSearch={value => filter('keyword', value)} style={{ width: 200 }} />
+    <Card><div className="patient-list-title"><h2>患者清单 <small className="muted">{state.data?.total_size ?? '—'} 位</small></h2><span className="muted">按当前账号权限展示</span></div><div className="toolbar"><Input.Search placeholder="搜索患者姓名" allowClear onSearch={value => filter('keyword', value)} style={{ width: 200 }} />
       <Select aria-label="风险筛选" placeholder="全部风险" allowClear style={{ width: 130 }} options={options(['UNKNOWN', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'])} onChange={value => filter('risk_level', value)} />
       <Select aria-label="阶段" placeholder="全部阶段" allowClear style={{ width: 130 }} options={options(lifecycles)} onChange={value => filter('lifecycle', value)} />
       <Select aria-label="来源场景" placeholder="全部来源" allowClear style={{ width: 140 }} options={options(scenes)} onChange={value => filter('source_scene', value)} />
       {account.role_code === 'MANAGER' && <LoadState state={staff}>{data => <Select aria-label="负责人" placeholder="全部负责人" allowClear style={{ width: 140 }} options={data.map(x => ({ value: x.user_id, label: x.real_name }))} onChange={value => filter('owner_id', value)} />}</LoadState>}
       <Input.Search placeholder="标签" allowClear onSearch={value => filter('tag', value)} style={{ width: 140 }} />
       <Space><Switch onChange={value => filter('overdue', value || undefined)} />有逾期</Space><Space><Switch onChange={value => filter('open_alert', value || undefined)} />有异常</Space>
-      <Button icon={<ReloadOutlined />} onClick={state.reload}>刷新</Button></div>
+      <Button icon={<ReloadOutlined />} onClick={() => { state.reload(); summary.reload() }}>刷新</Button></div>
       <DataTable state={state} page={page} setPage={setPage} columns={[
         { title: '患者 / 编号', dataIndex: 'name', render: (value, row) => <Link to={'/patients/' + row.id}><strong>{value}</strong><div className="muted">#{row.id} {row.tags?.map(t => <Tag key={t}>{t}</Tag>)}</div></Link> },
         { title: '性别 / 年龄', render: (_, row) => (names[row.gender] || '未填写') + ' / ' + row.age + ' 岁' },
-        { title: '科室 / 病种', dataIndex: 'department', render: (value, row) => <>{value}<div className="muted">{row.disease}</div></> },
-        { title: '来源', render: (_, row) => <>{names[row.source_scene] || '—'}<div className="muted">{orgs.data?.find(o => o.id === row.org_id)?.name || ''}</div></> },
-        { title: '风险分层', dataIndex: 'risk_level', render: value => <Status value={value} /> },
-        { title: '阶段', dataIndex: 'lifecycle', render: (value, row) => <><Status value={value} /><div className="muted">最近联系 {dateText(row.last_contact_at)}</div></> },
+        { title: '科室 / 管理原因', dataIndex: 'department', render: (value, row) => <>{value}<div className="muted">{row.disease}</div></> },
         { title: '联系电话', dataIndex: 'phone' },
+        { title: '风险 / 阶段', render: (_, row) => <><Status value={row.risk_level} /><div><Status value={row.lifecycle} /></div></> },
+        { title: '责任医生 / 负责人', render: (_, row) => <>{clinicians.data?.find(item => item.id === row.doctor_id)?.name || '待关联'}<div className="muted">{staff.data?.find(item => item.user_id === row.owner_id)?.real_name || '待分配'}</div></> },
+        { title: '来源', render: (_, row) => <>{({ FILE_IMPORT: '文件导入', HOSPITAL_MOCK: '模拟医院接口', MANUAL: '人工录入' })[row.source_system] || names[row.source_scene] || '—'}<div className="muted">{orgs.data?.find(o => o.id === row.org_id)?.name || names[row.source_scene]}</div></> },
         { title: '操作', render: (_, row) => <Link to={'/patients/' + row.id}>查看档案</Link> },
       ]} />
     </Card>
@@ -135,8 +147,19 @@ function TimelineTab({ id }) {
   const color = { TASK: 'blue', CONTACT: 'orange', INVITATION: 'purple', APPOINTMENT: 'green', RECORD: 'gray', REFERRAL: 'cyan', ENROLLMENT: 'gold', MESSAGE: 'default', MEDICATION: 'lime', AUDIT: 'default', PATIENT: 'blue', CONSENT: 'green', WECHAT: 'green' }
   return <LoadState state={state}>{data => <><Timeline items={data.events.map((e, i) => ({ key: i, color: color[e.kind] || 'gray', children: <div><strong>{e.title}</strong> <Status value={e.status} /><div className="muted">{dateText(e.at)} · {e.kind}</div>{e.detail && <p className="pre-wrap">{e.detail}</p>}</div> }))} />{data.truncated && <p className="muted">仅显示最近 200 条。</p>}</>}</LoadState>
 }
+function PatientJourneys({ id }) {
+  const [page, setPage] = useState(0)
+  const state = useLoad(() => api('/journeys/query', { patient_id: Number(id), page, size: 10 }), [id, page])
+  return <><div className="toolbar"><Link to={'/journeys?patient=' + id}>查看本患者旅程与计划 →</Link></div><DataTable state={state} page={page} setPage={setPage} columns={[
+    { title: '就诊事件', dataIndex: 'event_key' }, { title: '路径', dataIndex: 'kind', render: value => value === 'OUTPATIENT' ? '门诊旅程' : '住院与出院旅程' },
+    { title: '阶段', render: (_, j) => j.steps.find(s => s.code === j.current_step)?.title || '旅程结束' },
+    { title: '状态', dataIndex: 'status', render: value => ({ INTAKE: '待负责人接收', ACTIVE: '服务进行中', PAUSED: '已暂停', EXITED: '已退出', CLOSED: '本次服务已结案' })[value] },
+    { title: '操作', render: (_, j) => <Link to={'/journeys/' + j.id}>办理旅程</Link> },
+  ]} /></>
+}
 export function PatientDetail() {
   const { id } = useParams()
+  const [detailSearch, setDetailSearch] = useSearchParams()
   const account = useOutletContext()
   const [edit, setEdit] = useState(false)
   const [consent, setConsent] = useState(false)
@@ -149,7 +172,7 @@ export function PatientDetail() {
   const [medication, setMedication] = useState(null)
   const [message, setMessage] = useState(false)
   const [action, setAction] = useState(null)
-  const [tab, setTab] = useState('timeline')
+  const tab = detailSearch.get('tab') || 'records'
   const [page, setPage] = useState(0)
   const [revision, setRevision] = useState(0)
   const [report, setReport] = useState(null)
@@ -181,8 +204,8 @@ export function PatientDetail() {
       { key: 'tags', label: '标签', children: patient.tags?.length ? patient.tags.map(t => <Tag key={t}>{t}</Tag>) : '—', span: 2 },
       { key: 'note', label: '内部备注', children: patient.note || '暂无', span: 2 },
     ]} /></Card>
-    <Card><Tabs activeKey={tab} onChange={value => { setTab(value); setPage(0) }} items={[{ key: 'timeline', label: '时间轴' }, { key: 'records', label: '就诊与健康记录' }, { key: 'tasks', label: '服务任务' }, { key: 'invitations', label: '邀约' }, { key: 'appointments', label: '预约到诊' }, { key: 'enrollments', label: '服务实例' }, { key: 'medications', label: '用药' }, { key: 'referrals', label: '转诊' }, { key: 'message-logs', label: '已发消息' }, { key: 'wecom', label: '企业微信' }, { key: 'official-account', label: '公众号' }, { key: 'messages', label: '沟通记录' }, { key: 'audits', label: '操作留痕' }]} />
-      {tab === 'timeline' ? <TimelineTab id={id} key={revision} /> : tab === 'tasks' ? <Tasks patientId={Number(id)} compact /> : tab === 'wecom' || tab === 'official-account' ? <PatientWechat key={tab} patientId={Number(id)} provider={tab === 'wecom' ? 'WE_COM' : 'WECHAT_OFFICIAL'} readOnly={doctor} /> : <>{tab === 'medications' && !doctor && <div className="toolbar"><Button icon={<PlusOutlined />} onClick={() => setMedication({ status: 'ACTIVE', source: 'HOSPITAL_RECORD', adherence: 'UNKNOWN' })}>登记用药</Button></div>}
+    <Card><Tabs activeKey={tab} onChange={value => { setDetailSearch({ tab: value }); setPage(0) }} items={[{ key: 'timeline', label: '时间轴' }, { key: 'records', label: '就诊与健康记录' }, { key: 'journeys', label: '就诊旅程' }, { key: 'tasks', label: '服务任务' }, { key: 'invitations', label: '邀约' }, { key: 'appointments', label: '预约到诊' }, { key: 'enrollments', label: '服务实例' }, { key: 'medications', label: '用药' }, { key: 'referrals', label: '转诊' }, { key: 'message-logs', label: '已发消息' }, { key: 'wecom', label: '企业微信' }, { key: 'official-account', label: '公众号' }, { key: 'messages', label: '沟通记录' }, { key: 'audits', label: '操作留痕' }]} />
+      {tab === 'journeys' ? <PatientJourneys id={id} /> : tab === 'timeline' ? <TimelineTab id={id} key={revision} /> : tab === 'tasks' ? <Tasks patientId={Number(id)} compact /> : tab === 'wecom' || tab === 'official-account' ? <PatientWechat key={tab} patientId={Number(id)} provider={tab === 'wecom' ? 'WE_COM' : 'WECHAT_OFFICIAL'} readOnly={doctor} /> : <>{tab === 'medications' && !doctor && <div className="toolbar"><Button icon={<PlusOutlined />} onClick={() => setMedication({ status: 'ACTIVE', source: 'HOSPITAL_RECORD', adherence: 'UNKNOWN' })}>登记用药</Button></div>}
       <DataTable state={history} page={page} setPage={setPage} columns={
         tab === 'records' ? [
           { title: '记录类型', dataIndex: 'record_type', render: value => <Status value={value} /> }, { title: '发生时间', dataIndex: 'occurred_at', render: dateText },

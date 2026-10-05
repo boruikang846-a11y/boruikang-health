@@ -55,7 +55,7 @@ function Login({ onLogin, account }) {
     <div><div className="eyebrow">CONTINUOUS CARE</div><h1>每一次随访，<br />都有下文。</h1><p>连接患者、医生与健康管理团队。<br />从入组到复诊，让院外服务有记录、可跟踪。</p>
       <div className="login-steps"><span>医生看报告</span><span>审核随访意见</span><span>团队持续跟进</span></div></div>
     <small>苏州博瑞康医疗科技有限公司 · 医患运营管理平台</small>
-  </section><section className="login-panel"><Card bordered={false}><Tag color="blue">医护与运营团队</Tag><h2>登录工作台</h2><p className="muted">使用分配给你的工作账号登录</p>
+  </section><section className="login-panel"><Card bordered={false}><Tag color="green">医护与运营团队</Tag><h2>登录工作台</h2><p className="muted">使用分配给你的工作账号登录</p>
     {error && <Alert type="error" showIcon message={error} className="mb" />}
     <Form layout="vertical" onFinish={async values => {
       if (busy) return; setBusy(true); setError(null)
@@ -83,15 +83,15 @@ function Shell({ account, logout }) {
   const [password, setPassword] = useState(false)
   const visible = menuFor(account.role_code)
   const selected = visible.map(([path]) => path).filter(path => location.pathname === path || location.pathname.startsWith(path + '/')).sort((a, b) => b.length - a.length)[0]
-  return <Layout className="app-shell"><Layout.Sider width={222} breakpoint="lg" collapsedWidth={64} className="sidebar">
-    <Link className="brand" to={visible[0][0]}><HeartOutlined /><span>博瑞康 <b>Health</b></span></Link>
+  return <Layout className="app-shell"><header className="topbar">
+    <Link className="brand" to={home(account.role_code)}><HeartOutlined /><span>博瑞康 <b>Health</b></span><small>医患运营管理平台</small></Link>
+    <Space className="account-actions"><Tag>{names[account.role_code]}</Tag><Avatar size="small">{account.real_name?.slice(0, 1)}</Avatar><span className="account-name">{account.real_name}</span><Button type="text" icon={<KeyOutlined />} onClick={() => setPassword(true)}>修改密码</Button><Button type="text" icon={<LogoutOutlined />} onClick={logout}>退出</Button></Space>
+  </header><Layout className="workspace"><Layout.Sider width={220} breakpoint="lg" collapsedWidth={64} className="sidebar">
     <div className="nav-caption">{account.role_code === 'DOCTOR' ? '医生工作台' : '院外连续服务'}</div>
     <Menu mode="inline" selectedKeys={[selected]} items={visible.map(([path, title, Icon]) => ({
       key: path, icon: <Icon />, label: <Link to={path}>{title}</Link>,
     }))} /><div className="sidebar-foot"><span className="online-dot" /> 医患协作 / 2.0</div>
-  </Layout.Sider><Layout><header className="topbar"><span className="muted">医患运营管理平台 <span className="topbar-divider">/</span> 工作空间</span>
-    <Space><Tag>{names[account.role_code]}</Tag><Avatar size="small" style={{ background: '#e5efff', color: '#2469d9' }}>{account.real_name?.slice(0, 1)}</Avatar><span>{account.real_name}</span><Button type="text" icon={<KeyOutlined />} onClick={() => setPassword(true)}>修改密码</Button><Button type="text" icon={<LogoutOutlined />} onClick={logout}>退出</Button></Space>
-  </header><main className="main-content"><div className="page-enter" key={location.pathname}><Outlet context={account} /></div></main></Layout>
+  </Layout.Sider><main className="main-content"><div className="page-enter" key={location.pathname}><Outlet context={account} /></div></main></Layout>
     <PasswordDialog open={password} onClose={() => setPassword(false)} /></Layout>
 }
 export default function App() {

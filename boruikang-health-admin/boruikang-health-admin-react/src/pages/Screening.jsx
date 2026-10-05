@@ -71,7 +71,7 @@ export default function Screening() {
       description="首行表头，姓名、联系电话、发现结论必填。发现时间为空使用导入时间；同来源的重复来源编号会跳过。文件先预览，确认后进入待判定池。"
       initialValues={{ source_type: 'ECG_NETWORK', owner_id: account.user_id }} onClose={() => setFileImportOpen(false)} onSubmit={async (values, preview, importBatch) => {
         const response = await api('/screenings/import', { ...values, import_batch: importBatch, rows: preview.rows })
-        setResult(fileImportResult(response, preview.entries)); state.reload()
+        setResult(fileImportResult(response, preview.entries)); state.reload(); return response
       }}><div className="form-grid"><Form.Item name="source_type" label="来源" rules={required}><Select options={options(sources)} /></Form.Item>
         <LoadState state={orgs}>{data => <Form.Item name="org_id" label="来源机构"><Select allowClear options={data.filter(o => o.active).map(o => ({ value: o.id, label: o.name }))} /></Form.Item>}</LoadState>
         <LoadState state={campaigns}>{data => <Form.Item name="campaign_id" label="所属活动"><Select allowClear options={data.items.filter(c => c.status !== 'CLOSED').map(c => ({ value: c.id, label: c.name }))} /></Form.Item>}</LoadState>

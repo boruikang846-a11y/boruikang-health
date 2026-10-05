@@ -76,6 +76,9 @@ for (const filename of fs.readdirSync(path.join(root, mapperDir)).filter(f => f.
 }
 assert(checkedMappers > 20, 'Too few checked MyBatis mappers');
 const statuses = { INTAKE: '待负责人接收', ACTIVE: '服务进行中', PAUSED: '已暂停', EXITED: '已退出', CLOSED: '本次服务已结案' };
+const patientQuery = read(common + '/java/com/boruikang/health/patient/dto/PatientQueryRequest.java').split(') {')[0];
+const recordFields = source => [...source.matchAll(/(?:String|Long|Integer|Boolean|LocalDate|long)\s+(\w+)(?=\s*[,\)])/g)].map(m => snake(m[1]));
+const patientTypes = patientQuery.match(/@Pattern\(regexp="([^"]+)"\) String patientType/)[1].split('|');
 const backendStatuses = new Set([...service.matchAll(/(?:j|x)\.status\s*=\s*"(\w+)"/g)].map(m => m[1]));
 for (const [, block] of service.matchAll(/x\.status=switch\(req\.action\(\)\)\{([^}]+)\}/g)) for (const [, value] of block.matchAll(/->"(\w+)"/g)) backendStatuses.add(value);
 assert.deepEqual([...backendStatuses].sort(), Object.keys(statuses).sort(), 'Backend journey statuses changed; update labels and prototype behavior');
@@ -83,6 +86,7 @@ const contract = {
   version: 'HEALTH-2.0',
   journey: { paths, statuses, planStatuses: { DRAFT: '待责任医生审核', APPROVED: '已批准', REJECTED: '已退回', SUPERSEDED: '已替代' }, caseStatuses: { OPEN: '待接单', ACCEPTED: '处理中', RESOLVED: '已有处理结果，待反馈核验', CLOSED: '反馈已核验，闭环' }, requests, patterns, endpoints },
   navigation: { operations: navigation('navigation'), doctor: navigation('doctorNavigation') },
+  patientCentre: { types: patientTypes, queryFields: recordFields(patientQuery), summaryFields: recordFields(read(common + '/java/com/boruikang/health/patient/dto/PatientSummaryResponse.java')), summaryEndpoint: { method: 'GET', path: '/boruikang/admin/patients/summary' } },
   patientImport: { maxBytes: 5 * 1024 * 1024, maxRows: 500, outreachDeadline: 'SLA', pendingConsent: true, lifecycle: 'ENROLLED', riskLevel: 'UNKNOWN', defaultFirstContactHours: Number(read(common + '/java/com/boruikang/health/org/service/SlaResolver.java').match(/default->\{row.firstContactHours=(\d+)/)[1]), metadata: [...read(common + '/java/com/boruikang/health/patient/dto/ImportPatientFileRequest.java').matchAll(/(?:String|Long|Boolean)\s+(\w+)(?=\s*[,\)])/g)].map(m => snake(m[1])) },
   tables,
 };

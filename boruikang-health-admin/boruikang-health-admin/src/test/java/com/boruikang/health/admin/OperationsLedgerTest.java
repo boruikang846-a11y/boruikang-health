@@ -170,7 +170,7 @@ class OperationsLedgerTest {
         var tl=timeline.timeline(new TimelineQueryRequest(p.id(),50));
         assertTrue(tl.events().stream().anyMatch(e->"MEDICATION".equals(e.kind())));assertTrue(tl.events().stream().anyMatch(e->"CONSENT".equals(e.kind())));
         assertEquals(List.of("测试"),patients.detail(p.id()).tags());
-        assertEquals(1,patients.query(new PatientQueryRequest(0,10,null,null,null,null,null,null,null,null,"测试",null,null,null,null,null,null,null)).items().stream().filter(x->x.id().equals(p.id())).count());
+        assertEquals(1,patients.query(new PatientQueryRequest(0,10,null,null,null,null,null,null,null,null,"测试",null,null,null,null,null,null,null,null)).items().stream().filter(x->x.id().equals(p.id())).count());
     }
     @Test void lifecycleExitNeedsReasonAndAlertCloseNeedsDisposition(){
         var p=newPatient(false);
