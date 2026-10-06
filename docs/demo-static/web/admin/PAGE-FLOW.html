@@ -2,3 +2,5 @@
 
 <section><h2>1.7 DeepSeek 配置</h2><p>/settings → 外部接入（运营主管）或接入设置（平台管理员）→ 配置 DeepSeek → 保存 / 取消返回。仅模型、API Key、启用开关可编辑；端点固定 https://api.deepseek.com/chat/completions。其他角色不可保存；无密钥启用时留在表单并提示填写。<a href="followup-ai-1.7.html">配置原型</a> · <a href="index.html">返回管理端原型</a></p></section>
 <section><h2>1.9 企业微信与公众号</h2><p>/settings → 外部接入 → 配置企业微信 / 公众号 → 保存 → 测试连接；运营主管与平台管理员可操作。/wecom 企业微信、/official-account 公众号（两个独立菜单；运营主管、运营人员、护士）→ 全部 / 我的患者 / 待绑定 → 会话抽屉 → 发送文字、模板消息或已审核正文 / 标记已处理 / 转咨询任务 → /followups?task=。/channels → 微信二维码。/accounts → 企业微信成员账号。/patients/:id → 企业微信、公众号页签（医生只读）。任务抽屉已审核时 → 微信发送已审核正文。原型见 wechat-channels-1.9.html。</p></section>
+
+<section><h2>1.7 DeepSeek 余额</h2><p>运营主管/平台管理员：/settings → DeepSeek 卡片 → 自动查询一次 / 刷新余额 → 按币种显示总额、赠金、充值与查询时间。无密钥先配置；失败清除旧金额并提示重试；其他角色无余额入口。<a href="followup-ai-1.7.html">余额交互原型</a></p></section>
