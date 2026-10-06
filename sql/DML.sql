@@ -1,4 +1,3 @@
-USE bgssai_health;
 -- Reference service content only. The demo approval is not a hospital clinical approval.
 INSERT INTO knowledge_entry (id,hospital_id,kind,department,title,content,source,version,status,reviewer_id,reviewed_at,creator) VALUES (1,1,'EDUCATION','全科','首次联系与出院随访（演示）','1. 核对是否为本人或授权联系人，并确认现在方便沟通。\n2. 了解近期身体感受，有无新的不适或希望医生处理的问题。\n3. 核对是否按原医嘱执行，记录遇到的困难；不自行给出调药建议。\n4. 核对原记录中的复诊日期与安排。\n5. 总结本次反馈、下一步联系计划，并把需要医学判断的问题交给医生。','问询内容参考草稿；无正式 SOP，个体建议另由责任医生审核',1,'DRAFT',NULL,NULL,'demo-seed') ON DUPLICATE KEY UPDATE id=id;
 INSERT INTO knowledge_entry (id,hospital_id,kind,department,title,content,source,version,status,reviewer_id,reviewed_at,creator) VALUES (2,1,'EDUCATION','心血管内科','心血管患者信息核对（演示）','请核对最近一次就诊时间、医生安排与复诊日期。请问近期身体感受与之前相比是否有变化？是否有需要医生解答的问题？如已测量血压、心率或体重，可提供测量时间与数值。请说明按原医嘱执行时遇到的困难。记录信息后提交责任医生判断，不根据本问卷自行诊断或调药。','信息采集参考草稿；不含临床阈值或可执行规则',1,'DRAFT',NULL,NULL,'demo-seed') ON DUPLICATE KEY UPDATE id=id;
@@ -27,3 +26,8 @@ INSERT INTO sla_config (id,hospital_id,risk_level,first_contact_hours,booking_da
 INSERT INTO sla_config (id,hospital_id,risk_level,first_contact_hours,booking_days,arrival_days,lost_after_attempts,note,version,creator) VALUES (4,1,'LOW',168,30,90,3,'低风险：一周内首触',0,'demo-seed') ON DUPLICATE KEY UPDATE id=id;
 INSERT INTO sla_config (id,hospital_id,risk_level,first_contact_hours,booking_days,arrival_days,lost_after_attempts,note,version,creator) VALUES (5,1,'UNKNOWN',168,30,90,3,'未评估按低风险口径',0,'demo-seed') ON DUPLICATE KEY UPDATE id=id;
 -- END OPERATIONS LEDGER 1.5
+-- BEGIN WECHAT 1.9
+-- WeChat wording samples, disabled until the hospital reviews them. The template id is filled in after the Official Account template is approved.
+INSERT INTO message_template (id,hospital_id,code,channel,scene,title,content,is_active,version,external_template_id,creator) VALUES (15,1,'WECHAT_WELCOME','WECHAT','WELCOME','加好友 / 关注欢迎语','您好，这里是{医院}健康管理团队。服务时间为工作日 8:00–17:00，留言会在服务时间内回复。如出现胸痛、呼吸困难等紧急情况，请立即拨打 120 或前往急诊，不要等待回复。',0,0,'','demo-seed') ON DUPLICATE KEY UPDATE id=id;
+INSERT INTO message_template (id,hospital_id,code,channel,scene,title,content,is_active,version,external_template_id,creator) VALUES (16,1,'MP_REVISIT_REMINDER','MP_TEMPLATE','REVISIT_REMINDER','复诊提醒（公众号模板消息）','thing1={姓名}\ntime2={复诊日期}\nthing3=请按医生安排复诊，改期请联系健康管理团队',0,0,'','demo-seed') ON DUPLICATE KEY UPDATE id=id;
+-- END WECHAT 1.9

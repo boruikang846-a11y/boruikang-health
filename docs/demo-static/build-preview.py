@@ -9,13 +9,18 @@ from pathlib import Path
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("output", type=Path, help="Destination for the standalone HTML")
 parser.add_argument("--browser-url", type=Path, help="Optional compressed data URL for opening in a browser")
+parser.add_argument("--patient-import", action="store_true", help="Open directly in the patient center as the fictional manager")
 args = parser.parse_args()
 web = Path(__file__).resolve().parent / "web"
 html = (web / "interactive.html").read_text(encoding="utf-8")
 css = (web / "interactive.css").read_text(encoding="utf-8")
-js = (web / "interactive.js").read_text(encoding="utf-8")
+scripts = ["patient-import-files.js", "patient-import.js", "quality-wecom.js", "platform-prototype.js", "screening-sheet-data.js", "screening-sheet.js", "screening-cycle.js", "screening-import.js", "care-cycle.js", "journey.js", "interactive.js"]
 html = html.replace('<link rel="stylesheet" href="interactive.css">', "<style>" + css + "</style>")
-html = html.replace('<script src="interactive.js"></script>', "<script>" + js.replace("</script", "<\\/script") + "</script>")
+for filename in scripts:
+    js = (web / filename).read_text(encoding="utf-8")
+    html = html.replace('<script src="' + filename + '"></script>', "<script>" + js.replace("</script", "<\\/script") + "</script>")
+if args.patient_import:
+    html = html.replace("<body>", '<body data-demo-entry="patient-import">')
 args.output.parent.mkdir(parents=True, exist_ok=True)
 args.output.write_text(html, encoding="utf-8")
 result = {"html": str(args.output.resolve()), "html_bytes": args.output.stat().st_size}

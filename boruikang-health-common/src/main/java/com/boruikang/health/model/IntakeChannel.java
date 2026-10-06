@@ -1,0 +1,14 @@
+package com.boruikang.health.model;
+public class IntakeChannel extends BaseRow {
+    public Long hospitalId;
+    public String title;
+    public String source;
+    public String department;
+    public Long doctorId;
+    public Long ownerId;
+    public String token;
+    public Boolean active;
+    public String wecomConfigId;
+    public String wecomQrUrl;
+    public String officialQrUrl;
+}

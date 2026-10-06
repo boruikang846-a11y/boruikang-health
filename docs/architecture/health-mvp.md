@@ -6,7 +6,7 @@
 
 ## 工程与运行
 
-骨架来源 bgssai-skeleton，Java 21 / Spring Boot 4.1.0 / MyBatis 4 / PageHelper / React 18 / Ant Design 5 / Vite 7，管理端 React Router 7（仍为 React 18）。前端依赖升级至 npm audit 无已知告警的补丁线，移除未使用的网络和状态库。保留 admin/admin 与 admin/admin-react、user/user 与 user/user-react 结构；增加 common Maven 模块，承载同一医患业务域的持久层和服务，避免两端维护两套状态机。两端 Controller 和静态前端独立打包；common 不单独部署。
+技术栈：Java 21 / Spring Boot 4.1.0 / MyBatis 4 / PageHelper / React 18 / Ant Design 5 / Vite 7，管理端 React Router 7（仍为 React 18）。前端依赖升级至 npm audit 无已知告警的补丁线，移除未使用的网络和状态库。保留 admin/admin 与 admin/admin-react、user/user 与 user/user-react 结构；增加 common Maven 模块，承载同一医患业务域的持久层和服务，避免两端维护两套状态机。两端 Controller 和静态前端独立打包；common 不单独部署。
 
 MySQL 8 为部署数据库，H2 MySQL 模式仅供本地自包含演示和集成测试，默认 local。MySQL 权威结构在 sql/DDL.sql，种子在 sql/DML.sql（业务模板）与 sql/dev/DML.sql（虚构账号和患者）。演示库不得含原始参考中的真实个人信息。非 local 环境在配置不完整时失败关闭。
 
@@ -64,7 +64,7 @@ HIS/EMR 字段参考《慢病系统所需数据说明》：医院患者号、病
 
 ## 2026-09-28 用户端范围调整
 
-患者端部署公开介绍 SPA，不注册任何 /bgssai/user 业务 Controller。只保留基础健康检查与静态页面服务。前端不调用患者 API，不储存会话；只记语言偏好。企业微信、小程序、患者 Web 均为规划渠道。管理端 /tasks/contact 仅保存人工完成的联系证据，更新 CONTACTED 并写 STAFF_TO_PATIENT 沟通留痕，不调用任何发送通道，account_id 是否存在不影响人工联系记录。患者消息/指标服务保留在共享领域中的已有基础代码，不在 user 部署中暴露，后续需求另行评审。
+患者端部署公开介绍 SPA，不注册任何 /boruikang/user 业务 Controller。只保留基础健康检查与静态页面服务。前端不调用患者 API，不储存会话；只记语言偏好。企业微信、小程序、患者 Web 均为规划渠道。管理端 /tasks/contact 仅保存人工完成的联系证据，更新 CONTACTED 并写 STAFF_TO_PATIENT 沟通留痕，不调用任何发送通道，account_id 是否存在不影响人工联系记录。患者消息/指标服务保留在共享领域中的已有基础代码，不在 user 部署中暴露，后续需求另行评审。
 
 
 ## 1.2 权限与图解
@@ -89,5 +89,21 @@ HospitalGateway 定义获取医院批次的接口；MockHospitalGateway 返回�
 服务分层：`SlaResolver` 只依赖 `sla_config`，供 `OrgService`、`OutreachService`、`ReferralService` 与 `InvitationService` 共用，避免 PatientService 与 OrgService 之间的循环依赖；`OutreachService` 在患者行锁内开、关首触任务并升级失联异常（`Propagation.MANDATORY`）；`PatientService.advance()` 只允许阶段向前推进且不越过人工态（PAUSED 及之后），各台账动作通过它同步患者阶段；`AppointmentService` 通过 `TaskWriter` 镜像复诊任务；`EnrollmentService.activate()` 展开方案节点为任务；`MetricService` 以有界样本（5000 行）在内存里算十项指标、漏斗、按人绩效、日统计与队列，不落库。ExampleBase 增加 `le/gt/isNull/isNotNull`。
 
 指标与 SLA 全部可按医院配置；默认口径见需求文档。控制器由 `tools` 中的生成脚本统一产出一接口一类。演示种子由 `tools/generate-ledger-seed.py` 生成，日期按参数绝对化，H2 与 MySQL 文本一致。
+
+## 1.9 企业微信与公众号
+
+新增 `wechat` 领域包。`WechatGateway` 定义对微信平台的调用；`LiveWechatGateway` 用固定主机调用企业微信与公众号官方接口，按配置缓存 access_token（公众号用 stable_token），凭证被拒时刷新一次；`MockWechatGateway` 不联网，返回带 `mock` 前缀的结果。`WechatConfigService` 按配置的 `channel_mode` 选择网关，模拟通道只在 `health.wechat.mock-allowed=true` 且非 prod 时可用。
+
+数据：`integration_config` 增加 app_id、callback_token、aes_key、channel_mode、verify_status、verified_at、last_error；新表 `wechat_contact`（`(hospital_id, channel, external_id)` 唯一，`patient_id=0` 表示待绑定）与 `wechat_message`（`(hospital_id, request_key)` 唯一）。联系人上冗余待处理条数、最后互动时间与最近消息摘要，列表不必扫消息表。微信身份与患者档案只通过人工绑定关联。
+
+事务与网络：`WechatLedger` 集中所有短事务（入站入库、发送前校验并写 SENDING、发送结果回写、绑定解绑、转咨询），锁顺序固定为联系人行 → 患者行。网络调用都在事务之外：发送先落 SENDING 再调接口，结果用条件更新回写；同步先拉完再入库；活码先调接口再更新渠道。
+
+回调：四个公开 Controller 用原始 Servlet 读写（请求体上限 64 KiB，返回纯文本），不经过 JSON 转换器。`WechatInboundService` 先按医院取配置并校验签名，企业微信与公众号安全模式再用 AES-256-CBC 解密并核对 corp id / app id；XML 解析禁用 DTD 和外部实体。回调没有登录账号，医院取自路径，审计操作人记 0。事件幂等键入库即去重，微信重推不重复记账。
+
+发送规则在服务端判定：已审核正文从任务读取并核对审核人是当前责任医生；公众号文字检查 48 小时互动；模板消息字段逐行解析；未替换的 {占位} 被拒绝。发送不改变任务状态，联系结果仍走 1.3 的登记。患者时间轴合并微信收发。
+
+前端新增 `/wecom`（企业微信）、`/official-account`（公众号）两个独立菜单与对应的患者档案页签；任务抽屉、渠道、账号、模板、外部接入各加入口。HEALTH-USER 仅新增纯前端的互动演示。
+
+## DeepSeek 账户余额
 
 DeepSeek 余额沿用本院已保存密钥，由主管/平台管理员查询；浏览器不接触密钥。读取配置 → 固定 GET /user/balance → 校验响应 → 返回各币种金额和时间，全程不写数据库、不触发模型、不修改接入状态；详见 [1.7 API 契约](../api/followup-ai-1.7.md)。

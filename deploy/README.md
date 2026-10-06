@@ -8,8 +8,8 @@
 
 本仓对发布的约定只有三条：
 
-1. 目录保持 `bgssai-health-<端>/bgssai-health-<端>`（Maven 模块）与 `bgssai-health-<端>/bgssai-health-<端>-react`（前端，`npm run build:deploy` 把产物同步进后端 `static/`）；改目录或模块名时同步改发布仓 `products.json`。
-2. 数据库口令、JWT 密钥不进 Git：properties 里留空，由目标机 `/etc/boruikang/boruikang-health-<端>.env` 注入。
+1. 目录保持 `boruikang-health-<端>/boruikang-health-<端>`（Maven 模块）与 `boruikang-health-<端>/boruikang-health-<端>-react`（前端，`npm run build:deploy` 把产物同步进后端 `static/`）；改目录或模块名时同步改发布仓 `products.json`。
+2. dev 两端使用 `101.44.27.60:3306/boruikang`，启用 TLS；按用户要求，dev 的 `root` 账号与口令直接保存在两端 `application-dev.properties` 中。目标机 `/etc/boruikang/boruikang-health-<端>.env` 的 `SPRING_DATASOURCE_*` 优先级更高，发布前须同步这些覆盖值。JWT 密钥仍由该环境文件注入，prod 数据库配置仍独立管理。
 3. SQL 只保留全量 `sql/DDL.sql`、`sql/DML.sql`、`sql/<env>/DML.sql`，不写增量迁移；表结构变了按「备份 → 清库 → init database → deploy」发版。
 
-2026-09-30 之前本应用由 bgssai-workflows 的 `bgssai/dev-health-deploy` 发布，初次部署的历史记录见 `docs/deploy/health-mvp.md`。
+初次部署的历史记录见 `docs/deploy/health-mvp.md`。
