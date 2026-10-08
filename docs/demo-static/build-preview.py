@@ -10,6 +10,7 @@ parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("output", type=Path, help="Destination for the standalone HTML")
 parser.add_argument("--browser-url", type=Path, help="Optional compressed data URL for opening in a browser")
 parser.add_argument("--patient-import", action="store_true", help="Open directly in the patient center as the fictional manager")
+parser.add_argument("--after-care", action="store_true", help="Open the AF after-care overview as the fictional manager")
 args = parser.parse_args()
 web = Path(__file__).resolve().parent / "web"
 html = (web / "interactive.html").read_text(encoding="utf-8")
@@ -19,6 +20,8 @@ html = html.replace('<link rel="stylesheet" href="interactive.css">', "<style>" 
 for filename in scripts:
     js = (web / filename).read_text(encoding="utf-8")
     html = html.replace('<script src="' + filename + '"></script>', "<script>" + js.replace("</script", "<\\/script") + "</script>")
+if args.after_care:
+    html = html.replace("<body>", '<body data-demo-entry="af-after-care">')
 if args.patient_import:
     html = html.replace("<body>", '<body data-demo-entry="patient-import">')
 args.output.parent.mkdir(parents=True, exist_ok=True)

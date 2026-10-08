@@ -79,3 +79,37 @@ const before=vm.runInContext('demo.patients.length',context);vm.runInContext("cy
 vm.runInContext("cycleAction('cycle-revoke',1001);cycleAction('cycle-handoff',1001)",context);assert(!vm.runInContext('enrollmentRows().find(x=>x.id===1001).assigned',context));
 vm.runInContext("account=person(1);cycleAction('cycle-scan-patient',106101);cycleAction('cycle-verify',106101,{note:'虚构导入对象核验与本人授权',target:'NEW'});cycleAction('cycle-handoff',106101)",context);assert(vm.runInContext('enrollmentRows().find(x=>x.id===106101).assigned',context));assert(vm.runInContext("demo.patients.at(-1).risk",context)==='待评估');
 console.log('78 combined hub/role renders; service authorization, repeat-scan, revoke and imported-patient onboarding passed');
+// Specialist overview must not count unrelated diagnoses or leak role-restricted records.
+for(const role of [1,2,3,4,5,6])for(const route of ['/after-care','/after-care?tab=boundaries']){
+  vm.runInContext(`account=person(${role});location.hash=${JSON.stringify('#'+route)};render()`,context);
+  const html=elements['#main'].innerHTML;
+  if(role===5){assert(html.includes('当前角色无权访问'));assert(!html.includes('房颤干预总览'));}
+  else {assert(html.includes('房颤干预总览'));assert(html.includes('协作范围与上线验收'));}
+}
+vm.runInContext("account=person(1);location.hash='#/after-care';render()",context);
+assert(elements['#main'].innerHTML.includes('房颤演示患者 · 林先生（虚构）'));
+assert(elements['#main'].innerHTML.includes('待接通 · 当前仅医院 Mock'));
+vm.runInContext("demo.patients.push({id:9901,name:'虚构房颤专病测试对象',department:'心血管内科',disease:'房颤',doctor:2,owner:4});account=person(4);render()",context);
+assert(elements['#main'].innerHTML.includes('虚构房颤专病测试对象'));
+vm.runInContext('account=person(3);render()',context);
+assert(!elements['#main'].innerHTML.includes('虚构房颤专病测试对象'));
+vm.runInContext("account=person(1);location.hash='#/after-care?tab=boundaries';render()",context);
+assert(elements['#main'].innerHTML.includes('数值门槛待院方确认'));
+assert(elements['#main'].innerHTML.includes('规则文件、适用人群、版本和医学负责人待确认'));
+console.log('AF overview and scope: 12 role/route checks, diagnosis scope, owner isolation, Mock truth and unconfirmed acceptance gates passed');
+// Annual management: role separation, version gates and complete-case integration.
+vm.runInContext("demo=structuredClone(initial);account=person(4);location.hash='#/after-care';document.querySelector('#dialog').close=()=>{};render()",context);
+vm.runInContext("afScenarioAction('af-step','approve',{note:'越序'})",context);
+assert(vm.runInContext('afScenarioState().stage',context)===0);
+for(const [key,title,role] of vm.runInContext('afFlow',context)){
+ vm.runInContext(`account=person(${role});afScenarioAction('af-step',${JSON.stringify(key)},{note:'【虚构验证】确认节点'})`,context);
+ if(key==='generate')assert(vm.runInContext('afScenarioState().plan.months.length',context)===12);
+ if(key==='update')assert(vm.runInContext('afScenarioState().plan.version',context)===1);
+}
+assert(vm.runInContext('afScenarioState().stage',context)===20);
+assert(vm.runInContext('afScenarioState().plan.version',context)===2);
+assert(vm.runInContext('afScenarioState().versions[0].version',context)===1);
+assert(vm.runInContext("demo.tasks.find(x=>x.id===afScenarioState().nextTask).record",context)===111);
+assert(vm.runInContext("demo.tasks.find(x=>x.id===afScenarioState().nextTask).status",context)==='PENDING');
+assert(vm.runInContext('afScenarioState().executionQC.by',context)===3);
+console.log('20-node annual management: operator execution, nurse QC, physician approval, 12-month plan, consultation, version history and next-cycle source linkage passed');

@@ -1,10 +1,10 @@
 'use strict';
 
 // Offline, fictional prototype state. No network, authentication or patient API is invoked.
-const roles={MANAGER:'运营主管',DOCTOR:'责任医生',NURSE:'院方护士',OPERATOR:'运营人员',PLATFORM_ADMIN:'平台管理员'};
+const roles={MANAGER:'运营主管',DOCTOR:'责任医生',NURSE:'院方护士',OPERATOR:'博瑞康健康管理师',PLATFORM_ADMIN:'平台管理员'};
 const names={PENDING:'待领取',IN_PROGRESS:'起草中',PENDING_REVIEW:'待医生审核',REJECTED:'退回修改',APPROVED:'审核通过',CONTACTED:'已联系',COMPLETED:'已完成',ESCALATED:'已升级医生',CLOSED:'已关闭',UNREAD:'待阅',READ:'已阅',DRAFT:'草稿',PUBLISHED:'已发布',BOOKED:'已预约',REMINDED:'已登记提醒',ARRIVED:'已到院',NO_SHOW:'未到院',CANCELLED:'已取消',ACTIVE:'履约中',INITIATED:'已发起',ACCEPTED:'已接收',FEEDBACK:'已反馈',NEW:'待判定',HIGH:'高危待建档',ENROLLED:'已建档'};
 const initial={
-  accounts:[{id:1,identifier:'manager',name:'演示运营主管',role:'MANAGER',department:'运营团队',active:true},{id:2,identifier:'doctor',name:'演示责任医生甲',role:'DOCTOR',department:'心血管内科',active:true},{id:3,identifier:'nurse',name:'演示护士',role:'NURSE',department:'心血管内科',active:true},{id:4,identifier:'operator_a',name:'演示运营专员',role:'OPERATOR',department:'运营团队',active:true},{id:5,identifier:'platform',name:'演示平台管理员',role:'PLATFORM_ADMIN',department:'平台',active:true},{id:6,identifier:'doctor_b',name:'演示责任医生乙',role:'DOCTOR',department:'全科',active:true}],
+  accounts:[{id:1,identifier:'manager',name:'演示运营主管',role:'MANAGER',department:'运营团队',active:true},{id:2,identifier:'doctor',name:'演示责任医生甲',role:'DOCTOR',department:'心血管内科',active:true},{id:3,identifier:'nurse',name:'演示护士',role:'NURSE',department:'心血管内科',active:true},{id:4,identifier:'operator_a',name:'博瑞康演示健康管理师',role:'OPERATOR',department:'运营团队',active:true},{id:5,identifier:'platform',name:'演示平台管理员',role:'PLATFORM_ADMIN',department:'平台',active:true},{id:6,identifier:'doctor_b',name:'演示责任医生乙',role:'DOCTOR',department:'全科',active:true}],
   patients:[{id:1001,name:'演示患者一',gender:'MALE',age:66,phone:'00000000001',department:'心血管内科',disease:'演示病程 A',risk:'高',doctor:2,owner:4,source:'HOSPITAL_MOCK',external:'MOCK-DEMO-001'},{id:1002,name:'演示患者二',gender:'FEMALE',age:54,phone:'00000000002',department:'心血管内科',disease:'演示病程 B',risk:'中',doctor:2,owner:3,source:'MANUAL',external:''},{id:1003,name:'演示患者三',gender:'MALE',age:61,phone:'00000000003',department:'全科',disease:'演示病程 C',risk:'低',doctor:6,owner:4,source:'HOSPITAL_MOCK',external:'MOCK-DEMO-003'}],
   records:[{id:101,patient:1001,type:'出院',title:'虚构出院报告 A',status:'UNREAD',text:'【虚构演示报告】请由责任医生核对原记录。随访时核实原医嘱执行中遇到的困难、近期反馈和复诊准备。不提供调药或诊断建议。',opinion:''},{id:102,patient:1002,type:'门诊',title:'虚构门诊报告 B',status:'READ',text:'【虚构演示报告】用于查看病程记录、关联随访和团队交接。',opinion:'请记录原医嘱执行时遇到的问题。'},{id:103,patient:1003,type:'体检',title:'虚构体检记录 C',status:'UNREAD',text:'【虚构演示报告】本记录尚待责任医生核对。',opinion:''}],
   tasks:[{id:2001,patient:1001,record:101,title:'出院后 D7 随访',status:'PENDING',due:'2026-10-02T10:00',draft:'',approved:'',version:1},{id:2002,patient:1002,record:102,title:'门诊报告后随访',status:'PENDING_REVIEW',due:'2026-10-02T11:00',draft:'请核对原医嘱执行情况，记录需要责任医生解答的问题。',approved:'',version:1},{id:2003,patient:1001,record:101,title:'复诊准备核实',status:'APPROVED',due:'2026-10-03T09:00',draft:'请核实复诊准备和原医嘱执行中遇到的问题。',approved:'请核实复诊准备和原医嘱执行中遇到的问题。',reviewer:2,version:1},{id:2004,patient:1001,record:101,title:'首次联系结果查收',status:'COMPLETED',due:'2026-10-01T09:00',draft:'核对原医嘱和复诊准备。',approved:'核对原医嘱和复诊准备。',reviewer:2,contacts:[{at:'2026-10-01T09:00',result:'SUCCESS',note:'【虚构联系记录】已核实身份，记录了复诊资料准备问题。'}],version:1},{id:2005,patient:1003,record:103,title:'体检报告后随访',status:'PENDING_REVIEW',due:'2026-10-03T09:00',draft:'请核对报告理解中遇到的问题。',approved:'',version:1}],
@@ -19,6 +19,7 @@ const initial={
   audits:[{at:'演示初始状态',patient:1001,text:'虚构演示档案与任务已载入。'}],
   archives:[],mockSynced:false,integrationConfigured:false
 };
+afScenarioSeed(initial);
 let demo=structuredClone(initial),account=null,current={path:'/login',query:new URLSearchParams()},noticeTimer;
 demo.accounts.forEach(a=>a.password='HealthDemo@2026!');
 const operations=[['/enrollment','全量扫码服务入组'],['/in-care','诊中患者管理'],['/after-care','诊后主动干预管理'],['/workbench','运营工作台'],['/screening','诊前筛查中心'],['/data-ingestion','数据接入测试'],['/patients','患者中心'],['/invitations','邀约记录'],['/appointments','预约到诊'],['/packages','服务包与方案'],['/referrals','转诊台账'],['/followups','随访工作台'],['/alerts','异常响应'],['/revisits','复诊跟踪'],['/knowledge','宣教内容'],['/channels','渠道管理'],['/reports','随访统计与复盘'],['/hospital','医院数据'],['/accounts','医护账号'],['/ai-reports','报告解析复核'],['/risk-review','风险复核'],['/care-plans','AI 管理计划'],['/longitudinal','长期健康档案'],['/analytics','运营分析'],['/wecom','企业微信协作'],['/quality','质量保障中心'],['/settings','运营设置'],['/overview','系统介绍']];
@@ -34,7 +35,7 @@ const patient=id=>demo.patients.find(p=>p.id===Number(id));
 const person=id=>demo.accounts.find(a=>a.id===Number(id));
 const canOperate=()=>account&&['MANAGER','OPERATOR','NURSE'].includes(account.role);
 const manager=()=>account&&account.role==='MANAGER';
-const mine=p=>account&&p&&(manager()||(account.role==='DOCTOR'?p.doctor===account.id:['OPERATOR','NURSE'].includes(account.role)&&p.owner===account.id));
+const mine=p=>account&&p&&((p.id===1010&&account.id===3)||manager()||(account.role==='DOCTOR'?p.doctor===account.id:['OPERATOR','NURSE'].includes(account.role)&&p.owner===account.id));
 const patients=()=>demo.patients.filter(mine);
 const pool=()=>demo.pool.filter(x=>manager()||x.owner===account?.id);
 const tasks=()=>demo.tasks.filter(t=>mine(patient(t.patient)));
@@ -227,6 +228,9 @@ function render(){
 }
 
 function requireAction(kind,id){
+  const afRow=demo.tasks.find(x=>x.id===Number(id))||demo.alerts.find(x=>x.id===Number(id));
+  if(account?.id===3&&afRow?.patient===1010&&['claim','draft','submit-review','contact','complete','escalate','close-lost'].includes(kind)){toast('房颤病例由博瑞康健康管理师执行，护士负责质控。');return false}
+
   if(!account){toast('请先选择演示角色。');return false}
   const clinical=['read-report','approve','reject','receive','dispose','publish'];
   if(clinical.includes(kind)){
@@ -243,7 +247,7 @@ function requireAction(kind,id){
 document.addEventListener('click',event=>{
   const b=event.target.closest('[data-action]');if(!b)return;
   const action=b.dataset.action,id=b.dataset.id||'';
-  if(action.startsWith('patient-import-')||action.startsWith('qa-')||action.startsWith('platform-')||action.startsWith('screen-')||action.startsWith('sheet-')||action.startsWith('ingest-')||action.startsWith('cycle-'))return;
+  if(action.startsWith('patient-import-')||action.startsWith('qa-')||action.startsWith('platform-')||action.startsWith('screen-')||action.startsWith('sheet-')||action.startsWith('ingest-')||action.startsWith('cycle-')||action.startsWith('af-'))return;
   if(action==='close'){$('#dialog').close();return}
   if(action==='reset'){demo=structuredClone(initial);demo.accounts.forEach(a=>a.password='HealthDemo@2026!');lastPatientImport=null;account=null;go('/login');render();toast('已重置虚构演示数据。');return}
   if(action==='login'){const a=person($('#login-'+id).value);if(!a?.active){toast('该演示账号已停用。');return}account=a;go(home());return}
@@ -294,7 +298,7 @@ document.addEventListener('click',event=>{
 });
 document.addEventListener('submit',event=>{
   const f=event.target.closest('[data-form]');if(!f)return;event.preventDefault();
-  if(f.dataset.form.startsWith('screen-')||f.dataset.form.startsWith('sheet-')||f.dataset.form.startsWith('cycle-'))return;
+  if(f.dataset.form.startsWith('screen-')||f.dataset.form.startsWith('sheet-')||f.dataset.form.startsWith('cycle-')||f.dataset.form.startsWith('af-'))return;
   const action=f.dataset.form,id=f.dataset.id||'',v=Object.fromEntries(new FormData(f));Object.keys(v).forEach(k=>v[k]=v[k].trim());
   if(action==='search'){go('/patients?q='+encodeURIComponent(v.q)+'&risk='+encodeURIComponent(v.risk));return}
   if(Array.from(f.elements).some(e=>e.required&&e.name&&e.type!=='checkbox'&&!v[e.name])){toast('请填写完整内容，不能只输入空格。');return}
@@ -352,5 +356,6 @@ document.addEventListener('submit',event=>{
   $('#dialog').close();if(location.hash==='#'+dest)render();else go(dest);toast('已保存演示记录；相关页面同步更新。');
 });
 window.addEventListener('hashchange',render);
+if(document.body.dataset.demoEntry==='af-after-care'){account=person(1);if(!location.hash)location.hash='/after-care'}
 if(document.body.dataset.demoEntry==='patient-import'){account=person(1);if(!location.hash)location.hash='/patients'}
 render();
