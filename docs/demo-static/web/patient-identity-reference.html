@@ -233,7 +233,7 @@
       <div><div class="eyebrow">给老板与产品经理：用卡片讲清楚三个端怎么串联</div><h1>医院、微信、运营平台，怎么认出同一位患者？</h1><p>医院保存患者资料，患者用小程序和公众号接受服务，运营人员在平台开展工作。<br>中间靠一份经过核实的“身份对照关系”，让每个入口找到同一位患者。</p></div>
       <div class="intro-aside"><b>重点观察：患者档案数量</b><span>加好友、关注公众号、绑定第二个联系人，都不应直接增加患者档案。</span></div>
     </section>
-    <div class="teaching-label">虚构数据 · 离线教学演示。所有动作只改变本页内存，不连接医院、微信或数据库；核验勾选仅模拟工作人员确认。刷新恢复初始状态。</div>
+    <div class="teaching-label">本页是补充资料：医院记录不含患者微信号。以下关联演示均假设患者已建立相应企微好友/公众号关注关系，或主动进入小程序；三种入口互不替代。引导入口与首次核验流程仍待业务确认。所有资料虚构，核验勾选只预览假设结果，不证明业务已走通。请先看动画首页的流程缺口。</div>
     <section class="background-panel" aria-labelledby="background-title">
       <h2 id="background-title">先讲一个完整故事：陈阿姨的资料与两个微信入口</h2>
       <p>依次点击 6 个步骤。观察医院档案、平台档案、微信账号怎样建立对应；再尝试关闭数据条件、分别核验两个微信入口。</p>
@@ -364,7 +364,7 @@
         step('院内已有','医院已经认识这位患者','医院有陈阿姨的患者编号和出院资料。此时平台还没有她的档案，也没有微信联系人。','医院有资料，平台还未接收','只有左侧的院内来源资料；还不能从微信定位患者。'),
         step('同步建档','把院内资料接到平台','使用“A 医院 + 医院来源系统 + 患者编号 A-02388”建立对应关系。','新增 1 份平台档案、1 份报告','P1001 是平台档案，A-02388 是医院患者编号。两个编号不同，但来源关系明确。',d=>syncSource(d,sources.a)),
         step('公众号关注','陈阿姨关注了医院公众号','讲解中知道是陈阿姨；系统仅知道有一个公众号联系人，尚未核实其真实身份。','新增 1 位微信联系人，患者档案仍为 1 份','关注事件不携带医院患者编号。渠道二维码只能告诉平台她从哪里来。',d=>follow(d,contactSeeds.official),{warning:true}),
-        step('人工核验','工作人员确认她对应哪份院内档案','通过电话或当面核实，对照院内确认的资料，确认联系人是 A-02388 的患者本人。','核验过程中仍是“待绑定”','勾选模拟核验完成后，点击“确认绑定”。确认动作才写入关系。',undefined,{gate:{type:'verify',contact:501,target:1001,text:'已模拟核实本人身份，并确认对应 A 医院 A-02388'}}),
+        step('人工核验','假设另行核实了账号与患者的对应关系','核验方式与凭据仍待业务确认；本步骤仅假设可信核验结果已确认联系人对应 A-02388。医院未提供微信号。','核验前仍是“待绑定”','勾选仅模拟核验结果，再预览平台保存关联。不能凭同名或同号完成身份确认。',undefined,{gate:{type:'verify',contact:501,target:1001,text:'仅作演示假设：核验结果已确认对应 A 医院 A-02388'}}),
         step('确认绑定','现在，三个入口接上了','微信联系人 #501 已指向平台 P1001，P1001 保留 A 医院患者编号。','只改变微信联系人的“对应患者”','平台档案和医院报告都没有复制。记录谁在什么时候确认了绑定。',d=>bind(d,501,1001)),
         step('消息定位','收到消息时，沿关系找到这位患者','收到一条公众号消息，先找到联系人 #501，再找到 P1001 和院内来源。','新增 1 条消息，不新增患者档案','在工作人员权限范围内查找对应档案。普通个人微信聊天正文和企微会话存档不在这个演示链路中。',d=>receive(d,501)),
       ]},
@@ -468,9 +468,9 @@
       $('trace').innerHTML=`<section class="trace-box"><h4>这条消息怎么定位患者？</h4><div class="trace-row"><div class="trace-chip">公众号来信<small>消息里没有院内患者号</small></div><span aria-hidden="true">→</span><div class="trace-chip">联系人 #${c.id}<small>${esc(c.external_id)}</small></div><span aria-hidden="true">→</span><div class="trace-chip">平台 P${p.id}<small>来自已核实的绑定</small></div><span aria-hidden="true">→</span><div class="trace-chip">${hospitalName(p.hospital_id)}<small>院内编号 ${esc(p.hospital_patient_id)}</small></div></div><p>消息保存联系人编号，再沿绑定查档案；这里没有把整份病历复制到消息里，也没有向微信发送报告。</p></section>`;
     }
     const tableSpecs={
-      inputs:{label:'医院输入资料',name:'输入示意',fields:[['hospital_id','来源医院'],['source_system','来源系统'],['hospital_patient_id','院内患者编号'],['name','姓名（虚构）'],['phone','联系方式（虚构）']],key:hospitalKey,note:'这是医院接口的输入示意，不是新增数据库表。院方资料携带来源身份，平台用它找到对应患者。'},
+      inputs:{label:'医院输入资料',name:'输入示意',fields:[['hospital_id','来源医院'],['source_system','来源系统'],['hospital_patient_id','院内患者编号'],['name','姓名（虚构）'],['phone','联系方式（虚构）']],key:hospitalKey,note:'医院接口输入示意，不含患者微信号、OpenID 或企微客户标识。它只能建立医院来源与平台患者的对应，不能创建关注/好友关系，也不能据此认定微信操作者身份。'},
       patients:{label:'平台患者',name:'patient',fields:[['id','平台患者编号'],['hospital_id','所属医院'],['source_system','来源系统'],['hospital_patient_id','院内患者编号'],['name','姓名（虚构）'],['phone','联系方式（虚构）']],key:x=>x.id,note:'对应现有 patient 表。唯一来源身份是 hospital_id + source_system + hospital_patient_id；P1001 是讲解用显示编号，实际 id 为 1001。'},
-      contacts:{label:'微信联系人',name:'wechat_contact',fields:[['id','联系人编号'],['hospital_id','医院范围'],['channel','沟通通道'],['external_id','微信账号标识'],['patient_id','对应患者'],['relation','联系状态'],['bound_by','绑定操作人'],['bound_at','绑定时间']],key:x=>x.id,note:'对应现有 wechat_contact 表。patient_id=0 表示待绑定；唯一微信身份是 hospital_id + channel + external_id。解绑保留历史绑定人和时间；是否当前关联以 patient_id 为准。'},
+      contacts:{label:'微信联系人',name:'wechat_contact',fields:[['id','联系人编号'],['hospital_id','医院范围'],['channel','沟通通道'],['external_id','微信侧接口标识'],['patient_id','对应患者'],['relation','联系状态'],['bound_by','绑定操作人'],['bound_at','绑定时间']],key:x=>x.id,note:'平台自己的 wechat_contact 表；标识来自微信侧接口，关联由平台另行保存，不是医院导入字段。patient_id=0 表示未绑定；唯一微信身份是 hospital_id + channel + external_id。绑定不代表当前满足发送条件。'},
       reports:{label:'医院报告',name:'care_record',fields:[['id','平台报告编号'],['hospital_id','所属医院'],['patient_id','报告归属患者'],['source_system','来源系统'],['external_id','医院报告编号'],['record_type','资料类型']],key:x=>x.id,note:'对应现有 care_record 表。相同医院、来源系统与报告编号的相同报告重送不重复新增；平台报告用 patient_id 指向患者。'},
       messages:{label:'微信消息与事件',name:'wechat_message',fields:[['id','消息编号'],['hospital_id','医院范围'],['contact_id','对应联系人'],['channel','通道'],['direction','方向'],['kind','类型'],['content','正文 / 事件（虚构）'],['status','处理状态']],key:x=>x.id,note:'对应现有 wechat_message 表。关注、取消关注记录为 EVENT，公众号文字来信为 TEXT；欢迎语发送未展开。消息存储 contact_id，没有直接存储 patient_id，患者定位依赖当前绑定及工作人员权限。'},
     };
