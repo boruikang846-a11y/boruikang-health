@@ -1,0 +1,43 @@
+{
+  "version": "2.1",
+  "trial": {
+    "hospital": "江阴人民医院",
+    "department": "心血管科",
+    "wecom_owner": "HOSPITAL"
+  },
+  "routes": {
+    "admin": "/service-center",
+    "patient": "/service"
+  },
+  "tables": [
+    "patient_service_entry",
+    "patient_service_feedback"
+  ],
+  "reuse": [
+    "patient",
+    "wechat_contact",
+    "service_journey",
+    "journey_case",
+    "audit_event"
+  ],
+  "consent_version": "patient-service-2.1",
+  "entry_statuses": [
+    "ISSUED",
+    "REGISTERED",
+    "VERIFIED",
+    "REVOKED"
+  ],
+  "ai": "EXISTING_DRAFT_DOCTOR_REVIEW_MANUAL_SEND",
+  "patient_methods": [
+    "portal",
+    "register",
+    "feedback"
+  ],
+  "admin_methods": [
+    "issue",
+    "query",
+    "verify",
+    "revoke"
+  ],
+  "link_expiration_days": 7
+}
