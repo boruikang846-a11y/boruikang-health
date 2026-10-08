@@ -1,3 +1,7 @@
+# 2.1 企业微信患者全程服务中心增量
+
+[服务中心原型](web/admin/patient-service-center-2.1.html)；统一交互原型已接入 /service-center。全部虚构内存演示，正式 H5 与 Java 接口另见本次需求。
+
 # HEALTH 2.0 当前实现原型
 
 [当前入口](web/index.html) · [完整交互](web/interactive.html) · [四层同步基线](../contracts/README.md) · [验证记录](../review/prototype-sync-2.0.md)。

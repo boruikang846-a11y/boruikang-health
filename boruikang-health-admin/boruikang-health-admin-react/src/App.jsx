@@ -20,9 +20,11 @@ import Referrals from './pages/Referrals'
 import Accounts from './pages/Accounts'
 import { DoctorHome, DoctorReports, DoctorTasks } from './pages/Doctor'
 import WechatChannel from './pages/Wechat'
+import ServiceCenter from './pages/ServiceCenter'
 import { FunnelPlotOutlined, PhoneOutlined, CarryOutOutlined, GiftOutlined, SwapOutlined, WechatOutlined, WechatWorkOutlined } from '@ant-design/icons'
 
 const navigation = [
+  ['/service-center', '企微患者全程服务中心', WechatWorkOutlined],
   ['/journeys', '患者全旅程服务', HeartOutlined], ['/after-care', '诊后主动干预', ScheduleOutlined], ['/workbench', '运营工作台', DashboardOutlined], ['/screening', '患者池', FunnelPlotOutlined], ['/patients', '患者中心', TeamOutlined],
   ['/invitations', '邀约记录', PhoneOutlined], ['/appointments', '预约到诊', CarryOutOutlined],
   ['/followups', '随访与咨询', ScheduleOutlined], ['/wecom', '企业微信', WechatWorkOutlined], ['/official-account', '公众号', WechatOutlined], ['/alerts', '异常处理', AlertOutlined],
@@ -111,7 +113,7 @@ export default function App() {
   const allowed = account && reachable(account.role_code, location.pathname)
   return <Routes><Route path="/overview" element={<SystemOverview account={account} />} /><Route path="/login" element={<Login account={account} onLogin={result => { setAccount(result); navigate(home(result.role_code)) }} />} />
     <Route element={account ? allowed ? <Shell account={account} logout={async () => { try { await api('/logout', {}) } catch {} setToken(null); setAccount(null); navigate('/login') }} /> : <Navigate to={home(account.role_code)} replace /> : <Navigate to="/login" replace />}>
-      <Route path="/after-care" element={<AfterCare />} /><Route path="/journeys" element={<Journeys />} /><Route path="/journeys/:id" element={<JourneyDetail />} /><Route path="/workbench" element={<Dashboard />} /><Route path="/patients" element={<Patients />} /><Route path="/patients/:id" element={<PatientDetail />} />
+      <Route path="/service-center" element={<ServiceCenter />} /><Route path="/after-care" element={<AfterCare />} /><Route path="/journeys" element={<Journeys />} /><Route path="/journeys/:id" element={<JourneyDetail />} /><Route path="/workbench" element={<Dashboard />} /><Route path="/patients" element={<Patients />} /><Route path="/patients/:id" element={<PatientDetail />} />
       <Route path="/screening" element={<Screening />} /><Route path="/invitations" element={<Invitations />} /><Route path="/appointments" element={<Appointments />} /><Route path="/packages" element={<Packages />} /><Route path="/referrals" element={<Referrals />} />
       <Route path="/followups" element={<Tasks />} /><Route path="/alerts" element={<Tasks taskType="ALERT" />} /><Route path="/revisits" element={<Tasks taskType="REVISIT" />} />
       <Route path="/hospital" element={<Hospital />} /><Route path="/knowledge" element={<Knowledge />} /><Route path="/channels" element={<Channels />} /><Route path="/reports" element={<Reports />} /><Route path="/settings" element={<Settings />} />

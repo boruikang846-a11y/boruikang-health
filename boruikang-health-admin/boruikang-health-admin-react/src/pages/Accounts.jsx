@@ -40,7 +40,7 @@ export default function Accounts() {
       <Form.Item name="password" label="初始密码" rules={password} extra="请线下告知本人，登录后在右上角「修改密码」自行更换。"><Input.Password maxLength={64} autoComplete="new-password" /></Form.Item>
     </FormDialog>
     <FormDialog title={'企业微信成员账号 · ' + (wecom?.real_name || '')} open={Boolean(wecom)} initialValues={{ wecom_user_id: wecom?.wecom_user_id || '' }} onClose={() => setWecom(null)} onSubmit={async values => { await api('/accounts/wecom', { id: wecom.id, wecom_user_id: values.wecom_user_id || '' }); state.reload() }}>
-      <p className="muted">填写该工作人员在医院企业微信通讯录里的成员账号（UserID）。患者加他为好友时，系统据此知道是谁添加的；渠道活码也用负责人的成员账号生成。留空保存表示清除。</p>
+      <p className="muted">填写该工作人员在博瑞康企业微信通讯录里的成员账号（UserID）。患者加他为好友时，系统据此知道是谁添加的；渠道活码也用负责人的成员账号生成。留空保存表示清除。</p>
       <Form.Item name="wecom_user_id" label="成员账号" rules={[{ pattern: /^[A-Za-z0-9_.@-]{0,64}$/, message: '最多 64 位字母、数字、点、下划线、@ 或短横线' }]}><Input maxLength={64} autoComplete="off" /></Form.Item>
     </FormDialog>
     <FormDialog title={'重置密码 · ' + (reset?.real_name || '')} open={Boolean(reset)} onClose={() => setReset(null)} onSubmit={async values => { await api('/accounts/reset-password', { id: reset.id, password: values.password }); state.reload() }}>

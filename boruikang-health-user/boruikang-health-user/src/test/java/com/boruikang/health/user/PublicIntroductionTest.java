@@ -42,4 +42,15 @@ class PublicIntroductionTest {
         assertEquals(404,miss.statusCode());
         assertFalse(miss.body().contains("<!doctype"));
     }
+    @Test void invitedServicePageAndValidatedApisAreAvailable() throws Exception {
+        var page=get("/service");assertEquals(200,page.statusCode());
+        assertEquals("no-store",page.headers().firstValue("Cache-Control").orElse(""));
+        for(String path:new String[]{"portal","register","feedback"}) {
+            var response=client.send(HttpRequest.newBuilder(URI.create("http://127.0.0.1:"+port+"/boruikang/user/service_center/"+path))
+                .header("Content-Type","application/json").POST(HttpRequest.BodyPublishers.ofString("{}")).build(),HttpResponse.BodyHandlers.ofString());
+            assertEquals(400,response.statusCode(),response.body());
+            assertEquals("no-store",response.headers().firstValue("Cache-Control").orElse(""));
+            assertFalse(response.body().contains("<!doctype"));
+        }
+    }
 }
