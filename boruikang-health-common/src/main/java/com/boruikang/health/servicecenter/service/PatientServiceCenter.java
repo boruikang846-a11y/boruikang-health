@@ -20,7 +20,7 @@ import java.util.*;
 /** Hospital-owned WeCom entry. Tokens identify an authorized contact, never a patient number. */
 @Service
 public class PatientServiceCenter {
- public static final String CONSENT_VERSION="patient-service-2.1";
+ public static final String CONSENT_VERSION="patient-service-2.1-brk";
  private final PatientServiceEntryMapper entries; private final PatientServiceFeedbackMapper feedback;
  private final WechatContactMapper contacts; private final PatientMapper patients;
  private final ServiceJourneyMapper journeys; private final JourneyCaseMapper cases;
@@ -31,10 +31,10 @@ public class PatientServiceCenter {
   this.access=access;this.authorization=authorization;this.ledger=ledger;this.audit=audit;
  }
  private static String hash(String value){try{return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8)));}catch(NoSuchAlgorithmException e){throw new IllegalStateException(e);}}
- private WechatContact contact(Long id){var c=contacts.selectByPrimaryKey(id);Checks.found(c!=null&&CurrentAccount.get().hospitalId().equals(c.hospitalId));Checks.require("WE_COM".equals(c.channel)&&"ACTIVE".equals(c.relation),"需要有效的医院企业微信联系人");return c;}
+ private WechatContact contact(Long id){var c=contacts.selectByPrimaryKey(id);Checks.found(c!=null&&CurrentAccount.get().hospitalId().equals(c.hospitalId));Checks.require("WE_COM".equals(c.channel)&&"ACTIVE".equals(c.relation),"需要有效的博瑞康企业微信联系人");return c;}
  private void contactAccess(WechatContact c){access.operations();if(c.patientId!=null&&c.patientId>0)access.require(c.patientId);else if(access.executor())Checks.permit(CurrentAccount.get().userId().equals(c.staffAccountId));}
  private PatientServiceEntry lockEntry(Long id){var ex=new PatientServiceEntryExample();ex.eq("id",id).eq("hospital_id",CurrentAccount.get().hospitalId());ex.setForUpdate(true);var rows=entries.selectByExample(ex);Checks.found(!rows.isEmpty());return rows.getFirst();}
- private WechatContact lockContact(Long id){var ex=new WechatContactExample();ex.eq("id",id).eq("hospital_id",CurrentAccount.get().hospitalId());ex.setForUpdate(true);var rows=contacts.selectByExample(ex);Checks.found(!rows.isEmpty());var c=rows.getFirst();Checks.require("WE_COM".equals(c.channel)&&"ACTIVE".equals(c.relation),"需要有效的医院企业微信联系人");contactAccess(c);return c;}
+ private WechatContact lockContact(Long id){var ex=new WechatContactExample();ex.eq("id",id).eq("hospital_id",CurrentAccount.get().hospitalId());ex.setForUpdate(true);var rows=contacts.selectByExample(ex);Checks.found(!rows.isEmpty());var c=rows.getFirst();Checks.require("WE_COM".equals(c.channel)&&"ACTIVE".equals(c.relation),"需要有效的博瑞康企业微信联系人");contactAccess(c);return c;}
  @Transactional
  public ServiceEntryIssuedResponse issue(ServiceEntryIssueRequest req){
   access.operations();var c=lockContact(req.contactId());var old=new PatientServiceEntryExample();old.eq("hospital_id",c.hospitalId).eq("contact_id",c.id).ne("status","REVOKED");

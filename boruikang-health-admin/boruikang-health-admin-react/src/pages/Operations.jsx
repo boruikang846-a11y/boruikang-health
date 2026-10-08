@@ -144,7 +144,7 @@ export function Reports() {
     <ReportArchives query={query} />
   </>
 }
-const providers = { AI: 'DeepSeek 随访建议', WE_COM: '医院企业微信', WECHAT_OFFICIAL: '医院公众号', HIS: 'HIS / EMR 数据', WEEKLY_DELIVERY: '周报外部投递' }
+const providers = { AI: 'DeepSeek 随访建议', WE_COM: '博瑞康企业微信', WECHAT_OFFICIAL: '医院公众号', HIS: 'HIS / EMR 数据', WEEKLY_DELIVERY: '周报外部投递' }
 const DEEPSEEK = 'https://api.deepseek.com/chat/completions'
 const deepseekModels = [
   { value: 'deepseek-flash', label: 'deepseek-flash（建议）' },
@@ -165,7 +165,7 @@ function WechatIntegration({ item, canConfigure, onChanged }) {
     catch (e) { message.error(e.message) } finally { setBusy(false) }
   }
   return <Card title={providers[item.provider]} extra={<ChannelTag item={item} />}>
-    <p>{wecom ? '患者加医院企业微信成员为好友后，系统同步好友关系与来源渠道。工作人员发起的消息以群发任务下发，成员在企业微信里确认后才发出。未开通会话存档，系统看不到聊天正文。' : '患者关注医院公众号后，可向其发送模板消息；患者 48 小时内有互动时可以发文字。患者来信进入「公众号」页面的待处理。'}</p>
+    <p>{wecom ? '患者加博瑞康企业微信成员为好友后，系统同步好友关系与来源渠道。工作人员发起的消息以群发任务下发，成员在企业微信里确认后才发出。未开通会话存档，系统看不到聊天正文。' : '患者关注医院公众号后，可向其发送模板消息；患者 48 小时内有互动时可以发文字。患者来信进入「公众号」页面的待处理。'}</p>
     <Descriptions size="small" column={1} items={[
       { key: 'app', label: wechatFields[item.provider][0], children: item.app_id || '未设置' },
       { key: 'secret', label: wechatFields[item.provider][1], children: item.configured ? '已配置（不回显）' : '未配置' },

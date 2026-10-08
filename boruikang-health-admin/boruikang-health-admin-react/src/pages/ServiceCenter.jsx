@@ -9,8 +9,8 @@ export default function ServiceCenter() {
  const state=useLoad(()=>api('/service_center/query',{page,size:10,status:filter}),[page,filter])
  const contacts=useLoad(()=>api('/wechat/contacts/query',{channel:'WE_COM',bound:false,page:0,size:100}))
  const patients=useLoad(()=>api('/patients/query',{page:0,size:100}))
- return <><PageTitle title="企业微信患者全程服务中心" subtitle="医院自有企微连接患者，AI 辅助起草，医护与运营团队持续服务。" extra={<Space><Button onClick={state.reload}>刷新</Button><Button type="primary" onClick={()=>setDialog({type:'issue'})}>签发患者 H5 入口</Button></Space>} />
- <Alert className="mb" type="info" showIcon message="首批试点：江阴人民医院 · 心血管科" description="通过当前账号所属医院办理服务。真实企微、医院接口及 AI 状态以接入配置为准；试点名称不代表已完成接入。" />
+ return <><PageTitle title="企业微信患者全程服务中心" subtitle="博瑞康企微连接患者，AI 辅助起草，医护与运营团队持续服务。" extra={<Space><Button onClick={state.reload}>刷新</Button><Button type="primary" onClick={()=>setDialog({type:'issue'})}>签发患者 H5 入口</Button></Space>} />
+ <Alert className="mb" type="info" showIcon message="博瑞康企业微信 · 江阴人民医院心血管科试点" description="通过当前账号所属医院办理服务。真实企微、医院接口及 AI 状态以接入配置为准；试点名称不代表已完成接入。" />
  <div className="integration-grid mb">{[['诊前','咨询登记、预约协助、就医准备'],['诊中','实际到院、院内协助、报告核对'],['诊后','医生审核计划、随访反馈、复诊结案']].map(([title,body])=><Card key={title} title={title}><p>{body}</p><Link to="/journeys">办理患者旅程 →</Link></Card>)}</div>
  <Card className="mb" title="AI + 人工服务"><p>从关联病历起草随访意见，由责任医生审核，运营或护士执行并记录反馈。患者提交的问题进入人工服务队列。</p><Space wrap><Link to="/followups">AI 随访起草与执行</Link><Link to="/after-care">咨询与异常受理</Link><Link to="/wecom">企微联系人与沟通</Link><Link to="/settings">接入状态</Link></Space></Card>
  <Card title="患者登记与身份核实"><div className="toolbar"><Select allowClear placeholder="全部状态" style={{width:180}} value={filter} options={Object.entries(states).map(([value,label])=>({value,label}))} onChange={v=>{setFilter(v);setPage(0)}} /></div>

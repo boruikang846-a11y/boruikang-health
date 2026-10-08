@@ -3,7 +3,7 @@
   "trial": {
     "hospital": "江阴人民医院",
     "department": "心血管科",
-    "wecom_owner": "HOSPITAL"
+    "wecom_owner": "BORUIKANG"
   },
   "routes": {
     "admin": "/service-center",
@@ -20,7 +20,7 @@
     "journey_case",
     "audit_event"
   ],
-  "consent_version": "patient-service-2.1",
+  "consent_version": "patient-service-2.1-brk",
   "entry_statuses": [
     "ISSUED",
     "REGISTERED",
