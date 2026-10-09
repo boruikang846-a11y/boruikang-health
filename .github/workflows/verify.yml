@@ -49,6 +49,7 @@ jobs:
           node docs/demo-static/tests/service-navigation.test.cjs
           node docs/demo-static/tests/after-care-service.test.cjs
           node docs/demo-static/tests/continuous-care.test.cjs
+          node docs/demo-static/tests/connected-service.test.cjs
           node docs/demo-static/tests/patient-service-center.test.cjs
           node docs/demo-static/tests/screening-details.test.cjs
       - name: Build admin UI
