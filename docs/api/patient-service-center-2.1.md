@@ -1,3 +1,5 @@
+> 2.2 扩展以 [当前 API](continuity-2.2.md) 为准：管理入口 `/wecom?tab=service`，issue.path 使用已配置患者域名；响应增加已审核长期安排和患者可见回复，同一联系人续签保留历史反馈。
+
 # 患者服务中心 2.1 API
 
 全部 POST，JSON snake_case、现有 ApiResponse 包装。管理接口需要 Jwttoken；患者接口使用 256 位随机 token，禁止用患者编号登录。

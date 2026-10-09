@@ -17,16 +17,19 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.*;
 
-/** Hospital-owned WeCom entry. Tokens identify an authorized contact, never a patient number. */
+/** Boruikang WeCom entry scoped to the service hospital. Tokens identify an authorized contact, never a patient number. */
 @Service
 public class PatientServiceCenter {
  public static final String CONSENT_VERSION="patient-service-2.1-brk";
+ private final com.boruikang.health.continuity.service.ContinuousCareService continuity;
+ private final String userUrl;
  private final PatientServiceEntryMapper entries; private final PatientServiceFeedbackMapper feedback;
  private final WechatContactMapper contacts; private final PatientMapper patients;
  private final ServiceJourneyMapper journeys; private final JourneyCaseMapper cases;
  private final PatientAccess access; private final ServiceAuthorization authorization; private final WechatLedger ledger; private final AuditService audit;
  public PatientServiceCenter(PatientServiceEntryMapper entries,PatientServiceFeedbackMapper feedback,WechatContactMapper contacts,
- PatientMapper patients,ServiceJourneyMapper journeys,JourneyCaseMapper cases,PatientAccess access,ServiceAuthorization authorization,WechatLedger ledger,AuditService audit){
+ PatientMapper patients,ServiceJourneyMapper journeys,JourneyCaseMapper cases,PatientAccess access,ServiceAuthorization authorization,WechatLedger ledger,AuditService audit,com.boruikang.health.continuity.service.ContinuousCareService continuity,org.springframework.core.env.Environment environment){
+  this.continuity=continuity;this.userUrl=environment.getRequiredProperty("health.user-url").replaceAll("/+$", "");
   this.entries=entries;this.feedback=feedback;this.contacts=contacts;this.patients=patients;this.journeys=journeys;this.cases=cases;
   this.access=access;this.authorization=authorization;this.ledger=ledger;this.audit=audit;
  }
@@ -42,7 +45,7 @@ public class PatientServiceCenter {
   byte[] bytes=new byte[32];new SecureRandom().nextBytes(bytes);String token=Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
   var e=new PatientServiceEntry();e.hospitalId=c.hospitalId;e.contactId=c.id;e.tokenHash=hash(token);e.status="ISSUED";e.expiresAt=LocalDateTime.now().plusDays(7).withNano(0);e.version=0;e.creator=CurrentAccount.get().userId().toString();entries.insertSelective(e);
   audit.append(c.patientId>0?c.patientId:null,"PATIENT_ENTRY_ISSUED",e.id,null,e.status,"contact="+c.id);
-  return new ServiceEntryIssuedResponse(e.id,token,"/service#"+token,e.expiresAt,Boolean.TRUE.equals(c.mock));
+  return new ServiceEntryIssuedResponse(e.id,token,userUrl+"/service#"+token,e.expiresAt,Boolean.TRUE.equals(c.mock));
  }
  public Paged<ServiceEntryResponse> query(ServiceEntryQueryRequest req){
   access.operations();var ex=new PatientServiceEntryExample();ex.eq("hospital_id",CurrentAccount.get().hospitalId());if(req.status()!=null)ex.eq("status",req.status());
@@ -58,7 +61,7 @@ public class PatientServiceCenter {
   Checks.conflict(Objects.equals(req.version(),e.version)&&"REGISTERED".equals(e.status));Checks.require(e.expiresAt.isAfter(LocalDateTime.now()),"服务链接已过期，请重新签发");
   Checks.require(e.consentAt!=null&&authorization.active(p)&&p.ownerId!=null&&p.doctorId!=null&&!List.of("PAUSED","CLOSED").contains(p.lifecycle),"请先在患者档案中核实服务授权并分派负责人、责任医生");
   Checks.require(c.patientId==0||c.patientId.equals(p.id),"联系人已绑定其他患者，请先核实解绑");if(c.patientId==0)ledger.bind(c.id,c.version,p.id);
-  var patch=new PatientServiceEntry();patch.patientId=p.id;patch.identityEvidence=req.evidence().trim();patch.status="VERIFIED";patch.version=e.version+1;patch.modifier=CurrentAccount.get().userId().toString();var ex=new PatientServiceEntryExample();ex.eq("id",e.id).eq("version",e.version);Checks.conflict(entries.updateByExampleSelective(patch,ex)==1);
+  var patch=new PatientServiceEntry();patch.patientId=p.id;patch.serviceConsentKey=authorization.fingerprint(p);patch.identityEvidence=req.evidence().trim();patch.status="VERIFIED";patch.version=e.version+1;patch.modifier=CurrentAccount.get().userId().toString();var ex=new PatientServiceEntryExample();ex.eq("id",e.id).eq("version",e.version);Checks.conflict(entries.updateByExampleSelective(patch,ex)==1);
   audit.append(p.id,"PATIENT_ENTRY_VERIFIED",e.id,e.status,"VERIFIED",req.evidence());return view(entries.selectByPrimaryKey(e.id));
  }
  @Transactional
@@ -70,7 +73,7 @@ public class PatientServiceCenter {
   if("VERIFIED".equals(e.status)){Checks.require(Objects.equals(c.patientId,e.patientId),"患者绑定已变化，请重新核实");patient(e);}
   return e;
  }
- private Patient patient(PatientServiceEntry e){var p=patients.selectByPrimaryKey(e.patientId);Checks.require(p!=null&&e.hospitalId.equals(p.hospitalId)&&authorization.active(p)&&!List.of("PAUSED","CLOSED").contains(p.lifecycle),"患者服务已暂停或授权已撤回，请联系服务人员");return p;}
+ private Patient patient(PatientServiceEntry e){var p=patients.selectByPrimaryKey(e.patientId);Checks.require(p!=null&&e.hospitalId.equals(p.hospitalId)&&authorization.active(p)&&Objects.equals(e.serviceConsentKey,authorization.fingerprint(p))&&!List.of("PAUSED","CLOSED").contains(p.lifecycle),"患者服务已暂停或授权发生变化，请联系服务人员重新核实");return p;}
  @Transactional
  public PatientPortalResponse register(PatientEntryRegisterRequest req){
   var e=token(req.token(),true);Checks.require(Boolean.TRUE.equals(req.consent()),"请确认服务授权");
@@ -78,14 +81,34 @@ public class PatientServiceCenter {
   var patch=new PatientServiceEntry();patch.patientName=req.patientName().trim();patch.phone=req.phone();patch.relation=req.relation();patch.entryPhase=req.entryPhase();patch.consentVersion=CONSENT_VERSION;patch.consentAt=LocalDateTime.now().withNano(0);patch.status="REGISTERED";patch.version=e.version+1;patch.modifier="patient-h5";var ex=new PatientServiceEntryExample();ex.eq("id",e.id).eq("version",e.version);Checks.conflict(entries.updateByExampleSelective(patch,ex)==1);
   audit.appendSystem(e.hospitalId,null,"PATIENT_ENTRY_REGISTERED",e.id,"ISSUED","REGISTERED","consent="+CONSENT_VERSION+"; relation="+req.relation());return portal(entries.selectByPrimaryKey(e.id));
  }
+ private static String nextStep(JourneyCase c){
+  if(c==null)return "服务团队待受理";
+  return switch(c.status){case "OPEN"->"等待服务团队接单";case "ACCEPTED"->"团队处理中，您可以继续补充反馈";case "RESOLVED"->"已有处理结果，等待核实您是否收到反馈";case "CLOSED"->"本次反馈已闭环，如有新的问题可继续提交";default->"请联系服务团队核实进度";};
+ }
+ public java.util.List<ServiceFeedbackResponse> feedbackQuery(com.boruikang.health.continuity.dto.ContinuousCareQueryRequest req){
+  access.staff();var p=access.require(req.patientId());var ex=new PatientServiceFeedbackExample();ex.eq("hospital_id",p.hospitalId).eq("patient_id",p.id);ex.setOrderByClause("id DESC");PageHelper.startPage(1,50,false);
+  return feedback.selectByExample(ex).stream().map(f->{var c=cases.selectByPrimaryKey(f.caseId);return new ServiceFeedbackResponse(f.id,f.journeyId,f.caseId,c==null?null:c.version,f.kind,f.content,c==null?"OPEN":c.status,f.patientReply,f.repliedAt,f.gmtCreate);}).toList();
+ }
+ @Transactional
+ public java.util.List<ServiceFeedbackResponse> feedbackReply(ReplyPatientFeedbackRequest req){
+  access.staff();var f=feedback.selectByPrimaryKey(req.id());Checks.found(f!=null);var p=access.lock(f.patientId);Checks.found(p.hospitalId.equals(f.hospitalId));
+  Checks.require(authorization.active(p)&&!List.of("PAUSED","CLOSED").contains(p.lifecycle),"患者服务已暂停或授权已撤回");
+  if("CLINICAL".equals(f.kind))access.responsibleDoctor(p);else access.operations();
+  var ce=new JourneyCaseExample();ce.eq("id",f.caseId).eq("hospital_id",p.hospitalId).eq("patient_id",p.id);ce.setForUpdate(true);var rows=cases.selectByExample(ce);Checks.found(!rows.isEmpty());var c=rows.getFirst();
+  Checks.conflict(Objects.equals(c.version,req.caseVersion()));Checks.require(List.of("RESOLVED","CLOSED").contains(c.status),"请先在旅程工单中登记处理结果，再发布患者可见回复");
+  var cp=new JourneyCase();cp.version=c.version+1;cp.modifier=CurrentAccount.get().userId().toString();var cx=new JourneyCaseExample();cx.eq("id",c.id).eq("version",c.version);Checks.conflict(cases.updateByExampleSelective(cp,cx)==1);
+  var patch=new PatientServiceFeedback();patch.patientReply=req.patientReply().trim();patch.repliedAt=LocalDateTime.now().withNano(0);patch.repliedBy=CurrentAccount.get().userId();patch.modifier=patch.repliedBy.toString();var fe=new PatientServiceFeedbackExample();fe.eq("id",f.id).eq("hospital_id",p.hospitalId);Checks.conflict(feedback.updateByExampleSelective(patch,fe)==1);
+  audit.append(p.id,"PATIENT_FEEDBACK_REPLY_PUBLISHED",f.id,null,c.status,req.patientReply());return feedbackQuery(new com.boruikang.health.continuity.dto.ContinuousCareQueryRequest(p.id));
+ }
  public PatientPortalResponse portal(PatientEntryAccessRequest req){return portal(token(req.token(),false));}
  private static String step(ServiceJourney j){var path="OUTPATIENT".equals(j.kind)?List.of("交接接单","诊前咨询与预约","实际到院核验","诊中服务","报告核对","个案计划审核","诊后随访","复诊与结案"):List.of("交接接单","住院服务","出院报告核对","出院交接","个案计划审核","诊后随访","复诊与结案");return j.stage>=path.size()?"已结束":path.get(j.stage);}
- private static String phase(ServiceJourney j){if("OUTPATIENT".equals(j.kind))return j.stage<=2?"诊前":j.stage<=4?"诊中":"诊后";return j.stage<=2?"诊中":"诊后";}
+ private static String phase(ServiceJourney j){if("AFTER_CARE".equals(j.entryPhase))return "诊后";if("OUTPATIENT".equals(j.kind))return j.stage<=2?"诊前":j.stage<=4?"诊中":"诊后";return j.stage<=2?"诊中":"诊后";}
  private PatientPortalResponse portal(PatientServiceEntry e){
-  var c=contacts.selectByPrimaryKey(e.contactId);if(!"VERIFIED".equals(e.status))return new PatientPortalResponse(e.status,e.patientName==null?null:PatientService.maskName(e.patientName),e.consentVersion,Boolean.TRUE.equals(c.mock),List.of(),List.of());
+  var c=contacts.selectByPrimaryKey(e.contactId);if(!"VERIFIED".equals(e.status))return new PatientPortalResponse(e.status,e.patientName==null?null:PatientService.maskName(e.patientName),e.consentVersion,Boolean.TRUE.equals(c.mock),List.of(),List.of(),List.of());
   var p=patient(e);var ex=new ServiceJourneyExample();ex.eq("hospital_id",e.hospitalId).eq("patient_id",p.id);ex.setOrderByClause("id DESC");PageHelper.startPage(1,50,false);var js=journeys.selectByExample(ex).stream().map(j->new PatientPortalResponse.Journey(j.id,j.kind,j.status,phase(j),step(j),j.eventAt)).toList();
-  var fe=new PatientServiceFeedbackExample();fe.eq("entry_id",e.id).eq("hospital_id",e.hospitalId);fe.setOrderByClause("id DESC");PageHelper.startPage(1,50,false);var fs=feedback.selectByExample(fe).stream().map(f->{var fc=cases.selectByPrimaryKey(f.caseId);return new PatientPortalResponse.Feedback(f.id,f.journeyId,f.kind,f.content,fc==null?"OPEN":fc.status,f.gmtCreate);}).toList();
-  return new PatientPortalResponse("VERIFIED",PatientService.maskName(p.name),e.consentVersion,Boolean.TRUE.equals(c.mock),js,fs);
+  var contactEntries=new PatientServiceEntryExample();contactEntries.eq("contact_id",e.contactId).eq("hospital_id",e.hospitalId).eq("patient_id",p.id);
+  var fe=new PatientServiceFeedbackExample();fe.in("entry_id",entries.selectByExample(contactEntries).stream().map(x->x.id).toList()).eq("patient_id",p.id).eq("hospital_id",e.hospitalId);fe.setOrderByClause("id DESC");PageHelper.startPage(1,50,false);var fs=feedback.selectByExample(fe).stream().map(f->{var fc=cases.selectByPrimaryKey(f.caseId);return new PatientPortalResponse.Feedback(f.id,f.journeyId,f.kind,f.content,fc==null?"OPEN":fc.status,f.gmtCreate,"CLINICAL".equals(f.kind)?"责任医生":"服务负责人",nextStep(fc),f.patientReply,f.repliedAt);}).toList();
+  return new PatientPortalResponse("VERIFIED",PatientService.maskName(p.name),e.consentVersion,Boolean.TRUE.equals(c.mock),js,fs,continuity.patientPlans(p));
  }
  @Transactional
  public PatientPortalResponse feedback(PatientEntryFeedbackRequest req){

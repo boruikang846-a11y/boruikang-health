@@ -311,10 +311,6 @@
   "navigation": {
     "operations": [
       [
-        "/service-center",
-        "企微患者全程服务中心"
-      ],
-      [
         "/journeys",
         "患者全旅程服务"
       ],
@@ -1214,6 +1210,7 @@
       "hospital_id": "BIGINT",
       "contact_id": "BIGINT",
       "token_hash": "VARCHAR(64)",
+      "service_consent_key": "VARCHAR(64)",
       "status": "VARCHAR(24)",
       "patient_name": "VARCHAR(80)",
       "phone": "VARCHAR(32)",
@@ -1241,7 +1238,64 @@
       "request_id": "VARCHAR(80)",
       "kind": "VARCHAR(16)",
       "content": "VARCHAR(2000)",
-      "payload_hash": "VARCHAR(64)"
+      "payload_hash": "VARCHAR(64)",
+      "patient_reply": "VARCHAR(2000)",
+      "replied_by": "BIGINT",
+      "replied_at": "DATETIME"
+    },
+    "continuous_care_plan": {
+      "id": "BIGINT",
+      "hospital_id": "BIGINT",
+      "patient_id": "BIGINT",
+      "disease_code": "VARCHAR(24)",
+      "consent_key": "VARCHAR(64)",
+      "status": "VARCHAR(24)",
+      "approval_status": "VARCHAR(24)",
+      "baseline": "VARCHAR(2000)",
+      "goals": "VARCHAR(2000)",
+      "patient_instructions": "VARCHAR(2000)",
+      "next_review_date": "DATE",
+      "revision": "INT",
+      "reviewer_id": "BIGINT",
+      "reviewed_at": "DATETIME",
+      "version": "INT",
+      "del_flag": "TINYINT",
+      "creator": "VARCHAR(64)",
+      "modifier": "VARCHAR(64)",
+      "gmt_create": "DATETIME",
+      "gmt_modified": "DATETIME"
+    },
+    "continuous_care_review": {
+      "id": "BIGINT",
+      "hospital_id": "BIGINT",
+      "patient_id": "BIGINT",
+      "plan_id": "BIGINT",
+      "revision": "INT",
+      "kind": "VARCHAR(24)",
+      "summary": "TEXT",
+      "evidence": "VARCHAR(2000)",
+      "patient_message": "VARCHAR(2000)",
+      "assessment": "VARCHAR(24)",
+      "journey_id": "BIGINT",
+      "actor_id": "BIGINT",
+      "next_review_date": "DATE",
+      "del_flag": "TINYINT",
+      "creator": "VARCHAR(64)",
+      "modifier": "VARCHAR(64)",
+      "gmt_create": "DATETIME",
+      "gmt_modified": "DATETIME"
+    },
+    "continuous_care_journey": {
+      "id": "BIGINT",
+      "hospital_id": "BIGINT",
+      "patient_id": "BIGINT",
+      "plan_id": "BIGINT",
+      "journey_id": "BIGINT",
+      "del_flag": "TINYINT",
+      "creator": "VARCHAR(64)",
+      "modifier": "VARCHAR(64)",
+      "gmt_create": "DATETIME",
+      "gmt_modified": "DATETIME"
     }
   }
 }

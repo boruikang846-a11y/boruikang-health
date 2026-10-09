@@ -1,3 +1,11 @@
+# 2.2 当前增量基线
+
+最新范围：[需求](../feature/wecom-af-continuity-2.2.md)、[API](../api/continuity-2.2.md)、[验收](../review/wecom-af-continuity-2.2.md)、[机器契约](continuity-2.2.json)。首期博瑞康企微 + 受邀 H5 + 诊后患者摘要 + 房颤连续管理；全量 39 表。企业微信受邀入口统一在 `/wecom?tab=service`，保留 13 项主导航。Java / React 实现与离线原型分别验证，原型不调用真实接口。
+
+增加 `node tools/sync-continuity-contract.cjs [--write]` 漂移检查，覆盖新增 DTO、接口及三表增量结构。2.1 增量升级按 SQL README，历史仅介绍页 / 医院自有企微 / 清库等口径由当前增量覆盖，不据此执行部署。
+
+以下 2.0 / 2.1 记录按当时版本保留；开发库 34 表的旧检查不代表本轮 39 表已迁移。
+
 # 2.1 患者服务中心增量
 
 2026-10-08 用户确认并启动开发。当前新增范围见 [服务中心需求](../feature/patient-service-center-2.1.md)、[API](../api/patient-service-center-2.1.md)、[机器契约](patient-service-center-2.1.json)、[原型](../demo-static/web/admin/patient-service-center-2.1.html)。HEALTH-USER 新增受邀 H5 服务，不再仅公开介绍。此前完整自助入组探索不等同于本次受邀入组。数据库加法新增 2 表，全量 36 表；不清库。

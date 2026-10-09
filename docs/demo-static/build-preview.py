@@ -18,7 +18,7 @@ scripts = ["implementation-contract.js", "patient-import-files.js", "patient-imp
 html = html.replace('<link rel="stylesheet" href="interactive.css">', "<style>" + css + "</style>")
 html = html.replace('<link rel="stylesheet" href="after-care-service.css">', "<style>" + (web / "after-care-service.css").read_text(encoding="utf-8") + "</style>")
 html = html.replace('<link rel="stylesheet" href="service-navigation.css">', "<style>" + (web / "service-navigation.css").read_text(encoding="utf-8") + "</style>")
-scripts.append("service-navigation.js")
+scripts.extend(["service-navigation.js", "continuous-care.js"])
 for filename in scripts:
     js = (web / filename).read_text(encoding="utf-8")
     html = html.replace('<script src="' + filename + '"></script>', "<script>" + js.replace("</script", "<\\/script") + "</script>")

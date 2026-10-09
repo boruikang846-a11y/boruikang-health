@@ -7,6 +7,7 @@ import dayjs from 'dayjs'
 import { api, useLoad, uploadPatientFile } from '../api'
 import { countUp, DataTable, dateText, day, dayText, doctorOptions, FormDialog, LoadState, money, names, options, ownerOptions, PageTitle, required, stamp, Status } from '../ui'
 import Tasks from './Tasks'
+import PatientServiceSummary from './PatientServiceSummary'
 import { InvitationDialog } from './Invitations'
 import { AppointmentAction, AppointmentDialog, appointmentActions } from './Appointments'
 import { EnrollmentDialog, enrollmentColumns } from './Packages'
@@ -174,7 +175,7 @@ export function PatientDetail({ patientId } = {}) {
   const [medication, setMedication] = useState(null)
   const [message, setMessage] = useState(false)
   const [action, setAction] = useState(null)
-  const tab = detailSearch.get('tab') || 'records'
+  const tab = detailSearch.get('tab') || 'summary'
   const [page, setPage] = useState(0)
   const [revision, setRevision] = useState(0)
   const [report, setReport] = useState(null)
@@ -206,8 +207,8 @@ export function PatientDetail({ patientId } = {}) {
       { key: 'tags', label: '标签', children: patient.tags?.length ? patient.tags.map(t => <Tag key={t}>{t}</Tag>) : '—', span: 2 },
       { key: 'note', label: '内部备注', children: patient.note || '暂无', span: 2 },
     ]} /></Card>
-    <Card><Tabs activeKey={tab} onChange={value => { setDetailSearch(previous => patientTabSearch(previous, value)); setPage(0) }} items={[{ key: 'timeline', label: '时间轴' }, { key: 'records', label: '就诊与健康记录' }, { key: 'journeys', label: '就诊旅程' }, { key: 'tasks', label: '服务任务' }, { key: 'invitations', label: '邀约' }, { key: 'appointments', label: '预约到诊' }, { key: 'enrollments', label: '服务实例' }, { key: 'medications', label: '用药' }, { key: 'referrals', label: '转诊' }, { key: 'message-logs', label: '已发消息' }, { key: 'wecom', label: '企业微信' }, { key: 'official-account', label: '公众号' }, { key: 'messages', label: '沟通记录' }, { key: 'audits', label: '操作留痕' }]} />
-      {tab === 'journeys' ? <PatientJourneys id={id} /> : tab === 'timeline' ? <TimelineTab id={id} key={revision} /> : tab === 'tasks' ? <Tasks patientId={Number(id)} compact /> : tab === 'wecom' || tab === 'official-account' ? <PatientWechat key={tab} patientId={Number(id)} provider={tab === 'wecom' ? 'WE_COM' : 'WECHAT_OFFICIAL'} readOnly={doctor} /> : <>{tab === 'medications' && !doctor && <div className="toolbar"><Button icon={<PlusOutlined />} onClick={() => setMedication({ status: 'ACTIVE', source: 'HOSPITAL_RECORD', adherence: 'UNKNOWN' })}>登记用药</Button></div>}
+    <Card><Tabs activeKey={tab} onChange={value => { setDetailSearch(previous => patientTabSearch(previous, value)); setPage(0) }} items={[{ key: 'summary', label: '服务摘要与连续管理' }, { key: 'timeline', label: '时间轴' }, { key: 'records', label: '就诊与健康记录' }, { key: 'journeys', label: '就诊旅程' }, { key: 'tasks', label: '服务任务' }, { key: 'invitations', label: '邀约' }, { key: 'appointments', label: '预约到诊' }, { key: 'enrollments', label: '服务实例' }, { key: 'medications', label: '用药' }, { key: 'referrals', label: '转诊' }, { key: 'message-logs', label: '已发消息' }, { key: 'wecom', label: '企业微信' }, { key: 'official-account', label: '公众号' }, { key: 'messages', label: '沟通记录' }, { key: 'audits', label: '操作留痕' }]} />
+      {tab === 'summary' ? <PatientServiceSummary patientId={id} key={revision} /> : tab === 'journeys' ? <PatientJourneys id={id} /> : tab === 'timeline' ? <TimelineTab id={id} key={revision} /> : tab === 'tasks' ? <Tasks patientId={Number(id)} compact /> : tab === 'wecom' || tab === 'official-account' ? <PatientWechat key={tab} patientId={Number(id)} provider={tab === 'wecom' ? 'WE_COM' : 'WECHAT_OFFICIAL'} readOnly={doctor} /> : <>{tab === 'medications' && !doctor && <div className="toolbar"><Button icon={<PlusOutlined />} onClick={() => setMedication({ status: 'ACTIVE', source: 'HOSPITAL_RECORD', adherence: 'UNKNOWN' })}>登记用药</Button></div>}
       <DataTable state={history} page={page} setPage={setPage} columns={
         tab === 'records' ? [
           { title: '记录类型', dataIndex: 'record_type', render: value => <Status value={value} /> }, { title: '发生时间', dataIndex: 'occurred_at', render: dateText },

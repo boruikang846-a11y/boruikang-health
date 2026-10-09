@@ -1,3 +1,11 @@
+# 2.2 既有数据库升级规则
+
+本轮只加法升级，禁止按历史章节清库。先备份并在隔离副本演练、核对已应用版本；应用停止写入后按顺序执行待应用脚本：2.0 基线 → `PATIENT-SERVICE-2.1-migration.sql`（两表）→ `CONTINUITY-2.2-migration.sql`（三表及四列）。若 2.1 已存在，仅执行 2.2。ALTER 语句每版执行一次，不可重复执行；MySQL DDL 隐式提交，失败后先核对结构再恢复，不能盲目重跑。
+
+新空库使用完整 DDL（39 表），不要再执行增量脚本。DDL 的 IF NOT EXISTS 不会给既有表补列。既有 H2 local 数据库同样需要升级，或另建独立虚构演示库；不得自动删除旧文件。升级前的 VERIFIED 入口没有 service_consent_key，按失效处理，需续签并重新核实；历史反馈保留。
+
+本次未操作真实数据库。dev/prod 仍由独立部署仓发布。下面为基础说明与历史版本记录；出现清库的文字仅描述旧演示库初始化，不是本轮发布步骤。
+
 # 数据库使用说明
 
 MySQL 8 为部署目标。`DDL.sql` 是新库的规范表结构，`DML.sql` 是演示知识和未启用的接入配置，`dev/DML.sql` 是虚构账号、患者和任务。SQL 文件不指定库名；初始化时必须先创建目标库，并让 MySQL 客户端选择该库后按 DDL → DML → dev/DML 执行。dev 的目标库是华为云 RDS `101.44.27.60:3306/boruikang`，prod 由独立配置决定。按用户要求，dev 使用 `root` 账号，账号与口令直接保存在两端 `application-dev.properties` 中；Jenkins 的 dev 数据库凭据及目标机环境文件须与之保持一致。应用 dev/prod 均 `spring.sql.init.mode=never`，不会启动时建表或灌入演示数据。

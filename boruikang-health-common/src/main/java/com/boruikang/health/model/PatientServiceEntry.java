@@ -1,6 +1,7 @@
 package com.boruikang.health.model;
 import java.time.LocalDateTime;
 public class PatientServiceEntry extends BaseRow {
+ public String serviceConsentKey;
  public Long hospitalId;
  public Long contactId;
  public String tokenHash;

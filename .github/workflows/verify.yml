@@ -42,11 +42,14 @@ jobs:
       - name: Verify implementation contract and offline prototype
         run: |
           node tools/sync-implementation-contract.cjs
+          node tools/sync-continuity-contract.cjs
           node docs/demo-static/tests/platform-prototype.test.cjs
           node docs/demo-static/tests/implementation-prototype.test.cjs
           node docs/demo-static/tests/patient-upload.test.cjs
           node docs/demo-static/tests/service-navigation.test.cjs
           node docs/demo-static/tests/after-care-service.test.cjs
+          node docs/demo-static/tests/continuous-care.test.cjs
+          node docs/demo-static/tests/patient-service-center.test.cjs
           node docs/demo-static/tests/screening-details.test.cjs
       - name: Build admin UI
         working-directory: boruikang-health-admin/boruikang-health-admin-react
@@ -66,5 +69,16 @@ jobs:
           for sql in sql/DDL.sql sql/DML.sql sql/dev/DML.sql; do
             docker exec -i "$MYSQL_CONTAINER" mysql --default-character-set=utf8mb4 -uroot -phealth-ci-only boruikang_health < "$sql"
           done
+      - name: Verify additive patient service migrations
+        env:
+          MYSQL_CONTAINER: ${{ job.services.mysql.id }}
+        run: |
+          docker exec "$MYSQL_CONTAINER" mysql -uroot -phealth-ci-only -e 'CREATE DATABASE health_migration_probe'
+          for sql in sql/PATIENT-SERVICE-2.1-migration.sql sql/CONTINUITY-2.2-migration.sql; do
+            docker exec -i "$MYSQL_CONTAINER" mysql --default-character-set=utf8mb4 -uroot -phealth-ci-only health_migration_probe < "$sql"
+          done
+          docker exec "$MYSQL_CONTAINER" mysql -N -uroot -phealth-ci-only -e "SELECT TABLE_NAME,COLUMN_NAME,COLUMN_TYPE,IS_NULLABLE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='health_migration_probe' ORDER BY TABLE_NAME,COLUMN_NAME" > /tmp/migrated-columns
+          docker exec "$MYSQL_CONTAINER" mysql -N -uroot -phealth-ci-only -e "SELECT TABLE_NAME,COLUMN_NAME,COLUMN_TYPE,IS_NULLABLE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='boruikang_health' AND TABLE_NAME IN ('patient_service_entry','patient_service_feedback','continuous_care_plan','continuous_care_review','continuous_care_journey') ORDER BY TABLE_NAME,COLUMN_NAME" > /tmp/full-columns
+          diff -u /tmp/full-columns /tmp/migrated-columns
       - name: Verify Java modules and packaged resources
         run: mvn -B verify

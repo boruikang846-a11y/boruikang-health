@@ -6,7 +6,7 @@
     "wecom_owner": "BORUIKANG"
   },
   "routes": {
-    "admin": "/service-center",
+    "admin": "/wecom?tab=service",
     "patient": "/service"
   },
   "tables": [

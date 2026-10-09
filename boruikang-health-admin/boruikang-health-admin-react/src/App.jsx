@@ -15,6 +15,7 @@ import { Knowledge, Channels, Reports, Settings } from './pages/Operations'
 import Packages from './pages/Packages'
 import Accounts from './pages/Accounts'
 import WechatChannel from './pages/Wechat'
+import WecomWorkspace from './pages/WecomWorkspace'
 import { FunnelPlotOutlined, GiftOutlined, WechatOutlined, WechatWorkOutlined } from '@ant-design/icons'
 
 const navigation = [
@@ -82,7 +83,7 @@ function Shell({ account, logout }) {
     <div className="nav-caption">{account.role_code === 'DOCTOR' ? '医生工作台' : '院外连续服务'}</div>
     <Menu mode="inline" selectedKeys={[selected]} items={visible.map(([path, title, Icon]) => ({
       key: path, icon: <Icon />, label: <Link to={path}>{title}</Link>,
-    }))} /><div className="sidebar-foot"><span className="online-dot" /> 医患协作 / 2.0</div>
+    }))} /><div className="sidebar-foot"><span className="online-dot" /> 医患协作 / 2.2</div>
   </Layout.Sider><main className="main-content"><div className="page-enter" key={location.pathname}><Outlet context={account} /></div></main></Layout>
     <PasswordDialog open={password} onClose={() => setPassword(false)} /></Layout>
 }
@@ -108,7 +109,7 @@ export default function App() {
       <Route path="/screening" element={<CareWorkspace phase="before" />} /><Route path="/packages" element={<Packages />} />
       {['/workbench', '/patients', '/patients/:id', '/invitations', '/appointments', '/followups', '/alerts', '/revisits', '/referrals', '/doctor', '/doctor/reviews', '/doctor/reports', '/doctor/results', '/doctor/alerts'].map(path => <Route key={path} path={path} element={<LegacyCareRedirect />} />)}
       <Route path="/hospital" element={<Hospital />} /><Route path="/knowledge" element={<Knowledge />} /><Route path="/channels" element={<Channels />} /><Route path="/reports" element={<Reports />} /><Route path="/settings" element={<Settings />} />
-      <Route path="/accounts" element={<Accounts />} /><Route path="/wecom" element={<WechatChannel provider="WE_COM" key="WE_COM" />} /><Route path="/official-account" element={<WechatChannel provider="WECHAT_OFFICIAL" key="WECHAT_OFFICIAL" />} />
+      <Route path="/accounts" element={<Accounts />} /><Route path="/wecom" element={<WecomWorkspace />} /><Route path="/official-account" element={<WechatChannel provider="WECHAT_OFFICIAL" key="WECHAT_OFFICIAL" />} />
       <Route path="*" element={<Navigate to={account ? home(account.role_code) : '/login'} replace />} />
     </Route></Routes>
 }

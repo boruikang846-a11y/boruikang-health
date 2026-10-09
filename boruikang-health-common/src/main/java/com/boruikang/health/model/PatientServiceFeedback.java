@@ -1,6 +1,9 @@
 package com.boruikang.health.model;
 import java.time.LocalDateTime;
 public class PatientServiceFeedback extends BaseRow {
+ public String patientReply;
+ public Long repliedBy;
+ public java.time.LocalDateTime repliedAt;
  public Long hospitalId;
  public Long entryId;
  public Long patientId;
