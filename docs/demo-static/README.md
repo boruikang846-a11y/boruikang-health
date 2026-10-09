@@ -1,3 +1,7 @@
+# 心血管全周期服务探索原型
+
+[优化原型](web/cardiovascular.html) · [范围](../feature/cardiovascular-prototype.md) · [本地验收](../review/cardiovascular-prototype-2026-10-09.md)。患者统一视图、长期管理、患者填报与分阶段反馈闭环；内存演示，正式接口未实现。
+
 # 2.1 企业微信患者全程服务中心增量
 
 [服务中心原型](web/admin/patient-service-center-2.1.html)；统一交互原型已接入 /service-center。全部虚构内存演示，正式 H5 与 Java 接口另见本次需求。
