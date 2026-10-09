@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import SystemIntro from './SystemIntro'
+import PatientService from './PatientService'
 import WechatDemo from './WechatDemo'
 import { Button, Collapse, Tag } from 'antd'
 import { ArrowRightOutlined, CheckOutlined, DesktopOutlined, GlobalOutlined, HeartOutlined,
@@ -16,6 +17,9 @@ function useReveal(deps) {
   }, deps)
 }
 export default function App() {
+  return window.location.pathname === "/service" ? <PatientService /> : <Introduction />
+}
+function Introduction() {
   const [lang, setLang] = useState(localStorage.getItem('boruikang.lang') === 'en' ? 'en' : 'zh-CN')
   const t = (zh, en) => lang === 'en' ? en : zh
   useEffect(() => {
@@ -48,7 +52,7 @@ export default function App() {
     <h1>{t('让每一次关怀', 'Care that stays')}<br /><em>{t('延续到日常生活', 'with you.')}</em></h1>
     <p className="hero-description">{t('医院委托我们持续运营患者服务。院方负责医学判断，我们负责沟通、随访、复诊跟踪与结果反馈。', 'The hospital entrusts our team with ongoing patient services. Clinicians make medical decisions; we manage follow-ups, visit tracking and feedback.')}</p>
     <div className="hero-actions"><Button type="primary" size="large" href="#overview">{t('一图看懂整个系统', 'Explore the system')} <ArrowRightOutlined /></Button><a href="#roadmap">{t('查看建设进展', 'View the roadmap')}</a></div>
-    <div className="availability"><span className="availability-dot" />{t('当前为规划介绍，患者业务尚未开放', 'Introduction only. Patient services are not yet available.')}</div>
+    <div className="availability"><span className="availability-dot" />{t('患者服务请通过医院团队发送的专属链接进入', 'Introduction only. Patient services are not yet available.')}</div>
   </div><div className="hero-art" aria-label={t('患者与健康管理团队协作示意', 'Illustration of patients connected to a care team')}>
     <div className="orbit outer" /><div className="orbit inner" /><div className="center-heart"><HeartOutlined /><span>{t('以患者为中心', 'Patient centered')}</span></div>
     <div className="care-card top"><span className="small-icon"><TeamOutlined /></span><div><b>{t('受托运营团队', 'Managed operations team')}</b><small>{t('明确责任，持续跟进', 'Assigned care and continued support')}</small></div></div>
@@ -78,10 +82,10 @@ export default function App() {
   </section>
   <section id="faq" className="faq-section"><div className="section-intro" data-reveal><div className="eyebrow">GOOD TO KNOW</div><h2>{t('关于当前服务', 'About the current service')}</h2></div>
     <Collapse ghost expandIconPosition="end" className="faq-list" items={[
-      { key:'1',label:t('现在可以注册、咨询或提交健康指标吗？','Can I register, ask questions or submit health measurements now?'),children:<p>{t('暂时不可以。当前 HEALTH-USER 仅为介绍页面，不开放注册、登录、健康填报、在线咨询或自助入组，也不收集这些个人信息。','Not yet. HEALTH-USER is currently an introduction only. Registration, sign-in, measurements, consultations and self-enrollment are unavailable, and this page does not collect that personal information.')}</p> },
+      { key:'1',label:t('现在可以注册、咨询或提交健康指标吗？','Can I register, ask questions or submit health measurements now?'),children:<p>{t('公开页面不提供注册。医院团队可通过企微私发专属 H5 链接；登记和身份核实后，可查看服务旅程、提交咨询与随访反馈。','Not yet. HEALTH-USER is currently an introduction only. Registration, sign-in, measurements, consultations and self-enrollment are unavailable, and this page does not collect that personal information.')}</p> },
       { key:'2',label:t('企业微信、公众号和小程序已经可以使用了吗？','Are WeCom, the Official Account and the Mini Program available?'),children:<p>{t('后台已经具备企业微信和公众号的沟通功能，上方的演示展示了互动方式；真实通道要等医院提供接入参数并完成联调后才开通。小程序仍在规划。这里的展示不代表渠道已经接通。','The staff workspace already supports WeCom and Official Account communication, as the walk-through above shows; the real channels open only after the hospital provides credentials and integration testing is complete. The Mini Program is still planned. Their presence here does not imply a connected service.')}</p> },
       { key:'3',label:t('系统会自动诊断或自动回复患者吗？','Will the system diagnose or automatically reply to patients?'),children:<p>{t('不会。后台按医生审核、人工负责的方式设计：系统不独立诊断、开药或调整治疗方案，也不自动回复。微信消息只在工作人员点击发送时发出，涉及病情的内容须经责任医生审核。','No. The staff workspace is built around clinical review and human responsibility: it does not diagnose, prescribe, change treatment or reply automatically. WeChat messages go out only when a staff member clicks send, and clinical content requires the responsible doctor’s review.')}</p> },
-      { key:'4',label:t('如何了解后续开放进展？','How can I learn about future availability?'),children:<p>{t('后续以本页面的建设进展与医院服务团队正式通知为准。当前没有预约名额或资料收集入口。','Refer to this roadmap and official announcements from your hospital care team. No waitlist or information collection form is available at this stage.')}</p> },
+      { key:'4',label:t('如何了解后续开放进展？','How can I learn about future availability?'),children:<p>{t('后续以本页面的建设进展与医院服务团队正式通知为准。患者服务请使用医院团队私发的专属入口。','Refer to this roadmap and official announcements from your hospital care team. No waitlist or information collection form is available at this stage.')}</p> },
     ]} />
   </section></main><footer className="site-footer"><a className="brand" href="/"><span className="brand-icon"><HeartOutlined /></span><span>{t('博瑞康', 'Boruikang')} <b>Health</b></span></a><p>{t('苏州博瑞康医疗科技有限公司 · 医患运营管理系统', '苏州博瑞康医疗科技有限公司 · Patient relationship and care operations')}</p><span>HEALTH MVP / {t('持续建设中','In development')}</span></footer></div>
 }

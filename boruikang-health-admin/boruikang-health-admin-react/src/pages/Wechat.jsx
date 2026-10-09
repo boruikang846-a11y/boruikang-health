@@ -9,7 +9,7 @@ import { DataTable, dateText, FormDialog, LoadState, names, PageTitle, required,
 /** WeCom and the Official Account are separate menu pages; each says what its own channel can and cannot do. */
 export const channelPages = {
   WE_COM: { path: '/wecom', title: '企业微信', who: '企业微信客户', join: '加企业微信好友',
-    subtitle: '患者加医院企业微信成员为好友后，在这里核实身份并绑定患者档案。消息以群发任务下发，成员在企业微信里确认后才发出。',
+    subtitle: '患者加博瑞康企业微信成员为好友后，在这里核实身份并绑定患者档案。消息以群发任务下发，成员在企业微信里确认后才发出。',
     events: [{ value: 'FOLLOW', label: '加好友' }, { value: 'UNFOLLOW', label: '删好友' }], mockId: 'wm-demo-0006' },
   WECHAT_OFFICIAL: { path: '/official-account', title: '公众号', who: '公众号粉丝', join: '关注公众号',
     subtitle: '患者关注医院公众号后，在这里核实身份并绑定患者档案。患者来信进入待处理；48 小时内有互动可以回文字，否则发模板消息。',

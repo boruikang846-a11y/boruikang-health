@@ -1,0 +1,373 @@
+{
+  "version": "HEALTH-2.2",
+  "disease": "AF",
+  "wecomOwner": "BORUIKANG",
+  "routes": {
+    "admin": "/wecom?tab=service",
+    "summary": "/after-care?step=patients&patient=:id",
+    "patient": "/service"
+  },
+  "requests": {
+    "ApproveContinuousCareRequest": [
+      "id",
+      "version",
+      "approve",
+      "evidence"
+    ],
+    "ContinuousCareQueryRequest": [
+      "patient_id"
+    ],
+    "LinkContinuousJourneyRequest": [
+      "id",
+      "version",
+      "journey_id",
+      "evidence"
+    ],
+    "ReviewContinuousCareRequest": [
+      "id",
+      "version",
+      "journey_id",
+      "summary",
+      "evidence",
+      "patient_message",
+      "assessment",
+      "next_review_date"
+    ],
+    "SaveContinuousCareRequest": [
+      "id",
+      "version",
+      "patient_id",
+      "baseline",
+      "goals",
+      "patient_instructions",
+      "next_review_date",
+      "evidence"
+    ],
+    "TransitionContinuousCareRequest": [
+      "id",
+      "version",
+      "action",
+      "evidence"
+    ],
+    "PatientEntryAccessRequest": [
+      "token"
+    ],
+    "PatientEntryFeedbackRequest": [
+      "token",
+      "journey_id",
+      "request_id",
+      "kind",
+      "content"
+    ],
+    "PatientEntryRegisterRequest": [
+      "token",
+      "patient_name",
+      "phone",
+      "relation",
+      "entry_phase",
+      "consent"
+    ],
+    "ReplyPatientFeedbackRequest": [
+      "id",
+      "case_version",
+      "patient_reply"
+    ],
+    "ServiceEntryIssueRequest": [
+      "contact_id"
+    ],
+    "ServiceEntryQueryRequest": [
+      "page",
+      "size",
+      "status"
+    ],
+    "ServiceEntryRevokeRequest": [
+      "id",
+      "version",
+      "reason"
+    ],
+    "ServiceEntryVerifyRequest": [
+      "id",
+      "version",
+      "patient_id",
+      "evidence"
+    ]
+  },
+  "endpoints": [
+    {
+      "method": "POST",
+      "path": "/boruikang/admin/continuity/approve",
+      "request": "ApproveContinuousCareRequest"
+    },
+    {
+      "method": "POST",
+      "path": "/boruikang/admin/continuity/link",
+      "request": "LinkContinuousJourneyRequest"
+    },
+    {
+      "method": "POST",
+      "path": "/boruikang/admin/continuity/query",
+      "request": "ContinuousCareQueryRequest"
+    },
+    {
+      "method": "POST",
+      "path": "/boruikang/admin/continuity/review",
+      "request": "ReviewContinuousCareRequest"
+    },
+    {
+      "method": "POST",
+      "path": "/boruikang/admin/continuity/save",
+      "request": "SaveContinuousCareRequest"
+    },
+    {
+      "method": "POST",
+      "path": "/boruikang/admin/continuity/summary",
+      "request": "ContinuousCareQueryRequest"
+    },
+    {
+      "method": "POST",
+      "path": "/boruikang/admin/continuity/transition",
+      "request": "TransitionContinuousCareRequest"
+    },
+    {
+      "method": "POST",
+      "path": "/boruikang/admin/service_center/feedback_query",
+      "request": "ContinuousCareQueryRequest"
+    },
+    {
+      "method": "POST",
+      "path": "/boruikang/admin/service_center/feedback_reply",
+      "request": "ReplyPatientFeedbackRequest"
+    },
+    {
+      "method": "POST",
+      "path": "/boruikang/admin/service_center/issue",
+      "request": "ServiceEntryIssueRequest"
+    },
+    {
+      "method": "POST",
+      "path": "/boruikang/admin/service_center/query",
+      "request": "ServiceEntryQueryRequest"
+    },
+    {
+      "method": "POST",
+      "path": "/boruikang/admin/service_center/revoke",
+      "request": "ServiceEntryRevokeRequest"
+    },
+    {
+      "method": "POST",
+      "path": "/boruikang/admin/service_center/verify",
+      "request": "ServiceEntryVerifyRequest"
+    }
+  ],
+  "tables": {
+    "continuous_care_plan": [
+      {
+        "column": "id",
+        "type": "BIGINT"
+      },
+      {
+        "column": "hospital_id",
+        "type": "BIGINT"
+      },
+      {
+        "column": "patient_id",
+        "type": "BIGINT"
+      },
+      {
+        "column": "disease_code",
+        "type": "VARCHAR(24)"
+      },
+      {
+        "column": "consent_key",
+        "type": "VARCHAR(64)"
+      },
+      {
+        "column": "status",
+        "type": "VARCHAR(24)"
+      },
+      {
+        "column": "approval_status",
+        "type": "VARCHAR(24)"
+      },
+      {
+        "column": "baseline",
+        "type": "VARCHAR(2000)"
+      },
+      {
+        "column": "goals",
+        "type": "VARCHAR(2000)"
+      },
+      {
+        "column": "patient_instructions",
+        "type": "VARCHAR(2000)"
+      },
+      {
+        "column": "next_review_date",
+        "type": "DATE"
+      },
+      {
+        "column": "revision",
+        "type": "INT"
+      },
+      {
+        "column": "reviewer_id",
+        "type": "BIGINT"
+      },
+      {
+        "column": "reviewed_at",
+        "type": "DATETIME"
+      },
+      {
+        "column": "version",
+        "type": "INT"
+      },
+      {
+        "column": "del_flag",
+        "type": "TINYINT"
+      },
+      {
+        "column": "creator",
+        "type": "VARCHAR(64)"
+      },
+      {
+        "column": "modifier",
+        "type": "VARCHAR(64)"
+      },
+      {
+        "column": "gmt_create",
+        "type": "DATETIME"
+      },
+      {
+        "column": "gmt_modified",
+        "type": "DATETIME"
+      }
+    ],
+    "continuous_care_review": [
+      {
+        "column": "id",
+        "type": "BIGINT"
+      },
+      {
+        "column": "hospital_id",
+        "type": "BIGINT"
+      },
+      {
+        "column": "patient_id",
+        "type": "BIGINT"
+      },
+      {
+        "column": "plan_id",
+        "type": "BIGINT"
+      },
+      {
+        "column": "revision",
+        "type": "INT"
+      },
+      {
+        "column": "kind",
+        "type": "VARCHAR(24)"
+      },
+      {
+        "column": "summary",
+        "type": "TEXT"
+      },
+      {
+        "column": "evidence",
+        "type": "VARCHAR(2000)"
+      },
+      {
+        "column": "patient_message",
+        "type": "VARCHAR(2000)"
+      },
+      {
+        "column": "assessment",
+        "type": "VARCHAR(24)"
+      },
+      {
+        "column": "journey_id",
+        "type": "BIGINT"
+      },
+      {
+        "column": "actor_id",
+        "type": "BIGINT"
+      },
+      {
+        "column": "next_review_date",
+        "type": "DATE"
+      },
+      {
+        "column": "del_flag",
+        "type": "TINYINT"
+      },
+      {
+        "column": "creator",
+        "type": "VARCHAR(64)"
+      },
+      {
+        "column": "modifier",
+        "type": "VARCHAR(64)"
+      },
+      {
+        "column": "gmt_create",
+        "type": "DATETIME"
+      },
+      {
+        "column": "gmt_modified",
+        "type": "DATETIME"
+      }
+    ],
+    "continuous_care_journey": [
+      {
+        "column": "id",
+        "type": "BIGINT"
+      },
+      {
+        "column": "hospital_id",
+        "type": "BIGINT"
+      },
+      {
+        "column": "patient_id",
+        "type": "BIGINT"
+      },
+      {
+        "column": "plan_id",
+        "type": "BIGINT"
+      },
+      {
+        "column": "journey_id",
+        "type": "BIGINT"
+      },
+      {
+        "column": "del_flag",
+        "type": "TINYINT"
+      },
+      {
+        "column": "creator",
+        "type": "VARCHAR(64)"
+      },
+      {
+        "column": "modifier",
+        "type": "VARCHAR(64)"
+      },
+      {
+        "column": "gmt_create",
+        "type": "DATETIME"
+      },
+      {
+        "column": "gmt_modified",
+        "type": "DATETIME"
+      }
+    ]
+  },
+  "addedColumns": [
+    "patient_service_entry.service_consent_key",
+    "patient_service_feedback.patient_reply",
+    "patient_service_feedback.replied_by",
+    "patient_service_feedback.replied_at"
+  ],
+  "patientVisibility": "ACTIVE plan approved by current responsible doctor under current service consent; explicit patient replies only",
+  "acceptance": [
+    "one complete case for workflow",
+    "consecutive enrolled cohort for stability and actual results"
+  ]
+}

@@ -18,6 +18,8 @@ class JourneyHttpTest {
  @Value("${local.server.port}") int port;
  @Autowired ObjectMapper json;
  @Autowired com.boruikang.health.mapper.JourneyCaseMapper caseMapper;
+ @Autowired com.boruikang.health.mapper.WechatContactMapper contactMapper;
+ @Autowired com.boruikang.health.servicecenter.service.PatientServiceCenter patientPortal;
  final HttpClient http=HttpClient.newHttpClient();
  String key(){return UUID.randomUUID().toString();}
  String at(int days){return LocalDateTime.now().minusDays(days).withNano(0).toString();}
@@ -153,4 +155,38 @@ class JourneyHttpTest {
   var profile=http.send(HttpRequest.newBuilder(URI.create("http://127.0.0.1:"+port+"/boruikang/admin/patients/"+p)).header("Jwttoken",m).GET().build(),HttpResponse.BodyHandlers.ofString());var pr=json.readTree(profile.body()).path("result");ok("/patients/consent",map("id",p,"version",pr.path("version").asInt(),"consent_at",at(0),"consent_version","DEMO-NEW","consent_evidence","虚构重新取得本用途服务授权"),m);assertEquals("INTAKE",ok("/journeys/create",create,n).path("status").asText());assertEquals("EXITED",ok("/journeys/detail",map("id",secondId),n).path("status").asText(),"new consent never silently resumes old journeys");
  }
 
+
+ @Test void continuousPlanSurvivesCompleteEvidenceBasedJourneyAndRejectsConcurrentOverwrite()throws Exception {
+  String m=login("manager"),n=login("nurse"),d=login("doctor");long p=patient(m);
+  var contact=new com.boruikang.health.model.WechatContact();contact.hospitalId=1L;contact.channel="WE_COM";contact.externalId=key();contact.nickname="虚构完整案例联系人";contact.patientId=0L;contact.staffAccountId=6L;contact.relation="ACTIVE";contact.pendingCount=0;contact.version=0;contact.mock=true;contact.creator="test";contactMapper.insertSelective(contact);
+  var invitation=ok("/service_center/issue",map("contact_id",contact.id),n);String inviteToken=invitation.path("token").asText();
+  patientPortal.register(new com.boruikang.health.servicecenter.dto.PatientEntryRegisterRequest(inviteToken,"虚构受邀患者","00000000031","SELF","AFTER_CARE",true));
+  ok("/service_center/verify",map("id",invitation.path("id").asLong(),"version",1,"patient_id",p,"evidence","虚构身份授权及代办核实"),n);
+  var plan=ok("/continuity/save",map("patient_id",p,"baseline","虚构基线","goals","虚构房颤管理目标，医师确认","patient_instructions","按个案安排接受服务","next_review_date",java.time.LocalDate.now().plusDays(20).toString(),"evidence","虚构核对资料"),n);
+  assertEquals(403,request("/continuity/approve",map("id",plan.path("id").asLong(),"version",0,"approve",true,"evidence","不可代审"),n).statusCode());
+  JsonNode j=approve(draft(ready(p,"DISCHARGE","AFTER_CARE",m,n,d),n),d);
+  plan=ok("/continuity/link",map("id",plan.path("id").asLong(),"version",plan.path("version").asInt(),"journey_id",j.path("id").asLong(),"evidence","关联本次就医"),n);
+  plan=ok("/continuity/approve",map("id",plan.path("id").asLong(),"version",plan.path("version").asInt(),"approve",true,"evidence","医生本人审核长期安排"),d);
+  var portalAccess=new com.boruikang.health.servicecenter.dto.PatientEntryAccessRequest(inviteToken);
+  assertEquals(1,patientPortal.portal(portalAccess).continuousPlans().size());
+  var patientFeedback=new com.boruikang.health.servicecenter.dto.PatientEntryFeedbackRequest(inviteToken,j.path("id").asLong(),key(),"CLINICAL","虚构患者阶段反馈");
+  patientPortal.feedback(patientFeedback);patientPortal.feedback(patientFeedback);
+  j=ok("/journeys/detail",map("id",j.path("id").asLong()),n);long caseId=j.path("cases").get(0).path("id").asLong();
+  var accept=command(j);accept.putAll(map("case_id",caseId,"action","ACCEPT"));j=ok("/journeys/case_action",accept,d);
+  var resolve=command(j);resolve.putAll(map("case_id",caseId,"action","RESOLVE"));j=ok("/journeys/case_action",resolve,d);
+  var f=ok("/service_center/feedback_query",map("patient_id",p),d).get(0);
+  ok("/service_center/feedback_reply",map("id",f.path("id").asLong(),"case_version",f.path("case_version").asInt(),"patient_reply","责任医生已处理，请按个案安排复诊"),d);
+  assertEquals("责任医生已处理，请按个案安排复诊",patientPortal.portal(portalAccess).feedback().getFirst().patientReply());
+  var receipt=command(j);receipt.putAll(map("case_id",caseId,"action","CLOSE"));j=ok("/journeys/case_action",receipt,n);
+  j=finishFollowups(j,n,d);long a=appointment(p,"REVISIT",1,m);j=step(j,n,"outcome","VERIFIED","appointment_id",a,"satisfaction_status","RATED","satisfaction_score",5);assertEquals("CLOSED",j.path("status").asText());
+  var summary=ok("/continuity/summary",map("patient_id",p),n);assertEquals("ACTIVE",summary.path("plans").get(0).path("status").asText());assertTrue(summary.path("latest_report").path("reviewed").asBoolean());
+  var body=map("id",plan.path("id").asLong(),"version",plan.path("version").asInt(),"journey_id",j.path("id").asLong(),"summary","完成复诊后的阶段评价","evidence","虚构独立复诊证据","patient_message","继续按确认后的个案安排服务","assessment","UNKNOWN","next_review_date",java.time.LocalDate.now().plusDays(40).toString());
+  var pool=Executors.newFixedThreadPool(2);try{var results=pool.invokeAll(List.of(()->request("/continuity/review",body,d).statusCode(),()->request("/continuity/review",body,d).statusCode()));var codes=List.of(results.get(0).get(),results.get(1).get());assertTrue(codes.contains(200));assertTrue(codes.contains(409));}finally{pool.shutdown();}
+  assertEquals(404,request("/continuity/summary",map("patient_id",p),login("operator_a")).statusCode());
+  assertEquals(403,request("/continuity/summary",map("patient_id",p),login("platform")).statusCode());
+  JsonNode second=start(p,"OUTPATIENT","AFTER_CARE",m,n);plan=ok("/continuity/query",map("patient_id",p),n).get(0);
+  plan=ok("/continuity/link",map("id",plan.path("id").asLong(),"version",plan.path("version").asInt(),"journey_id",second.path("id").asLong(),"evidence","再次就医沿用长期计划"),n);
+  assertEquals(2,plan.path("journey_ids").size());assertEquals(2,patientPortal.portal(portalAccess).journeys().size());
+  assertEquals("CLOSED",patientPortal.portal(portalAccess).feedback().getFirst().status());
+ }
 }

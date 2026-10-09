@@ -197,7 +197,7 @@ function render(){
   const publicRoute=['/login','/flow','/overview','/public'].includes(current.path);
   if(!account&&!publicRoute){go('/login');return}
   const allowed=publicRoute||(typeof serviceRouteAllowed==='function'?serviceRouteAllowed(current.path):menu().some(([p])=>current.path===p||current.path.startsWith(p+'/')));
-  $('#header').innerHTML='<div class="brand">博瑞康 Health<small>门诊 / 住院 / 体检全流程 · 虚构演示数据</small></div><div class="row">'+link('页面流程','/flow')+'<a href="patient-service-center.html">患者服务中心</a>'+(account?'<span>'+esc(account.name+' · '+roles[account.role])+'</span>'+button('修改演示密码','password')+button('切换角色','logout'):link('角色入口','/login'))+'</div>';
+  $('#header').innerHTML='<div class="brand">博瑞康 Health<small>门诊 / 住院 / 体检全流程 · 虚构演示数据</small></div><div class="row">'+link('页面流程','/flow')+'<a href="#/after-care?tab=summary'+(current.query.get('patient')?'&amp;patient='+esc(current.query.get('patient')):'')+'">患者服务预览</a>'+(account?'<span>'+esc(account.name+' · '+roles[account.role])+'</span>'+button('修改演示密码','password')+button('切换角色','logout'):link('角色入口','/login'))+'</div>';
   $('#nav').innerHTML=account?'<small>'+esc(roles[account.role])+'</small>'+careHubNav():link('角色入口','/login')+link('完整页面流程','/flow')+link('系统公开介绍','/public');
   let html='';
   if(!allowed)html=forbidden();
@@ -209,6 +209,7 @@ function render(){
   else if(current.path==='/journeys'||/^\/journeys\/\d+$/.test(current.path))html=journeyPage();
   else if(current.path==='/enrollment')html=enrollmentPage();
   else if(current.path==='/in-care')html=inCarePage();
+  else if(current.path==='/service-center')html=typeof csWecom==='function'?csWecom():page('企业微信患者全程服务中心','2.1 受邀入组与患者 H5 增量；虚构内存演示，不代表真实接通。',`<iframe title="患者全程服务中心原型" src="admin/patient-service-center-2.1.html" style="width:100%;height:1100px;border:0"></iframe>`);
   else if(current.path==='/after-care')html=afterCarePage();
   else if(current.path==='/patients')html=patientList();
   else if(/^\/patients\/\d+$/.test(current.path))html=patientDetail(current.path.split('/').pop());

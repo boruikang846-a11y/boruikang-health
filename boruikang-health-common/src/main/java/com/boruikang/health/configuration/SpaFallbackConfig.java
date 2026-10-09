@@ -32,8 +32,8 @@ public class SpaFallbackConfig implements WebMvcConfigurer {
     private final List<String> routePrefixes;
 
     public SpaFallbackConfig(@Value("${health.portal}") String portal) {
-        routePrefixes="user".equals(portal)?List.of("/join"):List.of(
-            "/journeys", "/after-care", "/hospital", "/overview", "/login", "/workbench", "/patients", "/followups", "/alerts", "/revisits",
+        routePrefixes="user".equals(portal)?List.of("/join", "/service"):List.of(
+            "/service-center", "/journeys", "/after-care", "/hospital", "/overview", "/login", "/workbench", "/patients", "/followups", "/alerts", "/revisits",
             "/knowledge", "/channels", "/reports", "/settings",
             "/screening", "/invitations", "/appointments", "/packages", "/referrals", "/accounts", "/doctor", "/wecom", "/official-account");
     }
