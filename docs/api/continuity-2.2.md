@@ -20,6 +20,6 @@
 
 issue.path 改为 health.user-url + /service#token，可直接复制；须配置正确患者端域名，不能使用管理端域名。患者入口在人工核实时记录 service_consent_key；授权变化后旧令牌失败。新授权需新入口核实与计划重审。
 
-并发：先锁患者，再锁计划；version 条件更新防覆盖。只允许一个未结束 AF 计划。反馈发布先锁患者再锁工单，增加 case.version；回复审计只追加。状态非法返回 400，不可见 404，权限 403，旧版本 409。患者端响应沿用 no-store 和限流。
+并发：写事务采用 READ_COMMITTED，先锁患者，再锁计划；避免等待患者锁后仍读取旧的授权撤回快照；version 条件更新防覆盖。只允许一个未结束 AF 计划。反馈发布先锁患者再锁工单，增加 case.version；回复审计只追加。状态非法返回 400，不可见 404，权限 403，旧版本 409。患者端响应沿用 no-store 和限流。
 
 [机器契约](../contracts/continuity-2.2.json) 从 Java DTO / Controller 与 SQL 生成。新增三表 continuous_care_plan / continuous_care_journey / continuous_care_review；旧受邀表加四列。升级路径见 [SQL 说明](../../sql/README.md)。

@@ -13,11 +13,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.pagehelper.PageHelper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Isolation;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 
-/** A patient's continuous programme survives individual encounter closure. No automatic clinical decisions. */
+/** Mutations use current reads after the patient lock so concurrent consent withdrawal cannot be hidden by an older snapshot.
+ * A patient's continuous programme survives individual encounter closure. No automatic clinical decisions. */
 @Service
 public class ContinuousCareService {
     private final ContinuousCarePlanMapper plans;
@@ -74,7 +76,7 @@ public class ContinuousCareService {
         Checks.conflict(plans.updateByExampleSelective(patch,ex)==1);
     }
 
-    @Transactional
+    @Transactional(isolation=Isolation.READ_COMMITTED)
     public ContinuousCareResponse save(SaveContinuousCareRequest req) {
         nextDate(req.nextReviewDate());Patient p;ContinuousCarePlan plan;
         if(req.id()==null) {
@@ -95,7 +97,7 @@ public class ContinuousCareService {
         return view(plan,p);
     }
 
-    @Transactional
+    @Transactional(isolation=Isolation.READ_COMMITTED)
     public ContinuousCareResponse approve(ApproveContinuousCareRequest req) {
         var locked=lock(req.id(),req.version());var plan=locked.plan();var p=locked.patient();access.responsibleDoctor(p);
         Checks.require(!"CLOSED".equals(plan.status),"已结束计划不能审核");
@@ -106,7 +108,7 @@ public class ContinuousCareService {
         return view(plan,p);
     }
 
-    @Transactional
+    @Transactional(isolation=Isolation.READ_COMMITTED)
     public ContinuousCareResponse link(LinkContinuousJourneyRequest req) {
         var locked=lock(req.id(),req.version());var plan=locked.plan();var p=locked.patient();
         Checks.require(!"CLOSED".equals(plan.status),"已结束计划不能关联新旅程");
@@ -118,7 +120,7 @@ public class ContinuousCareService {
         event(plan,"JOURNEY_LINKED","关联就医旅程 #"+j.id,req.evidence(),"","UNKNOWN",j.id,null);return view(plan,p);
     }
 
-    @Transactional
+    @Transactional(isolation=Isolation.READ_COMMITTED)
     public ContinuousCareResponse review(ReviewContinuousCareRequest req) {
         nextDate(req.nextReviewDate());var locked=lock(req.id(),req.version());var plan=locked.plan();var p=locked.patient();
         access.responsibleDoctor(p);currentApproved(plan,p);
@@ -128,7 +130,7 @@ public class ContinuousCareService {
         event(plan,"STAGE_REVIEW",req.summary(),req.evidence(),req.patientMessage(),req.assessment(),req.journeyId(),req.nextReviewDate());return view(plan,p);
     }
 
-    @Transactional
+    @Transactional(isolation=Isolation.READ_COMMITTED)
     public ContinuousCareResponse transition(TransitionContinuousCareRequest req) {
         var locked=lock(req.id(),req.version());var plan=locked.plan();var p=locked.patient();var patch=new ContinuousCarePlan();
         switch(req.action()) {
