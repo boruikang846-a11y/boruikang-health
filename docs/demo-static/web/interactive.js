@@ -40,8 +40,10 @@ const mine=p=>account&&p&&(manager()||(account.role==='DOCTOR'?p.doctor===accoun
 const patients=()=>demo.patients.filter(mine);
 const pool=()=>demo.pool.filter(x=>manager()||x.owner===account?.id);
 const tasks=()=>demo.tasks.filter(t=>mine(patient(t.patient)));
-const home=()=>account.role==='DOCTOR'?'/doctor':account.role==='PLATFORM_ADMIN'?'/settings':'/workbench';
-const menu=()=>account.role==='DOCTOR'?doctors:account.role==='PLATFORM_ADMIN'?operations.filter(([p])=>['/settings','/overview'].includes(p)):manager()?operations:operations.filter(([p])=>!['/channels','/accounts'].includes(p));
+const home=()=>account.role==='PLATFORM_ADMIN'?'/settings':'/journeys';
+const roleMenu=()=>account.role==='DOCTOR'?doctors:account.role==='PLATFORM_ADMIN'?operations.filter(([p])=>['/settings','/overview'].includes(p)):manager()?operations:operations.filter(([p])=>!['/channels','/accounts'].includes(p));
+const menu=()=>roleMenu();
+const matchesPatient=id=>!current.query.get('patient')||String(id)===current.query.get('patient');
 function toast(text){clearTimeout(noticeTimer);$('#notice').textContent=text;$('#notice').classList.add('visible');noticeTimer=setTimeout(()=>$('#notice').classList.remove('visible'),4500)}
 function go(path){if(location.hash==='#'+path)render();else location.hash=path}
 function audit(text,p=0){demo.audits.unshift({at:new Date().toLocaleString('zh-CN'),patient:Number(p),text:account.name+'：'+text})}
@@ -56,14 +58,14 @@ function modal(title,action,id,fields,help=''){
   $('#dialog-content').innerHTML='<h2>'+esc(title)+'</h2><form data-form="'+esc(action)+'" data-id="'+esc(id)+'"><div class="form-grid">'+fields+'</div><p>'+esc(help)+'</p><div class="form-actions">'+button('取消','close')+'<button type="submit" class="primary">保存演示记录</button></div></form>';
   $('#dialog').showModal();
 }
-function patientChoice(value){return field('patient','患者','select',value||patients()[0]?.id||'',patients().map(p=>({value:p.id,label:p.name})))}
+function patientChoice(value){return field('patient','患者','select',value||current.query.get('patient')||patients()[0]?.id||'',patients().map(p=>({value:p.id,label:p.name})))}
 function patientCell(id){const p=patient(id);return p?link(p.name,'/patients/'+p.id):'—'}
 function timeline(id){return '<ul class="timeline">'+demo.audits.filter(a=>!id||a.patient===Number(id)).map(a=>'<li><small class="muted">'+esc(a.at)+'</small><br>'+esc(a.text)+'</li>').join('')+'</ul>'}
 function tabs(items,active){return '<div class="tabs">'+items.map(([key,label,path])=>link(label,path,key===active?'active':'')).join('')+'</div>'}
 function recordCard(r){return card(r.title,'<div class="row">'+tag(r.type)+tag(r.status)+'</div><div class="report">'+esc(r.text)+'</div><p>医生意见：'+esc(r.opinion||'尚未填写')+'</p>'+((account.role==='DOCTOR'&&mine(patient(r.patient)))?button(r.status==='READ'?'更新医生意见':'确认已阅 / 写意见','read-report',r.id,'primary'):'')+' '+link('打开患者档案','/patients/'+r.patient))}
 
 function login(){
-  return '<div class="login"><div class="hero"><small>HEALTH 2.0 · 当前实现交互原型</small><h1>每一次随访，都有下文。</h1><p>选择演示角色，查看完整页面跳转与团队交接。所有患者、报告和业务记录均为虚构。</p>'+link('查看完整页面流程','/flow','btn')+' '+link('公开系统介绍','/overview','btn')+'</div><div class="roles">'+Object.keys(roles).map(role=>card(roles[role],'<p>'+esc({MANAGER:'全院运营、分派、医护账号和医院 Mock 数据。',DOCTOR:'看报告、审核意见、查收随访结果、处置异常。',NURSE:'处理分配给自己的患者，与运营人员使用同一套执行页面。',OPERATOR:'建档、起草、提交审核、人工联系、邀约与到诊核实。',PLATFORM_ADMIN:'维护接入设置，不访问患者数据。'}[role])+'</p><label>演示账号<select id="login-'+role+'">'+demo.accounts.filter(a=>a.role===role).map(a=>'<option value="'+a.id+'"'+(!a.active?' disabled':'')+'>'+esc(a.identifier+' · '+a.name+(!a.active?'（已停用）':''))+'</option>').join('')+'</select></label>'+button('进入演示','login',role,'primary'))).join('')+'<div class="card"><h2>体验说明</h2><p>角色入口用于演示页面流程，不连接登录接口。数据在当前页面中联动；刷新或重置后恢复初始演示状态。</p>'+button('重置全部演示记录','reset')+'</div></div></div>';
+  return '<div class="login"><div class="hero"><small>博瑞康 Health · 患者服务</small><h1>每一次随访，都有下文。</h1><p>选择演示角色，查看完整页面跳转与团队交接。所有患者、报告和业务记录均为虚构。</p>'+link('查看完整页面流程','/flow','btn')+' '+link('公开系统介绍','/overview','btn')+'</div><div class="roles">'+Object.keys(roles).map(role=>card(roles[role],'<p>'+esc({MANAGER:'全院运营、分派、医护账号和医院 Mock 数据。',DOCTOR:'看报告、审核意见、查收随访结果、处置异常。',NURSE:'处理分配给自己的患者，与运营人员使用同一套执行页面。',OPERATOR:'建档、起草、提交审核、人工联系、邀约与到诊核实。',PLATFORM_ADMIN:'维护接入设置，不访问患者数据。'}[role])+'</p><label>演示账号<select id="login-'+role+'">'+demo.accounts.filter(a=>a.role===role).map(a=>'<option value="'+a.id+'"'+(!a.active?' disabled':'')+'>'+esc(a.identifier+' · '+a.name+(!a.active?'（已停用）':''))+'</option>').join('')+'</select></label>'+button('进入演示','login',role,'primary'))).join('')+'<div class="card"><h2>体验说明</h2><p>角色入口用于演示页面流程，不连接登录接口。数据在当前页面中联动；刷新或重置后恢复初始演示状态。</p>'+button('重置全部演示记录','reset')+'</div></div></div>';
 }
 function dashboard(doctor=false){
   const ts=tasks(),ps=patients();
@@ -74,10 +76,10 @@ function dashboard(doctor=false){
 }
 function journey(){return '<div class="flow">'+[['医生看报告','/doctor/reports'],['团队起草','/followups/2001'],['医生审核','/doctor/reviews'],['团队人工联系','/followups/2001'],['医生查收','/doctor/results']].map(([l,p])=>link(l,p)).join('')+'</div><p class="muted">需要对应角色才能执行各步骤。右上角“切换角色”返回演示入口；切换角色保留当前演示记录。</p>'}
 function patientList(){
-  const key=current.query.get('q')||'',risk=current.query.get('risk')||'',batch=current.query.get('batch')||'',all=patients();let ps=all.filter(p=>(p.name+p.id+p.department+(p.phone||'')).includes(key)&&(!risk||p.risk===risk)&&(!batch||p.batch===batch));
+  const key=current.query.get('q')||'',risk=current.query.get('risk')||'',batch=current.query.get('batch')||'',all=patients().filter(p=>matchesPatient(p.id));let ps=all.filter(p=>(p.name+p.id+p.department+(p.phone||'')).includes(key)&&(!risk||p.risk===risk)&&(!batch||p.batch===batch));
   const categoryValue=current.query.get('category');if(categoryValue&&categoryValue!=='ALL')ps=ps.filter(p=>p.patient_type===categoryValue);
   const sourceName={HOSPITAL_MOCK:'医院 Mock',MANUAL:'人工补充',FILE_IMPORT:'文件导入'};
-  const title='<div class="crumb">'+link('流程总览','/flow')+' / 患者管理</div><div class="patient-page-head"><div><h1>'+(account.role==='DOCTOR'?'我的患者':'患者中心')+'</h1><p>集中管理患者档案，连接责任医生与日常跟进人员。</p></div>'+(canOperate()?'<div class="row">'+importButton('上传患者信息','open','primary')+button('新建患者','new-patient','','primary')+'</div>':'')+'</div>';
+  const title='<div class="crumb">'+link('流程总览','/flow')+' / 患者管理</div><div class="patient-page-head"><div><h1>'+(account.role==='DOCTOR'?'我负责的患者档案':'患者档案与接入')+'</h1><p>集中管理患者档案，连接责任医生与日常跟进人员。</p></div>'+(canOperate()?'<div class="row">'+importButton('上传患者信息','open','primary')+button('新建患者','new-patient','','primary')+'</div>':'')+'</div>';
   const metrics='<div class="patient-metrics">'+[['可见患者',all.length,'已建立健康档案'],['待评估',all.filter(p=>p.risk==='待评估').length,'等待责任医生评估'],['高风险',all.filter(p=>p.risk==='高').length,'重点跟进'],['文件导入',all.filter(p=>p.source==='FILE_IMPORT').length,'当前演示累计']].map(([l,n,d])=>'<div><span>'+l+'</span><strong>'+n+'</strong><small>'+d+'</small></div>').join('')+'</div>';
   const category=current.query.get('category')||'ALL';const categoryTabs=tabs([['ALL','全部患者','/patients'],['OUTPATIENT','门诊患者','/patients?category=OUTPATIENT'],['INPATIENT','住院患者','/patients?category=INPATIENT'],['DISCHARGED','出院患者','/patients?category=DISCHARGED']],category);
   const entry=canOperate()?'<div class="patient-import-entry"><div><h3>上传门诊、住院或出院患者名单</h3><p>Excel / CSV 上传 → 逐行校验与查重 → 分派医生和管家 → 确认建档 → 核验授权与旅程服务。</p></div>'+importButton('导入患者资料','open')+'</div>':'';
@@ -100,7 +102,7 @@ function taskTable(ts,base='/followups'){
   return card('',table(['患者','任务 / 关联报告','状态','节点日期','操作'],ts.map(t=>[patientCell(t.patient),esc(t.title)+'<br><small class="muted">'+esc(demo.records.find(r=>r.id===t.record)?.title||'未关联报告')+'</small>',tag(t.status),esc(t.due.replace('T',' ')),link('查看 / 处理',base+'/'+t.id,'btn')])));
 }
 function taskList(mode='followups'){
-  let ts=tasks();const status=current.query.get('status')||'';
+  let ts=tasks().filter(t=>matchesPatient(t.patient));const status=current.query.get('status')||'';
   if(mode==='reviews')ts=ts.filter(t=>t.status==='PENDING_REVIEW');
   else if(mode==='results')ts=ts.filter(t=>t.status==='COMPLETED'&&!t.received);
   else if(status)ts=ts.filter(t=>status==='IN_PROGRESS'?['PENDING','IN_PROGRESS','REJECTED'].includes(t.status):t.status===status);
@@ -125,11 +127,11 @@ function taskDetail(id,mode='followups'){
   return page(t.title,'患者 '+p.name+' · 责任医生 '+person(p.doctor).name+' · '+names[t.status],'<div class="toolbar">'+link('返回'+(mode==='reviews'?'审核清单':mode==='results'?'结果清单':'随访清单'),mode==='followups'?'/followups':'/doctor/'+mode,'btn')+link('患者详情','/patients/'+p.id,'btn')+actions+'</div>'+card('任务流程','<div class="flow">'+['PENDING','IN_PROGRESS','PENDING_REVIEW','APPROVED','CONTACTED','COMPLETED'].map(s=>'<span class="tag '+(s===t.status?'green':'')+'">'+names[s]+'</span>').join('')+'</div><p>节点日期由团队核对：'+esc(t.due.replace('T',' '))+' · 版本 '+t.version+'</p>')+'<div class="columns"><div>'+(r?recordCard(r):card('原报告','<p>尚未关联，提交审核前必须关联报告。</p>'))+card('团队起草的随访意见','<div class="report">'+esc(t.draft||'尚未起草')+'</div>'+(t.rejected?'<div class="note">退回原因：'+esc(t.rejected)+'</div>':''))+card('医生审核通过的正文','<div class="report">'+esc(t.approved||'尚未通过；暂不能联系患者。')+'</div>')+contacts+(t.received?card('医生已查收','<p>'+esc(t.feedback)+'</p>'):'')+'</div><div>'+card('沟通与审计',timeline(p.id))+'<div class="note">临床建议必须由患者的责任医生本人审核。系统不自动联系患者；联系记录仅代表团队登记的服务事实。</div></div></div>');
 }
 function reportList(){
-  const status=current.query.get('status')||'',type=current.query.get('type')||'',rs=demo.records.filter(r=>mine(patient(r.patient))&&(!status||r.status===status)&&(!type||r.type===type));
+  const status=current.query.get('status')||'',type=current.query.get('type')||'',rs=demo.records.filter(r=>mine(patient(r.patient))&&matchesPatient(r.patient)&&(!status||r.status===status)&&(!type||r.type===type));
   return page('患者报告','按阅读状态和报告类型查看自己患者的原报告。','<div class="toolbar">'+link('全部','/doctor/reports','btn')+link('待阅','/doctor/reports?status=UNREAD','btn')+link('已阅','/doctor/reports?status=READ','btn')+'</div><div class="toolbar">'+['出院','门诊','住院','手术','体检'].map(t=>link(t+'报告','/doctor/reports?status='+status+'&type='+encodeURIComponent(t),'btn')).join('')+'</div>'+card('',table(['患者','报告','类型','状态','操作'],rs.map(r=>[patientCell(r.patient),esc(r.title),tag(r.type),tag(r.status),link('查看报告','/doctor/reports/'+r.id,'btn')]))));
 }
 function alertList(doctor=false){
-  const kind=current.query.get('kind'),rows=demo.alerts.filter(a=>mine(patient(a.patient))&&(!kind||a.kind===kind)&&(!doctor||a.kind==='CLINICAL'&&a.status==='ESCALATED'));
+  const kind=current.query.get('kind'),rows=demo.alerts.filter(a=>mine(patient(a.patient))&&matchesPatient(a.patient)&&(!kind||a.kind===kind)&&(!doctor||a.kind==='CLINICAL'&&a.status==='ESCALATED'));
   return page(doctor?'医生异常处置':'异常响应','临床异常由团队核实后升级责任医生；失联类由负责人核实后关闭。',card('',table(['患者','异常','类型','状态','操作'],rows.map(a=>[patientCell(a.patient),esc(a.title),tag(a.kind==='CLINICAL'?'临床反馈':'失联'),tag(a.status),link('查看 / 处理',(doctor?'/doctor/alerts/':'/alerts/')+a.id,'btn')]))));
 }
 function alertDetail(id,doctor=false){
@@ -139,7 +141,7 @@ function alertDetail(id,doctor=false){
 }
 function collection(type,id,titleOverride=''){
   const info={invitations:['邀约记录','登记逐轮实际联系，未联系上需记录下次计划。'],appointments:['预约到诊','预约 → 登记人工提醒 → 到院核实 → 完成，或登记未到院 / 取消。'],packages:['服务包与方案','仅记录服务签约与履约；节点日期由团队核对，不发生支付。'],referrals:['转诊台账','发起 → 接收 → 到达 → 反馈 → 关闭；没有自动向机构发送消息。']}[type];
-  const key=type==='packages'?'enrollments':type,rows=demo[key].filter(x=>mine(patient(x.patient))&&(!current.query.get('status')||x.status===current.query.get('status')));
+  const key=type==='packages'?'enrollments':type,rows=demo[key].filter(x=>mine(patient(x.patient))&&matchesPatient(x.patient)&&(!current.query.get('status')||x.status===current.query.get('status'))&&(type!=='appointments'||!current.query.get('appointment_type')||x.appointment_type===current.query.get('appointment_type')));
   if(id){
     const x=demo[key].find(x=>x.id===Number(id));if(!x||!mine(patient(x.patient)))return forbidden();
     const next=type==='appointments'?{BOOKED:['登记实际提醒','REMINDED'],REMINDED:['核实到院','ARRIVED'],ARRIVED:['登记完成结果','COMPLETED']}[x.status]:type==='referrals'?{INITIATED:['登记接收','ACCEPTED'],ACCEPTED:['核实到达','ARRIVED'],ARRIVED:['登记反馈','FEEDBACK'],FEEDBACK:['关闭转诊','CLOSED']}[x.status]:type==='packages'&&x.status==='待激活'?['激活服务并确认随访日期','ACTIVE']:null;
@@ -160,7 +162,7 @@ function legacyScreening(){
 }
 function knowledge(){
   const rows=demo.knowledge;
-  return page(account.role==='DOCTOR'?'宣教审核':'宣教内容','运营主管维护草稿，医生审核后发布。SOP 是团队系统外的业务使用流程。','<div class="toolbar">'+(manager()?button('起草宣教内容','new-knowledge','','primary'):'')+'</div>'+card('',table(['标题','正文','状态','操作'],rows.map(x=>[esc(x.title),esc(x.content),tag(x.status),account.role==='DOCTOR'&&x.status==='DRAFT'?button('查看并审核发布','publish',x.id,'primary'):tag(x.status==='PUBLISHED'?'已完成医生审核':'待医生审核')]))));
+  return page(account.role==='DOCTOR'?'宣教服务 · 内容审核':'宣教服务','运营主管维护草稿，医生审核后发布。SOP 是团队系统外的业务使用流程。','<div class="toolbar">'+(manager()?button('起草宣教内容','new-knowledge','','primary'):'')+'</div>'+card('',table(['标题','正文','状态','操作'],rows.map(x=>[esc(x.title),esc(x.content),tag(x.status),account.role==='DOCTOR'&&x.status==='DRAFT'?button('查看并审核发布','publish',x.id,'primary'):tag(x.status==='PUBLISHED'?'已完成医生审核':'待医生审核')]))));
 }
 function hospital(){
   return page('医院数据','虚构医院 Mock：预览 → 选择责任医生与负责人 → 幂等同步 → 打开导入档案。','<div class="note">真实医院接口未接通。这里演示 Mock 数据，不代表医院实际接入。</div>'+card('Mock 预览','<p>2 位虚构患者、3 份演示报告。再次同步不重复创建。</p>'+table(['医院患者号','患者','报告'],[['MOCK-IMPORT-001','虚构医院对象一','出院报告、门诊报告'],['MOCK-IMPORT-002','虚构医院对象二','体检报告']])+'<div class="toolbar">'+(manager()?button(demo.mockSynced?'再次演示同步（不重复导入）':'选择负责人并演示同步','mock-sync','','primary'):'<span class="muted">仅运营主管可以执行同步。</span>')+(demo.mockSynced?link('查看已导入患者','/patients?q=虚构医院','btn'):'')+'</div>'));
@@ -179,7 +181,7 @@ function reports(){
   if(current.path==='/reports/archives')return page('日报周报归档','归档记录仅在此演示中保存。',card('',table(['归档名称','内容','查看'],demo.archives.map(x=>[esc(x.title),esc(x.summary),link('查看归档','/reports/archives/'+x.id,'btn')]))));
   if(current.path.startsWith('/reports/archives/')){const x=demo.archives.find(x=>x.id===Number(current.path.split('/').pop()));return x?page(x.title,'演示归档，报告外发仍需人工登记。','<div class="toolbar">'+link('返回归档清单','/reports/archives','btn')+button('登记人工外发凭证','deliver',x.id)+'</div>'+card('归档正文','<p>'+esc(x.summary)+'</p><p>'+esc(x.delivery||'尚未登记人工外发')+'</p>')):notFound()}
   const ts=tasks(),completed=ts.filter(t=>t.status==='COMPLETED').length;
-  return page('随访统计与复盘','数字来自当前可见的虚构演示记录；没有演示分母的指标显示 —。','<div class="grid">'+[['在管患者',patients().length],['应随访',ts.length],['已完成',completed],['完成率',ts.length?Math.round(completed/ts.length*100)+'%':'—']].map(([l,n])=>card(l,'<strong class="metric">'+n+'</strong>')).join('')+'</div>'+card('运营漏斗','<div class="flow">'+link('筛查对象 '+pool().length,'/screening')+link('患者 '+patients().length,'/patients')+link('邀约 '+demo.invitations.filter(x=>mine(patient(x.patient))).length,'/invitations')+link('预约 '+demo.appointments.filter(x=>mine(patient(x.patient))).length,'/appointments')+link('服务实例 '+demo.enrollments.filter(x=>mine(patient(x.patient))).length,'/packages')+'</div>')+card('指标口径',table(['指标','当前演示值'],[['首触率','—（没有完整统计分母）'],['有效随访率',ts.length?completed+'/'+ts.length:'—'],['按时履约率','—（需逐任务核对）'],['预约率','—'],['到院率','—'],['有效到院率','—'],['服务激活率','—'],['转诊闭环率','—'],['异常响应率','—'],['失联恢复率','—']]))+'<div class="toolbar">'+button('生成演示日报 / 周报','archive','','primary')+link('查看已归档报告','/reports/archives','btn')+'</div>');
+  return page('统计与复盘','数字来自当前可见的虚构演示记录；没有演示分母的指标显示 —。','<div class="grid">'+[['在管患者',patients().length],['应随访',ts.length],['已完成',completed],['完成率',ts.length?Math.round(completed/ts.length*100)+'%':'—']].map(([l,n])=>card(l,'<strong class="metric">'+n+'</strong>')).join('')+'</div>'+card('运营漏斗','<div class="flow">'+link('筛查对象 '+pool().length,'/screening')+link('患者 '+patients().length,'/patients')+link('邀约 '+demo.invitations.filter(x=>mine(patient(x.patient))).length,'/invitations')+link('预约 '+demo.appointments.filter(x=>mine(patient(x.patient))).length,'/appointments')+link('服务实例 '+demo.enrollments.filter(x=>mine(patient(x.patient))).length,'/packages')+'</div>')+card('指标口径',table(['指标','当前演示值'],[['首触率','—（没有完整统计分母）'],['有效随访率',ts.length?completed+'/'+ts.length:'—'],['按时履约率','—（需逐任务核对）'],['预约率','—'],['到院率','—'],['有效到院率','—'],['服务激活率','—'],['转诊闭环率','—'],['异常响应率','—'],['失联恢复率','—']]))+'<div class="toolbar">'+button('生成演示日报 / 周报','archive','','primary')+link('查看已归档报告','/reports/archives','btn')+'</div>');
 }
 function overview(publicMode=false){
   return '<div class="public">'+page(publicMode?'系统公开介绍':'系统与团队分工','HEALTH-USER 仅提供公开介绍，没有患者登录、入组、咨询、指标填报或消息功能。','<div class="hero"><h1>让出院后的服务<br>有人负责，有据可循。</h1><p>医生负责医学判断与个案审核，运营团队和护士负责执行、记录与复盘。</p></div>'+card('服务过程','<div class="flow"><span class="tag">医院报告</span><span class="tag">团队起草</span><span class="tag">责任医生审核</span><span class="tag">人工联系与记录</span><span class="tag">查收与复诊核实</span></div>')+card('三种计划模式',table(['模式','状态'],[['企业微信',tag('规划中，未接通')],['微信小程序',tag('规划中，未开放')],['Web 患者业务',tag('规划中，当前仅公开介绍')]]))+'<div class="toolbar">'+link(account?'返回当前角色工作台':'进入医护与运营演示',account?home():'/login','btn primary')+link('页面跳转流程','/flow','btn')+'</div>')+'</div>';
@@ -194,8 +196,8 @@ function render(){
   const raw=(location.hash.slice(1)||'/login').replace(/^\/journey(?=[?]|$)/,'/journeys'),pos=raw.indexOf('?');current={path:pos<0?raw:raw.slice(0,pos),query:new URLSearchParams(pos<0?'':raw.slice(pos+1))};
   const publicRoute=['/login','/flow','/overview','/public'].includes(current.path);
   if(!account&&!publicRoute){go('/login');return}
-  const allowed=publicRoute||menu().some(([p])=>current.path===p||current.path.startsWith(p+'/'));
-  $('#header').innerHTML='<div class="brand">博瑞康 Health<small>门诊与出院全旅程 · 诊后主动干预 · 2.0 当前实现 · 虚构演示数据</small></div><div class="row">'+link('页面流程','/flow')+(account?'<span>'+esc(account.name+' · '+roles[account.role])+'</span>'+button('修改演示密码','password')+button('切换角色','logout'):link('角色入口','/login'))+'</div>';
+  const allowed=publicRoute||(typeof serviceRouteAllowed==='function'?serviceRouteAllowed(current.path):menu().some(([p])=>current.path===p||current.path.startsWith(p+'/')));
+  $('#header').innerHTML='<div class="brand">博瑞康 Health<small>门诊 / 住院 / 体检全流程 · 虚构演示数据</small></div><div class="row">'+link('页面流程','/flow')+'<a href="patient-service-center.html">患者服务中心</a>'+(account?'<span>'+esc(account.name+' · '+roles[account.role])+'</span>'+button('修改演示密码','password')+button('切换角色','logout'):link('角色入口','/login'))+'</div>';
   $('#nav').innerHTML=account?'<small>'+esc(roles[account.role])+'</small>'+careHubNav():link('角色入口','/login')+link('完整页面流程','/flow')+link('系统公开介绍','/public');
   let html='';
   if(!allowed)html=forbidden();
@@ -218,7 +220,7 @@ function render(){
   else if(/^\/doctor\/(reviews|results)\/\d+$/.test(current.path))html=taskDetail(current.path.split('/').pop(),current.path.split('/')[2]);
   else if(current.path==='/alerts'||current.path==='/doctor/alerts')html=alertList(current.path.startsWith('/doctor'));
   else if(/^\/(doctor\/)?alerts\/\d+$/.test(current.path))html=alertDetail(current.path.split('/').pop(),current.path.startsWith('/doctor'));
-  else if(current.path==='/revisits')html=collection('appointments',undefined,'复诊跟踪');
+  else if(current.path==='/revisits'){current.query.set('appointment_type','REVISIT');html=collection('appointments',undefined,'复诊跟踪')}
   else if(/^\/(invitations|appointments|packages|referrals)(\/\d+)?$/.test(current.path))html=collection(current.path.split('/')[1],current.path.split('/')[2]);
   else if(current.path==='/data-ingestion')html=ingestionPage();
   else if(current.path==='/screening'||/^\/screening\/\d+$/.test(current.path))html=screening();
@@ -232,7 +234,7 @@ function render(){
   else if(current.path.startsWith('/reports'))html=reports();
   else if(current.path==='/channels')html=page('渠道管理','渠道介绍仅展示系统，不采集或绑定患者。',card('',table(['渠道','状态','打开'],demo.channels.map(c=>[esc(c.name),tag(c.active?'启用':'停用'),link('查看公开介绍','/public','btn')+button(c.active?'停用渠道':'启用渠道','toggle-channel',c.id)]))));
   else html=notFound();
-  $('#main').innerHTML=html;document.title=($('#main h1')?.textContent||'角色入口')+' · Health 交互原型';window.scrollTo(0,0);
+  $('#main').innerHTML=allowed&&account&&typeof serviceWrapLegacyPage==='function'?serviceWrapLegacyPage(html):html;document.title=($('#main h1')?.textContent||'角色入口')+' · Health 交互原型';window.scrollTo(0,0);
 }
 
 function requireAction(kind,id){
@@ -285,7 +287,7 @@ document.addEventListener('click',event=>{
   if(action==='assign'){const x=patient(id);if(!mine(x))return;modal('调整责任分工','assign',id,field('doctor','责任医生','select',x.doctor,demo.accounts.filter(a=>a.role==='DOCTOR'&&a.active).map(a=>({value:a.id,label:a.name})))+field('owner','负责人','select',x.owner,demo.accounts.filter(a=>['OPERATOR','NURSE','MANAGER'].includes(a.role)&&a.active).map(a=>({value:a.id,label:a.name}))),'更换责任医生后，尚未联系任务的旧审核自动失效，需重新提交新医生审核。')}
   if(action==='new-task')modal('新建随访任务','new-task','',patientChoice(id)+field('title','随访任务标题','text','演示随访任务')+field('due','人工确认节点日期','datetime-local','2026-10-02T10:00'),'新任务需要在详情中关联原报告，再提交医生审核。');
   if(action==='new-invitation')modal('登记实际邀约','new-invitation','',patientChoice(id)+field('result','本轮结果','select','已接通，有到院意向',['已接通，有到院意向','未接通','拒绝','待考虑'])+field('at','实际联系时间','datetime-local','2026-10-01T10:00')+field('note','沟通摘要 / 原因','textarea')+field('next','未联系上时的下次计划','datetime-local','',[],false));
-  if(action==='new-appointment')modal('预约到诊','new-appointment','',patientChoice(id)+field('appointment_type','预约类型','select','OUTPATIENT',[{value:'OUTPATIENT',label:'门诊'},{value:'REVISIT',label:'复诊'}])+field('at','预约到院时间','datetime-local','2026-10-07T10:00')+field('note','经核对的预约安排','textarea'));
+  if(action==='new-appointment')modal('预约到诊','new-appointment','',patientChoice(id)+field('appointment_type','预约类型','select',current.path==='/revisits'||current.query.get('tab')==='revisits'?'REVISIT':'OUTPATIENT',[{value:'OUTPATIENT',label:'门诊'},{value:'REVISIT',label:'复诊'}])+field('at','预约到院时间','datetime-local','2026-10-07T10:00')+field('note','经核对的预约安排','textarea'));
   if(action==='new-enrollment')modal('登记服务签约','new-enrollment','',patientChoice(id)+field('name','服务包','text','演示连续随访服务')+field('note','服务内容与知情同意凭证','textarea'),'仅展示服务台账，不发生支付。');
   if(action==='new-referral')modal('发起转诊台账','new-referral','',patientChoice(id)+field('direction','方向','select','上转',['上转','下转'])+field('target','目标机构','text','虚构示范医院')+field('note','原因与人工联系凭证','textarea'));
   if(action==='transition'){const [type,xid,next]=id.split(':');modal('登记下一步服务事实','transition',id,(type==='appointments'?field('occurred_at','实际发生时间','datetime-local',journeyNow().slice(0,16))+field('outcome','诊疗结果（完成预约时填写）','text','',[],false):'')+(type==='packages'?field('due','核对后的首次随访日期','datetime-local','2026-10-04T10:00'):'')+field('note',next==='ARRIVED'?'实际到院 / 到达核验证据':'结果与人工服务凭证','textarea'),'保存后更新台账，并进入详情与患者时间轴。')}
@@ -307,7 +309,7 @@ document.addEventListener('submit',event=>{
   if(f.dataset.form.startsWith('screen-')||f.dataset.form.startsWith('sheet-')||f.dataset.form.startsWith('cycle-'))return;
   const action=f.dataset.form,id=f.dataset.id||'',v=Object.fromEntries(new FormData(f));
   if(action.startsWith('journey-')||action.startsWith('service-'))return;Object.keys(v).forEach(k=>v[k]=v[k].trim());
-  if(action==='search'){go('/patients?q='+encodeURIComponent(v.q)+'&risk='+encodeURIComponent(v.risk));return}
+  if(action==='search'){const q=new URLSearchParams(current.query);q.set('q',v.q);q.set('risk',v.risk);go(current.path+'?'+q);return}
   if(Array.from(f.elements).some(e=>e.required&&e.name&&e.type!=='checkbox'&&!v[e.name])){toast('请填写完整内容，不能只输入空格。');return}
   if(!requireAction(action,id))return;
   const t=demo.tasks.find(t=>t.id===Number(id));if(t&&!journeyTaskAllowed(t))return toast('旅程暂停、授权或计划已失效。');let dest=current.path+(current.query.size?'?'+current.query:'');
@@ -360,6 +362,11 @@ document.addEventListener('submit',event=>{
   if(action==='integration'){demo.integrationConfigured=true;audit('保存演示接入说明，真实服务仍未接通')}
   if(action==='archive'){const x={...v,id:nextId(demo.archives)};demo.archives.push(x);audit('归档演示日报周报');dest='/reports/archives/'+x.id}
   if(action==='deliver'){if(!canOperate()){toast('此步骤仅运营角色可以登记。');return}const x=demo.archives.find(x=>x.id===Number(id));x.delivery=v.note;audit('登记报告人工外发凭证')}
+  if(/^\/(patients|invitations|appointments|followups|alerts|referrals|revisits)(\/|\?|$)/.test(dest)){
+    const [path,search='']=dest.split('?'),query=new URLSearchParams(search);
+    for(const key of ['flow','patient'])if(current.query.has(key)&&!query.has(key))query.set(key,current.query.get(key));
+    dest=path+(query.size?'?'+query:'');
+  }
   $('#dialog').close();if(location.hash==='#'+dest)render();else go(dest);toast('已保存演示记录；相关页面同步更新。');
 });
 window.addEventListener('hashchange',render);

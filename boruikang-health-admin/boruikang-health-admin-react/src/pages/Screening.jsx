@@ -38,7 +38,7 @@ export default function Screening() {
   const clinicians = useLoad(() => api('/clinicians'))
   const filter = (key, value) => { setFilters(previous => ({ ...previous, [key]: value === '' ? undefined : value })); setPage(0) }
   const orgName = id => orgs.data?.find(x => x.id === id)?.name || '—'
-  return <><PageTitle title="患者池" subtitle="心电网络、体检、筛查发现的对象先进池，判定高危后再建档入组并开出首次联系任务。" extra={<Space wrap><Button icon={<UploadOutlined />} onClick={() => setFileImportOpen(true)}>文件导入</Button><Button icon={<ImportOutlined />} onClick={() => { batch.current = newImportBatch(); setImportOpen(true) }}>粘贴导入</Button><Button type="primary" icon={<PlusOutlined />} onClick={() => setCreate(true)}>人工录入</Button></Space>} />
+  return <><PageTitle title="筛查名单与风险分层" subtitle="接收心电网络、体检和筛查名单，登记院方分层结论后建档入组，接续首次联系、邀约与到诊。" extra={<Space wrap><Button icon={<UploadOutlined />} onClick={() => setFileImportOpen(true)}>文件导入</Button><Button icon={<ImportOutlined />} onClick={() => { batch.current = newImportBatch(); setImportOpen(true) }}>粘贴导入</Button><Button type="primary" icon={<PlusOutlined />} onClick={() => setCreate(true)}>人工录入</Button></Space>} />
     {result && <Alert className="mb" type="success" showIcon closable onClose={() => setResult(null)} message={'批次 ' + result.import_batch + '：新增 ' + result.created + ' 条，跳过 ' + result.skipped + ' 条'} description={result.messages.length ? <ul>{result.messages.map((m, i) => <li key={i}>{m}</li>)}</ul> : null} />}
     <Card><div className="toolbar"><Input.Search placeholder="搜索姓名" allowClear onSearch={value => filter('keyword', value)} style={{ width: 200 }} />
       <Select aria-label="来源" placeholder="全部来源" allowClear style={{ width: 150 }} options={options(sources)} onChange={value => filter('source_type', value)} />
@@ -67,7 +67,7 @@ export default function Screening() {
         {account.role_code === 'MANAGER' && <LoadState state={staff}>{data => <Form.Item name="owner_id" label="负责人"><Select options={ownerOptions(data)} /></Form.Item>}</LoadState>}</div>
       <Form.Item name="note" label="备注"><Input.TextArea rows={2} maxLength={1000} /></Form.Item>
     </FormDialog>
-    {fileImportOpen && <FileImportDialog title="文件导入患者池" columns={screeningImportColumns} parseFile={parseScreeningFile} createTemplate={createScreeningTemplate} templateName="患者池导入模板.xlsx"
+    {fileImportOpen && <FileImportDialog title="文件导入筛查名单" columns={screeningImportColumns} parseFile={parseScreeningFile} createTemplate={createScreeningTemplate} templateName="筛查名单导入模板.xlsx"
       description="首行表头，姓名、联系电话、发现结论必填。发现时间为空使用导入时间；同来源的重复来源编号会跳过。文件先预览，确认后进入待判定池。"
       initialValues={{ source_type: 'ECG_NETWORK', owner_id: account.user_id }} onClose={() => setFileImportOpen(false)} onSubmit={async (values, preview, importBatch) => {
         const response = await api('/screenings/import', { ...values, import_batch: importBatch, rows: preview.rows })
@@ -104,7 +104,7 @@ export default function Screening() {
       <Alert type="info" message="判定只记录院方或筛查医生的结论，系统不做医学判断。高危对象建档后按 SLA 自动开出首次联系任务。" />
     </FormDialog>
     <FormDialog title={'建档入组：' + (enroll?.name || '')} open={Boolean(enroll)} initialValues={{ department: '心血管内科', disease: enroll?.category || enroll?.finding, patient_type: 'OUTPATIENT', outreach: true, owner_id: enroll?.owner_id }} onClose={() => setEnroll(null)} onSubmit={async values => { const saved = await api('/screenings/enroll', { id: enroll.id, version: enroll.version, ...values }); state.reload(); if (saved.patient_id) navigate('/patients/' + saved.patient_id) }}>
-      <Alert className="mb" type="warning" message={'风险 ' + (names[enroll?.risk_level] || '') + '，来源 ' + (names[enroll?.source_type] || '')} description="建档后患者进入患者中心，首次联系任务的截止时间按风险等级的 SLA 计算。" />
+      <Alert className="mb" type="warning" message={'风险 ' + (names[enroll?.risk_level] || '') + '，来源 ' + (names[enroll?.source_type] || '')} description="建档后可在诊后主动干预的患者档案中统一查阅；继续在诊前中心办理首次联系和邀约，联系截止时间按风险等级的 SLA 计算。" />
       <div className="form-grid"><Form.Item name="department" label="科室" rules={required}><Input maxLength={80} /></Form.Item><Form.Item name="disease" label="病种 / 管理原因" rules={required}><Input maxLength={120} /></Form.Item>
         <Form.Item name="patient_type" label="患者类型"><Select options={options(['OUTPATIENT', 'INPATIENT', 'DISCHARGED', 'UNKNOWN'])} /></Form.Item>
         <LoadState state={clinicians}>{data => <Form.Item name="doctor_id" label="责任医生"><Select allowClear options={doctorOptions(data)} /></Form.Item>}</LoadState>

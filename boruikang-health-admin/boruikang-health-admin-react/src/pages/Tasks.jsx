@@ -5,6 +5,7 @@ import { PlusOutlined, ReloadOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import { ContactExecution, ContactHistory, ScheduleFollowups, contactNames } from './FollowupExecution'
 import { api, useLoad } from '../api'
+import { taskMatchesPatient } from '../careNavigation'
 import { AppointmentDialog } from './Appointments'
 import { MessageLogDialog } from './Configuration'
 import { ReportReviewDialog, ReportStatus } from './ReportReview'
@@ -12,11 +13,11 @@ import { WechatAdvice } from './Wechat'
 import { DataTable, dateText, FormDialog, LoadState, names, options, PageTitle, required, Status } from '../ui'
 
 const ended = ['COMPLETED', 'CANCELLED']
-export default function Tasks({ taskType, patientId, compact = false }) {
+export default function Tasks({ taskType, patientId, compact = false, titleOverride }) {
   const account = useOutletContext()
   const doctor = account.role_code === 'DOCTOR'
   const [search, setSearch] = useSearchParams()
-  const [type, setType] = useState(taskType || 'FOLLOWUP')
+  const [type, setType] = useState(taskType || search.get('task_type') || 'FOLLOWUP')
   const [status, setStatus] = useState(undefined)
   const [priority, setPriority] = useState(undefined)
   const [overdue, setOverdue] = useState(search.get('overdue') === '1')
@@ -29,13 +30,13 @@ export default function Tasks({ taskType, patientId, compact = false }) {
   const [keyword, setKeyword] = useState('')
   const [slaOverdue, setSlaOverdue] = useState(search.get('sla_overdue') === 'true')
   const requestKey = useRef('')
-  useEffect(() => { setType(search.get('task_type') || taskType || 'FOLLOWUP'); setStatus(undefined); setPage(0); setSelected(Number(search.get('task')) || null) }, [taskType])
+  useEffect(() => { setType(taskType || search.get('task_type') || 'FOLLOWUP'); setStatus(undefined); setPage(0); setSelected(Number(search.get('task')) || null) }, [taskType])
   const state = useLoad(() => api('/tasks/query', { page, size: 10, patient_id: patientId, task_type: type, status, priority, overdue, contact_pending: contactPending, handover_pending: handoverPending, revisit_pending: search.get('pending') === '1', assignee_id: Number(search.get('assignee')) || undefined, due_from: search.get('due_from') || (search.get('due') === 'today' ? dayjs().format('YYYY-MM-DD') : undefined), due_to: search.get('due_to') || (search.get('due') === 'today' ? dayjs().format('YYYY-MM-DD') : undefined), sla_overdue: slaOverdue || undefined, alert_source: search.get('alert_source') || undefined }), [page, patientId, type, status, priority, overdue, contactPending, handoverPending, slaOverdue, search.toString()])
   const patients = useLoad(() => create ? api('/patients/query', { page: 0, size: 100, keyword }) : Promise.resolve({ items: [] }), [create, keyword])
-  const title = taskType === 'ALERT' ? '异常处理' : taskType === 'REVISIT' ? '复诊跟踪' : '随访与咨询'
+  const title = titleOverride || (taskType === 'OUTREACH' ? '首次联系' : taskType === 'CONSULTATION' ? '诊前咨询' : taskType === 'ALERT' ? '异常处理' : taskType === 'REVISIT' ? '复诊跟踪' : '随访与咨询')
   function closeTask() { setSelected(null); if (search.has('task')) { search.delete('task'); setSearch(search, { replace: true }) } }
   const newButton = !doctor && <Button type="primary" icon={<PlusOutlined />} onClick={() => { requestKey.current = crypto.randomUUID(); setCreate(true) }}>新建任务</Button>
-  return <>{!compact && <PageTitle title={title} subtitle={taskType === 'ALERT' ? '响应、核实后升级责任医生，由医生在系统里记录处置结果。' : taskType === 'REVISIT' ? '以核实的预约、到院证据和诊疗结果跟踪复诊。' : '依据原报告起草随访意见，责任医生审核通过后联系患者，完成后由医生查收。'} extra={<Space>{type === 'FOLLOWUP' && <Button onClick={() => setSchedule(true)}>安排随访节点</Button>}{newButton}</Space>} />}
+  return <>{!compact && <PageTitle title={title} subtitle={taskType === 'OUTREACH' ? '核实身份与服务意愿，登记联系结果，接续邀约和预约。' : taskType === 'ALERT' ? '响应、核实后升级责任医生，由医生在系统里记录处置结果。' : taskType === 'REVISIT' ? '以核实的预约、到院证据和诊疗结果跟踪复诊。' : '依据原报告起草随访意见，责任医生审核通过后联系患者，完成后由医生查收。'} extra={<Space>{!doctor && type === 'FOLLOWUP' && <Button onClick={() => setSchedule(true)}>安排随访节点</Button>}{newButton}</Space>} />}
     <div className={compact ? '' : 'table-panel'}><div className="toolbar">
       {!taskType && <Select aria-label="任务类型" value={type} style={{ width: 150 }} options={options(['FOLLOWUP', 'CONSULTATION', 'OUTREACH', ...(compact ? ['ALERT', 'REVISIT'] : [])])} onChange={value => { setType(value); setPage(0) }} />}
       <Select aria-label="任务状态" value={status} placeholder="全部状态" allowClear style={{ width: 155 }} options={options(type === 'ALERT' ? ['PENDING', 'IN_PROGRESS', 'ESCALATED', 'COMPLETED'] : type === 'REVISIT' ? ['PENDING', 'BOOKED', 'ARRIVED', 'COMPLETED', 'NO_SHOW', 'CANCELLED'] : ['PENDING', 'IN_PROGRESS', 'PENDING_REVIEW', 'REJECTED', 'APPROVED', 'CONTACTED', 'COMPLETED', 'CANCELLED'])} onChange={value => { setStatus(value); setPage(0) }} />
@@ -47,7 +48,7 @@ export default function Tasks({ taskType, patientId, compact = false }) {
     </div>
     <DataTable state={state} page={page} setPage={setPage} columns={taskColumns(setSelected)} /></div>
     <ScheduleFollowups open={schedule} patientId={patientId} onClose={() => setSchedule(false)} onSaved={state.reload} />
-    <TaskDrawer id={selected} onClose={closeTask} onChanged={state.reload} />
+    <TaskDrawer id={selected} expectedPatientId={patientId} onClose={closeTask} onChanged={state.reload} />
     <FormDialog title="新建服务任务" open={create} initialValues={{ patient_id: patientId, task_type: taskType || type, priority: 'P2', due_at: dayjs().add(1, 'day') }}
       onClose={() => setCreate(false)} onSubmit={async values => { const task = await api('/tasks/create', { ...values, due_at: values.due_at.format('YYYY-MM-DDTHH:mm:ss'), request_key: requestKey.current }); state.reload(); setSelected(task.id) }}>
       {patientId ? <Form.Item name="patient_id" hidden><Input /></Form.Item> : <LoadState state={patients}>{data => <Form.Item name="patient_id" label="患者（可搜索）" rules={required}><Select showSearch filterOption={false} onSearch={setKeyword} options={data.items.map(row => ({ value: row.id, label: row.name + ' #' + row.id }))} /></Form.Item>}</LoadState>}
@@ -73,7 +74,7 @@ export function taskColumns(open) {
 }
 
 const quickFeedback = ['已阅随访记录，按计划继续随访。', '已阅，请提醒患者按时复诊。', '已阅，患者问题已记录，门诊时处理。']
-export function TaskDrawer({ id, onClose, onChanged }) {
+export function TaskDrawer({ id, onClose, onChanged, expectedPatientId }) {
   const account = useOutletContext()
   const doctor = account.role_code === 'DOCTOR'
   const state = useLoad(() => id ? api('/tasks/' + id) : Promise.resolve(null), [id])
@@ -116,6 +117,7 @@ export function TaskDrawer({ id, onClose, onChanged }) {
     <LoadState state={state}>{context => {
       if (!context) return null
       const task = context.task
+      if (!taskMatchesPatient(task.patient_id, expectedPatientId)) return <Alert type="error" showIcon message="此任务不属于当前选定患者" description="已停止在当前患者范围内办理。请关闭任务详情，清除或切换患者范围后重新打开，核对患者身份再继续。" />
       const clinical = ['FOLLOWUP', 'CONSULTATION'].includes(task.task_type)
       const outreach = task.task_type === 'OUTREACH'
       const lostContact = task.task_type === 'ALERT' && task.alert_source === 'LOST_CONTACT'

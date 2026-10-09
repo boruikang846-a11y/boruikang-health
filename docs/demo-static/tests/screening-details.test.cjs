@@ -1,0 +1,45 @@
+const assert=require('node:assert/strict'),harness=require('./prototype-harness.cjs');
+const {run,elements}=harness();
+run("account=person(1);location.hash='#/screening';render()");
+assert.equal(run('sheetRows().length'),64);
+assert.equal((elements['#main'].innerHTML.match(/data-action="sheet-detail"/g)||[]).length,48);
+for(const section of ['communication','arrival','effective','followup']){
+ run(`sheetShowDetails(6102,'${section}')`);
+ assert(elements['#dialog-content'].innerHTML.includes('演示对象002'));
+ assert(elements['#dialog-content'].innerHTML.includes('虚构演示详情'));
+ assert(elements['#dialog-content'].innerHTML.includes('data-form="sheet-detail-save"'));
+ assert(elements['#dialog-content'].innerHTML.includes('保存修改'));
+ assert(!elements['#dialog-content'].innerHTML.includes('data-action="sheet-detail-edit"'));
+}
+run("sheetShowDetails(6101,'effective')");assert(elements['#dialog-content'].innerHTML.includes('个人时间冲突'));
+run("account=person(3);sheetAction('sheet-contact',6102,{round:'2',result:'SUCCESS',note:'确认改期',next:'2026-10-20T10:00'});sheetShowDetails(6102,'communication')");assert(elements['#dialog-content'].innerHTML.includes('确认改期'));
+run("sheetShowDetails(6102,'followup')");assert(elements['#dialog-content'].innerHTML.includes('2026-10-20T10:00'));
+assert.equal(run("screeningSheetData.records[1].communications[1]"),'已记录（原文已移除）');
+const previous=elements['#dialog-content'].innerHTML;
+run("sheetShowDetails(6101,'communication')");assert.equal(elements['#dialog-content'].innerHTML,previous);
+console.log('Screening detail links, seeded data, contact updates, source isolation and role visibility passed.');
+run("account=person(3);sheetEditDetails(6102,'arrival')");assert(elements['#dialog-content'].innerHTML.includes('name="appointmentDate"'));assert(elements['#dialog-content'].innerHTML.includes('name="changeReason"'));
+run("sheetSaveDetails(6102,{section:'arrival',appointmentDate:'2026-10-15T09:00',appointmentDepartment:'演示复诊门诊',arrival:'已到诊',arrivalDate:'2026-10-15T09:20',changeReason:'补齐日期'})");
+assert.equal(run('sheetRows().find(x=>x.id===6102).appointmentDepartment'),'演示复诊门诊');
+run("sheetSaveDetails(6102,{section:'effective',effective:'yes',effectiveBasis:'已核实演示接诊记录',absenceReason:'',changeReason:'确认凭据'})");assert.equal(run('sheetRows().find(x=>x.id===6102).effective'),true);
+run("sheetSaveDetails(6102,{section:'followup',nextDemo:'2026-11-10T10:00',followupPlan:'复诊后电话回访',changeReason:'调整计划'})");assert(elements['#dialog-content'].innerHTML.includes('复诊后电话回访'));
+const comm={section:'communication',changeReason:'更正三轮记录'};
+for(let i=0;i<3;i++)Object.assign(comm,{['round'+i+'At']:'2026-10-08T10:00',['round'+i+'Result']:'已核实身份并完成沟通',['round'+i+'Text']:'修改第'+(i+1)+'轮内容',['round'+i+'By']:'演示负责人',['round'+i+'Next']:''});
+run(`sheetSaveDetails(6102,${JSON.stringify(comm)})`);assert(elements['#dialog-content'].innerHTML.includes('修改第3轮内容'));
+assert.equal(run('sheetState().logs.length'),4);
+run("sheetSaveDetails(6102,{section:'arrival',appointmentDate:'',appointmentDepartment:'',arrival:'未到诊',arrivalDate:'',changeReason:'取消到诊登记'})");assert.equal(run('sheetRows().find(x=>x.id===6102).effective'),false);
+const logs=run('sheetState().logs.length');
+run("sheetSaveDetails(6102,{section:'effective',effective:'yes',effectiveBasis:'错误登记',absenceReason:'',changeReason:'校验'})");assert.equal(run('sheetState().logs.length'),logs);
+run("sheetEditDetails(6102,'followup')");const old=run('JSON.stringify(sheetRows().find(x=>x.id===6102))');assert.equal(run('JSON.stringify(sheetRows().find(x=>x.id===6102))'),old);
+run("account=person(2);sheetSaveDetails(6102,{section:'followup',nextDemo:'2026-11-11T10:00',followupPlan:'越权',changeReason:'测试'})");assert.equal(run('sheetState().logs.length'),logs);
+assert.equal(run('screeningSheetData.records[1].appointmentRecorded'),true);
+console.log('Editing all four sections, audit append, arrival consistency and read-only role checks passed.');
+run("account=person(3)");
+let summary=run('screeningSheetDetail(6102)');assert(summary.includes('data-form="sheet-edit"'));assert(summary.includes('保存摘要'));
+run("sheetShowDetails(6102,'arrival')");assert(elements['#dialog-content'].innerHTML.includes('name="appointmentDate"'));
+run("sheetAction('sheet-edit',6102,{name:'演示摘要更新',gender:'女',age:'60',phone:'00000000002',source:'演示社区',contactNote:'演示备注',reportConclusion:'虚构报告摘要更新',note:'更正摘要'})");
+assert.equal(run("sheetRows().find(x=>x.id===6102).name"),'演示摘要更新');assert.equal(run("sheetRows().find(x=>x.id===6102).source"),'演示社区');assert.equal(run("sheetRows().find(x=>x.id===6102).risk"),'待复核');assert.equal(run("sheetState().logs.at(-1).section"),'summary');
+run("account=person(2)");summary=run('screeningSheetDetail(6102)');assert(!summary.includes('保存摘要'));assert(summary.includes('演示摘要更新'));
+console.log('Inline summary editing, direct editable detail forms, audit and doctor read-only checks passed.');
+
+run("sheetShowDetails(6102,'communication')");assert(!elements['#dialog-content'].innerHTML.includes('data-form='));assert(elements['#dialog-content'].innerHTML.includes('关闭'));

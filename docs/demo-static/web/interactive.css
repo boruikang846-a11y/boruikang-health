@@ -94,3 +94,12 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 
 .wechat-prototype{display:block;border:0;width:100%;min-height:1000px;background:#f4f7fb}#journey-nodes{grid-column:1/-1}#journey-nodes .card{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.scene-enrollment-grid:has(section:nth-child(2):last-child){grid-template-columns:repeat(2,minmax(0,1fr))}@media(max-width:600px){#journey-nodes .card,.scene-enrollment-grid:has(section:nth-child(2):last-child){grid-template-columns:1fr}}
 /* Match the formal workspace background. */ body{background:#f1f5f5}
+
+.sheet-detail-button{display:block;width:100%;min-width:100px;text-align:left;border:1px solid transparent;background:transparent;color:inherit;padding:8px;border-radius:8px;line-height:1.6;cursor:pointer}
+.sheet-detail-button:hover{background:#f1f7ff;border-color:#b9d2ef}.sheet-detail-button:focus-visible{outline:2px solid #2869a5;outline-offset:2px}
+.sheet-detail-hint{display:block;color:#2869a5;margin-top:6px;white-space:nowrap}
+.sheet-round-grid dd{margin:0 0 12px;overflow-wrap:anywhere}.sheet-round-grid dt{color:#748397;font-size:13px}
+.sheet-edit-round{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;border:1px solid #d5e1ee;border-radius:10px;padding:16px;min-width:0}.sheet-edit-round legend{font-weight:600;padding:0 6px}
+@media(max-width:600px){.sheet-edit-round{grid-template-columns:1fr}}
+
+.sheet-direct-rounds{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-bottom:20px}.sheet-direct-rounds .sheet-edit-round{grid-column:auto;display:flex;flex-direction:column;background:#f5f7fa;border:0;padding:18px;gap:12px}.sheet-direct-rounds input,.sheet-direct-rounds select,.sheet-direct-rounds textarea{width:100%;min-width:0;box-sizing:border-box}.sheet-direct-rounds textarea{min-height:120px;resize:vertical}.sheet-direct-rounds legend{font-size:17px;padding-top:12px}.sheet-direct-rounds>input[type=hidden]{display:none}@media(max-width:850px){.sheet-direct-rounds{grid-template-columns:1fr}}

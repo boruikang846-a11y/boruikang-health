@@ -1,7 +1,7 @@
 const fs=require('fs'),vm=require('vm'),assert=require('assert'),path=require('path');
 process.chdir(path.resolve(__dirname,'../../..'));
 const el={},context=vm.createContext({structuredClone,URLSearchParams,TextDecoder,TextEncoder,Uint8Array,ArrayBuffer,Buffer,console,crypto:require('crypto').webcrypto,setTimeout,clearTimeout,location:{hash:''},window:{scrollTo(){},addEventListener(){}},document:{body:{dataset:{}},querySelector(s){return el[s]??={innerHTML:'',textContent:'',value:'',classList:{add(){},remove(){}},setAttribute(){},removeAttribute(){},showModal(){},close(){}}},addEventListener(){}}});
-for(const f of ['implementation-contract.js','patient-import-files.js','patient-import.js','quality-wecom.js','platform-prototype.js','screening-sheet-data.js','screening-sheet.js','screening-cycle.js','screening-import.js','care-cycle.js','journey.js','interactive.js'])vm.runInContext(fs.readFileSync('docs/demo-static/web/'+f,'utf8'),context);
+for(const f of ['implementation-contract.js','patient-import-files.js','patient-import.js','quality-wecom.js','platform-prototype.js','screening-sheet-data.js','screening-sheet.js','screening-cycle.js','screening-import.js','care-cycle.js','journey.js','interactive.js','after-care-service.js','service-navigation.js'])vm.runInContext(fs.readFileSync('docs/demo-static/web/'+f,'utf8'),context);
 const run=s=>vm.runInContext(s,context);
 (async()=>{
  run('account=person(1);openPatientImport();loadPatientImportSample();patientImportState.step=2;patientImportState.settings.doctor_id="2";patientImportState.settings.owner_id="4";patientImportState.settings.patient_type="DISCHARGED";patientImportState.settings.source_scene="DISCHARGE"');

@@ -155,4 +155,4 @@ document.addEventListener('DOMContentLoaded',()=>{
   $('#dialog').addEventListener('close',()=>{patientImportState=null;$('#dialog').classList.remove('patient-import-dialog');$('#dialog').removeAttribute('aria-labelledby')});
 });
 
-function patientImportDeadline(){const at=new Date();at.setHours(at.getHours()+implementationContract.patientImport.defaultFirstContactHours);return at.toISOString().slice(0,16)}
+function patientImportDeadline(){const at=new Date(Date.now()+implementationContract.patientImport.defaultFirstContactHours*3600000);const pad=n=>String(n).padStart(2,'0');return at.getFullYear()+'-'+pad(at.getMonth()+1)+'-'+pad(at.getDate())+'T'+pad(at.getHours())+':'+pad(at.getMinutes())}

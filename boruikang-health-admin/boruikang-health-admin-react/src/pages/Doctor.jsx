@@ -46,27 +46,27 @@ const queues = {
   results: { title: '随访结果查收', subtitle: '团队按审核通过的正文联系患者后，把随访记录交给您查收并反馈。', filters: [['PENDING', '待查收'], ['ACKNOWLEDGED', '已查收']], query: f => ({ task_type: 'FOLLOWUP', status: 'COMPLETED', handover_status: f }) },
   alerts: { title: '异常处置', subtitle: '团队核实后升级给您的异常，记录处置去向与结果后关闭。', filters: [['ESCALATED', '待处置'], ['COMPLETED', '已处置']], query: f => ({ task_type: 'ALERT', status: f }) },
 }
-export function DoctorTasks({ mode }) {
+export function DoctorTasks({ mode, patientId }) {
   const config = queues[mode]
   const [search, setSearch] = useSearchParams()
   const [filter, setFilter] = useState(config.filters[0][0])
   const [page, setPage] = useState(0)
   const [selected, setSelected] = useState(Number(search.get('task')) || null)
-  const state = useLoad(() => api('/tasks/query', { page, size: 10, ...config.query(filter) }), [mode, filter, page])
+  const state = useLoad(() => api('/tasks/query', { page, size: 10, ...config.query(filter), patient_id: patientId }), [mode, filter, page, patientId])
   function close() { setSelected(null); if (search.has('task')) { search.delete('task'); setSearch(search, { replace: true }) } }
   return <><PageTitle title={config.title} subtitle={config.subtitle} />
     <Card><div className="toolbar"><Segmented value={filter} onChange={value => { setFilter(value); setPage(0) }} options={config.filters.map(([value, label]) => ({ value, label }))} /><Button icon={<ReloadOutlined />} onClick={state.reload}>刷新</Button></div>
       <DataTable state={state} page={page} setPage={setPage} columns={taskColumns(setSelected)} /></Card>
-    <TaskDrawer id={selected} onClose={close} onChanged={state.reload} />
+    <TaskDrawer id={selected} expectedPatientId={patientId} onClose={close} onChanged={state.reload} />
   </>
 }
 
-export function DoctorReports() {
+export function DoctorReports({ patientId }) {
   const [viewed, setViewed] = useState('UNREAD')
   const [type, setType] = useState(undefined)
   const [page, setPage] = useState(0)
   const [report, setReport] = useState(null)
-  const state = useLoad(() => api('/records/reports', { page, size: 10, viewed: viewed === 'ALL' ? undefined : viewed === 'READ', record_type: type }), [viewed, type, page])
+  const state = useLoad(() => api('/records/reports', { page, size: 10, viewed: viewed === 'ALL' ? undefined : viewed === 'READ', record_type: type, patient_id: patientId }), [viewed, type, page, patientId])
   return <><PageTitle title="患者报告" subtitle="您负责患者的出院、门诊、体检报告。确认已阅时可写意见，团队起草随访意见时会看到。" />
     <Card><div className="toolbar"><Segmented value={viewed} onChange={value => { setViewed(value); setPage(0) }} options={[{ value: 'UNREAD', label: '待阅' }, { value: 'READ', label: '已阅' }, { value: 'ALL', label: '全部' }]} />
       <Select aria-label="报告类型" value={type} allowClear placeholder="全部类型" style={{ width: 140 }} options={options(['DISCHARGE', 'OUTPATIENT', 'EXAM'])} onChange={value => { setType(value); setPage(0) }} />

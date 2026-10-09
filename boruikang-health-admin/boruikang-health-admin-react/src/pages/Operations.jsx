@@ -25,7 +25,7 @@ export function Knowledge() {
   const publish = row => modal.confirm({ title: '审核发布「' + row.title + '」？', width: 560, content: <><p className="pre-wrap">{row.content}</p><p className="muted">来源：{row.source}</p><p>发布后团队可以在起草随访意见时引用。发布人记为您本人。</p></>, okText: '审核发布', cancelText: '取消',
     onOk: async () => { try { await api('/knowledge/publish', { id: row.id, version: row.version }); state.reload(); message.success('已发布') } catch (e) { message.error(e.message); throw e } } })
   const editableKinds = ['EDUCATION', 'PACKAGE']
-  return <><PageTitle title={isDoctor ? '宣教审核' : '宣教与服务内容'} subtitle={isDoctor ? '运营团队整理的宣教与服务说明，经您审核后发布，团队才能在随访中引用。' : '运营团队整理内容，保存草稿后由医生在系统里审核发布。'} extra={canEdit && <Button type="primary" icon={<PlusOutlined />} onClick={() => setEditor({ kind: 'EDUCATION', department: '综合服务' })}>新建内容</Button>} />
+  return <><PageTitle title={isDoctor ? '宣教服务 · 医生审核' : '宣教服务'} subtitle={isDoctor ? '运营团队整理的宣教与服务说明，经您审核后发布，团队才能在随访中引用。' : '运营团队整理内容，保存草稿后由医生在系统里审核发布。'} extra={canEdit && <Button type="primary" icon={<PlusOutlined />} onClick={() => setEditor({ kind: 'EDUCATION', department: '综合服务' })}>新建内容</Button>} />
     <Card><div className="toolbar"><Select aria-label="知识类型" placeholder="全部类型" allowClear style={{ width: 160 }} options={options(['EDUCATION', 'PACKAGE'])} onChange={value => { setKind(value); setPage(0) }} />
       <Input.Search placeholder="搜索标题" allowClear style={{ width: 280 }} onSearch={value => { setKeyword(value); setPage(0) }} /><Button onClick={state.reload} icon={<ReloadOutlined />}>刷新</Button></div>
       <DataTable state={state} page={page} setPage={setPage} columns={[
@@ -123,7 +123,7 @@ export function Reports() {
   const [range, setRange] = useState([dayjs().subtract(6, 'day'), dayjs()])
   const [query, setQuery] = useState({ from_date: range[0].format('YYYY-MM-DD'), to_date: range[1].format('YYYY-MM-DD') })
   const state = useLoad(() => api('/reports/weekly', query), [JSON.stringify(query)])
-  return <><PageTitle title="随访统计与运营复盘" subtitle="十项运营指标、漏斗、按人绩效与日统计都从台账计算；周报可打印交付院方。" extra={<Button icon={<PrinterOutlined />} disabled={!state.data} onClick={() => window.print()}>打印周报</Button>} />
+  return <><PageTitle title="统计与复盘" subtitle="十项运营指标、漏斗、按人绩效与日统计都从台账计算；周报可打印交付院方。" extra={<Button icon={<PrinterOutlined />} disabled={!state.data} onClick={() => window.print()}>打印周报</Button>} />
     <Card className="mb no-print"><div className="toolbar"><DatePicker.RangePicker value={range} onChange={setRange} allowClear={false} /><Button type="primary" disabled={!range?.[0] || !range?.[1]} onClick={() => setQuery({ from_date: range[0].format('YYYY-MM-DD'), to_date: range[1].format('YYYY-MM-DD') })}>生成报表</Button><span className="muted">周报最长 93 天，指标最长一年，以北京时间统计</span></div></Card>
     <Card className="mb"><Tabs items={[{ key: 'metrics', label: '十项指标', children: <Metrics query={query} /> }, { key: 'funnel', label: '漏斗与活动', children: <Funnel query={query} /> }, { key: 'operators', label: '按人绩效', children: <Operators query={query} /> }, { key: 'daily', label: '日统计', children: <Daily /> }]} /></Card>
     <LoadState state={state}>{data => <section className="print-report"><h2>{data.from_date} 至 {data.to_date}</h2><div className="stats-grid">
