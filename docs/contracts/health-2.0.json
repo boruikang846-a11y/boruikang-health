@@ -315,34 +315,6 @@
         "患者全旅程服务"
       ],
       [
-        "/after-care",
-        "诊后主动干预"
-      ],
-      [
-        "/workbench",
-        "运营工作台"
-      ],
-      [
-        "/screening",
-        "患者池"
-      ],
-      [
-        "/patients",
-        "患者中心"
-      ],
-      [
-        "/invitations",
-        "邀约记录"
-      ],
-      [
-        "/appointments",
-        "预约到诊"
-      ],
-      [
-        "/followups",
-        "随访与咨询"
-      ],
-      [
         "/wecom",
         "企业微信"
       ],
@@ -351,24 +323,20 @@
         "公众号"
       ],
       [
-        "/alerts",
-        "异常处理"
+        "/screening",
+        "诊前高危患者筛查中心"
       ],
       [
-        "/revisits",
-        "复诊跟踪"
+        "/after-care",
+        "诊后主动干预"
+      ],
+      [
+        "/knowledge",
+        "宣教服务"
       ],
       [
         "/packages",
         "服务包与方案"
-      ],
-      [
-        "/referrals",
-        "转诊"
-      ],
-      [
-        "/knowledge",
-        "宣教与服务内容"
       ],
       [
         "/channels",
@@ -376,7 +344,7 @@
       ],
       [
         "/reports",
-        "随访统计与复盘"
+        "统计与复盘"
       ],
       [
         "/hospital",
@@ -405,32 +373,8 @@
         "诊后主动干预"
       ],
       [
-        "/doctor",
-        "医生工作台"
-      ],
-      [
-        "/doctor/reviews",
-        "随访意见审核"
-      ],
-      [
-        "/doctor/reports",
-        "患者报告"
-      ],
-      [
-        "/doctor/results",
-        "随访结果查收"
-      ],
-      [
-        "/doctor/alerts",
-        "异常处置"
-      ],
-      [
-        "/patients",
-        "我的患者"
-      ],
-      [
         "/knowledge",
-        "宣教审核"
+        "宣教服务"
       ],
       [
         "/overview",

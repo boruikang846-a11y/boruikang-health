@@ -28,12 +28,12 @@ export function InvitationDialog({ open, patientId, onClose, onSaved }) {
     <Alert type="info" message="接通类结果会关闭首次联系任务并把患者置为已触达；连续未联系上达到 SLA 次数会自动产生失联异常。" />
   </FormDialog>
 }
-export default function Invitations() {
+export default function Invitations({ patientId }) {
   const account = useOutletContext()
   const [page, setPage] = useState(0)
   const [filters, setFilters] = useState({})
   const [create, setCreate] = useState(false)
-  const state = useLoad(() => api('/invitations/query', { page, size: 10, ...filters }), [page, JSON.stringify(filters)])
+  const state = useLoad(() => api('/invitations/query', { page, size: 10, ...filters, patient_id: patientId }), [page, patientId, JSON.stringify(filters)])
   const staff = useLoad(() => api('/staff'))
   const filter = (key, value) => { setFilters(previous => ({ ...previous, [key]: value === '' ? undefined : value })); setPage(0) }
   return <><PageTitle title="邀约记录" subtitle="每一轮电话、短信或当面邀约都留痕；结果字典统一，触达率和预约率从这里算。" extra={<Button type="primary" icon={<PlusOutlined />} onClick={() => setCreate(true)}>记录邀约</Button>} />
@@ -50,6 +50,6 @@ export default function Invitations() {
         { title: '摘要', dataIndex: 'summary', render: (value, row) => <>{value}{row.next_invite_at && <div className="muted">下次：{dateText(row.next_invite_at)}</div>}</> },
         { title: '记录人', dataIndex: 'actor_id', render: value => staff.data?.find(x => x.user_id === value)?.real_name || value },
       ]} /></Card>
-    <InvitationDialog open={create} onClose={() => setCreate(false)} onSaved={state.reload} />
+    <InvitationDialog open={create} patientId={patientId} onClose={() => setCreate(false)} onSaved={state.reload} />
   </>
 }

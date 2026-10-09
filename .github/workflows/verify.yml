@@ -45,10 +45,14 @@ jobs:
           node docs/demo-static/tests/platform-prototype.test.cjs
           node docs/demo-static/tests/implementation-prototype.test.cjs
           node docs/demo-static/tests/patient-upload.test.cjs
+          node docs/demo-static/tests/service-navigation.test.cjs
+          node docs/demo-static/tests/after-care-service.test.cjs
+          node docs/demo-static/tests/screening-details.test.cjs
       - name: Build admin UI
         working-directory: boruikang-health-admin/boruikang-health-admin-react
         run: |
           npm ci
+          npm test
           npm run build:deploy
       - name: Build introduction UI
         working-directory: boruikang-health-user/boruikang-health-user-react

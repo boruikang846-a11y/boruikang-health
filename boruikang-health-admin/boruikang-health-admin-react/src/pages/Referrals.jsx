@@ -43,12 +43,12 @@ export function referralActions(row, setAction) {
   if (['ARRIVED', 'FEEDBACK_RECORDED'].includes(row.status)) buttons.push(['CLOSE', '关闭'])
   return buttons.map(([action, text]) => <Button key={action} type="link" danger={action === 'REJECT'} onClick={() => setAction({ ...row, action })}>{text}</Button>)
 }
-export default function Referrals() {
+export default function Referrals({ patientId }) {
   const [page, setPage] = useState(0)
   const [filters, setFilters] = useState({})
   const [create, setCreate] = useState(false)
   const [action, setAction] = useState(null)
-  const state = useLoad(() => api('/referrals/query', { page, size: 10, ...filters }), [page, JSON.stringify(filters)])
+  const state = useLoad(() => api('/referrals/query', { page, size: 10, ...filters, patient_id: patientId }), [page, patientId, JSON.stringify(filters)])
   const orgs = useLoad(() => api('/orgs'))
   const filter = (key, value) => { setFilters(previous => ({ ...previous, [key]: value === '' ? undefined : value })); setPage(0) }
   const orgName = id => orgs.data?.find(x => x.id === id)?.name || '—'
@@ -63,7 +63,7 @@ export default function Referrals() {
         { title: '状态', render: (_, row) => <><Status value={row.status} />{row.overdue && <Tag color="red">超 SLA</Tag>}<div className="muted">到达期限 {dateText(row.sla_due_at)}</div>{row.feedback_diagnosis && <div className="muted">反馈：{row.feedback_diagnosis}</div>}</> },
         { title: '操作', render: (_, row) => <Space wrap>{referralActions(row, setAction)}</Space> },
       ]} /></Card>
-    <ReferralDialog open={create} onClose={() => setCreate(false)} onSaved={state.reload} />
+    <ReferralDialog open={create} patientId={patientId} onClose={() => setCreate(false)} onSaved={state.reload} />
     <ReferralAction row={action} onClose={() => setAction(null)} onSaved={state.reload} />
   </>
 }

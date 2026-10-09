@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { patientTabSearch } from '../careNavigation'
 import { Link, useNavigate, useOutletContext, useParams, useSearchParams } from 'react-router-dom'
 import { Alert, Button, Card, DatePicker, Descriptions, Form, Input, InputNumber, Select, Space, Statistic, Switch, Table, Tabs, Tag, Timeline } from 'antd'
 import { ArrowRightOutlined, PlusOutlined, ReloadOutlined, TeamOutlined, ScheduleOutlined, AlertOutlined, ClockCircleOutlined, UploadOutlined } from '@ant-design/icons'
@@ -88,7 +89,7 @@ export function Patients() {
   const orgs = useLoad(() => api('/orgs'))
   const filter = (key, value) => { setFilters(previous => ({ ...previous, [key]: value === '' ? undefined : value })); setPage(0) }
   const doctor = account.role_code === 'DOCTOR'
-  return <><PageTitle title={doctor ? '我的患者' : '患者中心'} subtitle={doctor ? '您作为责任医生的患者。档案只读，报告与随访意见在左侧对应页面处理。' : '统一管理门诊、住院与出院患者档案，承接医院资料和文件导入，分派责任医生与负责人。'} extra={!doctor && <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreate(true)}>新建患者</Button>} />
+  return <><PageTitle title={doctor ? '我的患者' : '患者档案与接入'} subtitle={doctor ? '您作为责任医生的患者。档案只读，请在本中心的查看报告、随访意见审核等环节办理。' : '统一管理门诊、住院与出院患者档案，承接医院资料和文件导入，分派责任医生与负责人。'} extra={!doctor && <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreate(true)}>新建患者</Button>} />
     <Tabs className="patient-category-tabs" activeKey={category} items={patientCategories} onChange={value => { setPage(0); setSearchParams(previous => { const next = new URLSearchParams(previous); if (value === 'ALL') next.delete('category'); else next.set('category', value); return next }) }} />
     <LoadState state={summary}>{data => <div className="patient-metrics">{[
       ['可见患者', data.patient_count, '当前账号可见的健康档案'], ['待评估', data.unknown_risk_count, '等待责任医生评估'],
@@ -96,7 +97,7 @@ export function Patients() {
     ].map(([label, value, detail]) => <Card key={label}><Statistic title={label} value={value} /><small>{detail}</small></Card>)}</div>}</LoadState>
     {!doctor && <section className="patient-import-entry"><div><h3>上传门诊、住院或出院患者名单</h3><p>Excel / CSV 上传 → 逐行校验与查重 → 分派医生和负责人 → 确认建档 → 核验授权与旅程服务。</p></div><Button type="primary" icon={<UploadOutlined />} onClick={() => setFileImportOpen(true)}>文件批量导入</Button></section>}
     {importResult && <Alert className="mb" type="success" showIcon closable onClose={() => setImportResult(null)} message={'批次 ' + importResult.import_batch + '：新增 ' + importResult.created + ' 条，跳过 ' + importResult.skipped + ' 条'} description={importResult.messages.length ? <ul>{importResult.messages.map((message, index) => <li key={index}>{message}</li>)}</ul> : null} />}
-    {fileImportOpen && <FileImportDialog title="文件批量导入患者档案" columns={patientImportColumns} parseFile={parsePatientFile} createTemplate={createPatientTemplate} templateName="患者中心导入模板.xlsx"
+    {fileImportOpen && <FileImportDialog title="文件批量导入患者档案" columns={patientImportColumns} parseFile={parsePatientFile} createTemplate={createPatientTemplate} templateName="患者档案导入模板.xlsx"
       description="姓名、年龄、联系电话、科室、病种/管理原因必填。建议填写来源编号或证件号用于跨批次去重；手机号不会合并档案。确认后批量建档，风险待评估。"
       initialValues={{ patient_type: category === 'ALL' ? 'UNKNOWN' : category, source_scene: 'MANUAL', outreach: true, owner_id: account.user_id }} onClose={() => setFileImportOpen(false)} onSubmit={async (values, preview, importBatch, file) => {
         const response = await uploadPatientFile({ ...values, import_batch: importBatch }, file)
@@ -157,8 +158,9 @@ function PatientJourneys({ id }) {
     { title: '操作', render: (_, j) => <Link to={'/journeys/' + j.id}>办理旅程</Link> },
   ]} /></>
 }
-export function PatientDetail() {
-  const { id } = useParams()
+export function PatientDetail({ patientId } = {}) {
+  const params = useParams()
+  const id = patientId || params.id
   const [detailSearch, setDetailSearch] = useSearchParams()
   const account = useOutletContext()
   const [edit, setEdit] = useState(false)
@@ -184,7 +186,7 @@ export function PatientDetail() {
   const listTabs = { records: '/records/query', messages: '/messages/query', audits: '/audits/query', invitations: '/invitations/query', appointments: '/appointments/query', enrollments: '/enrollments/query', referrals: '/referrals/query', 'message-logs': '/message-logs/query' }
   const history = useLoad(() => listTabs[tab] ? api(listTabs[tab], { page, size: 10, patient_id: Number(id) }) : tab === 'medications' ? api('/medications/query', { patient_id: Number(id) }).then(items => ({ items, total_size: items.length })) : Promise.resolve(null), [id, page, tab, revision])
   const refresh = () => setRevision(value => value + 1)
-  return <><Link to="/patients" className="back-link">{doctor ? '返回我的患者' : '返回患者中心'}</Link><LoadState state={state}>{patient => <>
+  return <><Link to="/patients" className="back-link">{doctor ? '返回我的患者' : '返回患者档案'}</Link><LoadState state={state}>{patient => <>
     <p><Link to={'/journeys?patient=' + patient.id}>查看 / 建立此患者的就诊服务旅程 →</Link></p>
     <PageTitle title={patient.name + ' 的健康档案'} subtitle={patient.department + ' / ' + patient.disease} extra={!doctor && <Space wrap><Button onClick={() => setEdit(true)}>管理档案</Button><Button onClick={() => setConsent(true)}>登记知情同意</Button><Button onClick={() => setInvite(true)}>记录邀约</Button><Button onClick={() => setBook(true)}>登记预约</Button><Button onClick={() => setEnroll(true)}>签约服务包</Button><Button onClick={() => setRefer(true)}>发起转诊</Button><Button onClick={() => setMessage(true)}>登记已发消息</Button><Button onClick={() => setObserve(true)}>代录指标</Button><Button type="primary" icon={<PlusOutlined />} onClick={() => setRecordOpen(true)}>添加就诊记录</Button></Space>} />
     <Card className="mb"><Descriptions column={{ xs: 1, sm: 2, lg: 4 }} items={[
@@ -204,7 +206,7 @@ export function PatientDetail() {
       { key: 'tags', label: '标签', children: patient.tags?.length ? patient.tags.map(t => <Tag key={t}>{t}</Tag>) : '—', span: 2 },
       { key: 'note', label: '内部备注', children: patient.note || '暂无', span: 2 },
     ]} /></Card>
-    <Card><Tabs activeKey={tab} onChange={value => { setDetailSearch({ tab: value }); setPage(0) }} items={[{ key: 'timeline', label: '时间轴' }, { key: 'records', label: '就诊与健康记录' }, { key: 'journeys', label: '就诊旅程' }, { key: 'tasks', label: '服务任务' }, { key: 'invitations', label: '邀约' }, { key: 'appointments', label: '预约到诊' }, { key: 'enrollments', label: '服务实例' }, { key: 'medications', label: '用药' }, { key: 'referrals', label: '转诊' }, { key: 'message-logs', label: '已发消息' }, { key: 'wecom', label: '企业微信' }, { key: 'official-account', label: '公众号' }, { key: 'messages', label: '沟通记录' }, { key: 'audits', label: '操作留痕' }]} />
+    <Card><Tabs activeKey={tab} onChange={value => { setDetailSearch(previous => patientTabSearch(previous, value)); setPage(0) }} items={[{ key: 'timeline', label: '时间轴' }, { key: 'records', label: '就诊与健康记录' }, { key: 'journeys', label: '就诊旅程' }, { key: 'tasks', label: '服务任务' }, { key: 'invitations', label: '邀约' }, { key: 'appointments', label: '预约到诊' }, { key: 'enrollments', label: '服务实例' }, { key: 'medications', label: '用药' }, { key: 'referrals', label: '转诊' }, { key: 'message-logs', label: '已发消息' }, { key: 'wecom', label: '企业微信' }, { key: 'official-account', label: '公众号' }, { key: 'messages', label: '沟通记录' }, { key: 'audits', label: '操作留痕' }]} />
       {tab === 'journeys' ? <PatientJourneys id={id} /> : tab === 'timeline' ? <TimelineTab id={id} key={revision} /> : tab === 'tasks' ? <Tasks patientId={Number(id)} compact /> : tab === 'wecom' || tab === 'official-account' ? <PatientWechat key={tab} patientId={Number(id)} provider={tab === 'wecom' ? 'WE_COM' : 'WECHAT_OFFICIAL'} readOnly={doctor} /> : <>{tab === 'medications' && !doctor && <div className="toolbar"><Button icon={<PlusOutlined />} onClick={() => setMedication({ status: 'ACTIVE', source: 'HOSPITAL_RECORD', adherence: 'UNKNOWN' })}>登记用药</Button></div>}
       <DataTable state={history} page={page} setPage={setPage} columns={
         tab === 'records' ? [
