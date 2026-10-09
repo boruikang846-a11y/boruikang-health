@@ -11,7 +11,7 @@ const ST={SENDING:['发送中','gold'],SENT:['已发出','green'],PENDING_CONFIR
 const KIND={TEXT:'文字',TEMPLATE:'模板消息',APPROVED_ADVICE:'已审核正文',WELCOME:'欢迎语'};
 const ROLE={M:'运营主管',O:'运营人员',D:'责任医生',P:'平台管理员'},NOAPI='本页面没有调用微信接口。',A='演示运营专员甲';
 const cfg={
- WE_COM:{name:'医院企业微信',idLabel:'企业 ID',secLabel:'客户联系 Secret',app_id:'ww0000000000000000',secret:true,token:true,aes:true,enabled:true,mode:'LIVE',verified:'',error:'',path:'/boruikang/open/wecom/callback/1',desc:'同步好友关系与加删事件；发消息走群发任务，成员在企业微信确认后才发出。未开通会话存档，系统读不到聊天内容。'},
+ WE_COM:{name:'博瑞康企业微信',idLabel:'企业 ID',secLabel:'客户联系 Secret',app_id:'ww0000000000000000',secret:true,token:true,aes:true,enabled:true,mode:'LIVE',verified:'',error:'',path:'/boruikang/open/wecom/callback/1',desc:'同步好友关系与加删事件；发消息走群发任务，成员在企业微信确认后才发出。未开通会话存档，系统读不到聊天内容。'},
  WECHAT_OFFICIAL:{name:'医院公众号',idLabel:'AppID',secLabel:'AppSecret',app_id:'wx0000000000000000',secret:true,token:true,aes:false,enabled:true,mode:'MOCK',verified:'',error:'',path:'/boruikang/open/wechat/callback/1',desc:'接收关注、取消关注和患者文字来信；发客服文字消息和模板消息。'}};
 const patients={1001:{name:'演示患者一',mask:'演*一',phone:'000****0001',mine:true},1002:{name:'演示患者二',mask:'演*二',phone:'000****0002',mine:true},1003:{name:'演示患者三',mask:'演*三',phone:'000****0003',mine:false}};
 const E=(time,text,mock)=>({kind:'EVENT',time,text,mock}),M=(dir,kind,time,text,st,x)=>({dir,kind,time,text,st,by:A,...x});
@@ -79,7 +79,7 @@ function row(c){const l=c.msgs[c.msgs.length-1],n=pend(c),p=patients[c.pid],act=
 const listTable=l=>`<table><tr><th>联系人</th><th>通道 / 来源</th><th>关系</th><th>患者</th><th>最近消息</th><th>待处理</th><th>操作</th></tr>${l.map(row).join('')||'<tr><td colspan="7">暂无匹配的联系人</td></tr>'}</table>`;
 function vChannel(ch){const m=who==='M',w=ch===W,n=w?0:total(),seg=(v,t)=>`<span class="${filt.bound===v?'on':''}" onclick="setF('bound','${v}')">${t}</span>`;
  const l=contacts.filter(c=>c.ch===ch&&sees(c)&&(!filt.bound||(filt.bound==='1')===!!c.pid)&&(w||!filt.pending||pend(c)));
- return `<h1>${CH[ch]}${n?` <span class="num">${n}</span> <span class="muted">条来信待处理</span>`:''}</h1><p>${w?'患者加医院企业微信成员为好友后生成联系人；核实身份后绑定患者档案。消息以群发任务下发，成员在企业微信里确认后才发出。':'患者关注医院公众号后生成联系人；核实身份后绑定患者档案。患者来信进入待处理，48 小时内有互动可以回文字，否则发模板消息。'}${m?'运营主管看全院。':'运营人员、护士只看待绑定和自己负责患者的联系人。'}</p>${usable(ch)?'':`<div class="note">${off(ch)}这个通道的联系人暂时不能发送。</div>`}<div class="card"><div class="toolbar"><span class="seg">${m?seg('','全部'):''}${seg('1',m?'已绑定':'已绑定（我负责的患者）')}${seg('0','待绑定')}</span>${w?'':`<label><input type="checkbox"${filt.pending?' checked':''} onchange="setF('pending',this.checked)"> 仅看待处理</label>`}${m?btn('同步'+CH[ch],`syncOpen('${ch}')`):''}</div>${listTable(l)}</div>`}
+ return `<h1>${CH[ch]}${n?` <span class="num">${n}</span> <span class="muted">条来信待处理</span>`:''}</h1><p>${w?'患者加博瑞康企业微信成员为好友后生成联系人；核实身份后绑定患者档案。消息以群发任务下发，成员在企业微信里确认后才发出。':'患者关注医院公众号后生成联系人；核实身份后绑定患者档案。患者来信进入待处理，48 小时内有互动可以回文字，否则发模板消息。'}${m?'运营主管看全院。':'运营人员、护士只看待绑定和自己负责患者的联系人。'}</p>${usable(ch)?'':`<div class="note">${off(ch)}这个通道的联系人暂时不能发送。</div>`}<div class="card"><div class="toolbar"><span class="seg">${m?seg('','全部'):''}${seg('1',m?'已绑定':'已绑定（我负责的患者）')}${seg('0','待绑定')}</span>${w?'':`<label><input type="checkbox"${filt.pending?' checked':''} onchange="setF('pending',this.checked)"> 仅看待处理</label>`}${m?btn('同步'+CH[ch],`syncOpen('${ch}')`):''}</div>${listTable(l)}</div>`}
 function chat(id){cur=id;kind='TEXT';selTask=0;render()}
 function chatClose(){cur=0;render()}
 function setKind(k){kind=k;render()}

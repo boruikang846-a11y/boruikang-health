@@ -209,6 +209,7 @@ function render(){
   else if(current.path==='/journeys'||/^\/journeys\/\d+$/.test(current.path))html=journeyPage();
   else if(current.path==='/enrollment')html=enrollmentPage();
   else if(current.path==='/in-care')html=inCarePage();
+  else if(current.path==='/service-center')html=page('企业微信患者全程服务中心','2.1 受邀入组与患者 H5 增量；虚构内存演示，不代表真实接通。',`<iframe title="患者全程服务中心原型" src="admin/patient-service-center-2.1.html" style="width:100%;height:1100px;border:0"></iframe>`);
   else if(current.path==='/after-care')html=afterCarePage();
   else if(current.path==='/patients')html=patientList();
   else if(/^\/patients\/\d+$/.test(current.path))html=patientDetail(current.path.split('/').pop());

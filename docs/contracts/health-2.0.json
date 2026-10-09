@@ -311,6 +311,10 @@
   "navigation": {
     "operations": [
       [
+        "/service-center",
+        "企微患者全程服务中心"
+      ],
+      [
         "/journeys",
         "患者全旅程服务"
       ],
@@ -1199,6 +1203,45 @@
       "modifier": "VARCHAR(64)",
       "gmt_create": "DATETIME",
       "gmt_modified": "DATETIME"
+    },
+    "patient_service_entry": {
+      "id": "BIGINT",
+      "del_flag": "TINYINT",
+      "creator": "VARCHAR(64)",
+      "modifier": "VARCHAR(64)",
+      "gmt_create": "DATETIME",
+      "gmt_modified": "DATETIME",
+      "hospital_id": "BIGINT",
+      "contact_id": "BIGINT",
+      "token_hash": "VARCHAR(64)",
+      "status": "VARCHAR(24)",
+      "patient_name": "VARCHAR(80)",
+      "phone": "VARCHAR(32)",
+      "relation": "VARCHAR(16)",
+      "entry_phase": "VARCHAR(16)",
+      "consent_version": "VARCHAR(40)",
+      "consent_at": "DATETIME",
+      "identity_evidence": "VARCHAR(1000)",
+      "patient_id": "BIGINT",
+      "expires_at": "DATETIME",
+      "version": "INT"
+    },
+    "patient_service_feedback": {
+      "id": "BIGINT",
+      "del_flag": "TINYINT",
+      "creator": "VARCHAR(64)",
+      "modifier": "VARCHAR(64)",
+      "gmt_create": "DATETIME",
+      "gmt_modified": "DATETIME",
+      "hospital_id": "BIGINT",
+      "entry_id": "BIGINT",
+      "patient_id": "BIGINT",
+      "journey_id": "BIGINT",
+      "case_id": "BIGINT",
+      "request_id": "VARCHAR(80)",
+      "kind": "VARCHAR(16)",
+      "content": "VARCHAR(2000)",
+      "payload_hash": "VARCHAR(64)"
     }
   }
 }

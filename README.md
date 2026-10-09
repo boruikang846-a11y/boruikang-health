@@ -1,3 +1,11 @@
+# 企业微信患者全程服务中心 2.1
+
+2026-10-08 增量开发：医院自有企微 + 受邀患者 H5，江阴人民医院心血管科先行。管理端 `/service-center` 签发患者链接、人工核实绑定；患者 `/service#token` 登记、查看旅程、反馈转人工工单。AI 复用随访草稿 → 责任医生审核 → 人工执行链路。
+
+[本次需求](docs/feature/patient-service-center-2.1.md) · [实施方案](docs/plans/2026-10-08-wecom-service-center-design.md) · [API](docs/api/patient-service-center-2.1.md) · [增量 SQL](sql/PATIENT-SERVICE-2.1-migration.sql)。生产部署只执行经审查的加法迁移，禁止清库。真实企微/HIS/AI 以配置和联调结果为准。
+
+下文为原 2.0 基线：关于 HEALTH-USER 仅介绍、患者业务未开放的描述已由本次受邀 H5 范围替代；其余业务约束继续生效。
+
 # 博瑞康 Health
 
 苏州博瑞康医疗科技有限公司的医患运营管理系统。本仓是该公司的资产。
