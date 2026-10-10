@@ -4,6 +4,7 @@ import argparse
 import base64
 import gzip
 import json
+import re
 from pathlib import Path
 
 parser = argparse.ArgumentParser(description=__doc__)
@@ -19,15 +20,16 @@ scripts = ["implementation-contract.js", "patient-import-files.js", "patient-imp
 html = html.replace('<link rel="stylesheet" href="interactive.css">', "<style>" + css + "</style>")
 html = html.replace('<link rel="stylesheet" href="after-care-service.css">', "<style>" + (web / "after-care-service.css").read_text(encoding="utf-8") + "</style>")
 html = html.replace('<link rel="stylesheet" href="service-navigation.css">', "<style>" + (web / "service-navigation.css").read_text(encoding="utf-8") + "</style>")
-scripts.extend(["service-navigation.js", "screening-center.js"])
+scripts.extend(["service-navigation.js", "continuous-care.js", "connected-service.js", "screening-center.js"])
 html = html.replace('<link rel="stylesheet" href="screening-center.css">', "<style>" + (web / "screening-center.css").read_text(encoding="utf-8") + "</style>")
+html = html.replace('<link rel="stylesheet" href="connected-service.css">', "<style>" + (web / "connected-service.css").read_text(encoding="utf-8") + "</style>")
 for filename in scripts:
     js = (web / filename).read_text(encoding="utf-8")
     html = html.replace('<script src="' + filename + '"></script>', "<script>" + js.replace("</script", "<\\/script") + "</script>")
 if args.patient_import:
-    html = html.replace("<body>", '<body data-demo-entry="patient-import">')
+    html = re.sub(r"<body[^>]*>", '<body data-demo-entry="patient-import">', html, count=1)
 if args.screening_center:
-    html = html.replace("<body>", '<body data-demo-entry="screening-center">')
+    html = re.sub(r"<body[^>]*>", '<body data-demo-entry="screening-center">', html, count=1)
 args.output.parent.mkdir(parents=True, exist_ok=True)
 args.output.write_text(html, encoding="utf-8")
 result = {"html": str(args.output.resolve()), "html_bytes": args.output.stat().st_size}
