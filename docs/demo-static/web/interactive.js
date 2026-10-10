@@ -197,7 +197,7 @@ function render(){
   const publicRoute=['/login','/flow','/overview','/public'].includes(current.path);
   if(!account&&!publicRoute){go('/login');return}
   const allowed=publicRoute||(typeof serviceRouteAllowed==='function'?serviceRouteAllowed(current.path):menu().some(([p])=>current.path===p||current.path.startsWith(p+'/')));
-  $('#header').innerHTML='<div class="brand">博瑞康 Health<small>门诊 / 住院 / 体检全流程 · 虚构演示数据</small></div><div class="row">'+link('页面流程','/flow')+'<a href="patient-service-center.html">患者服务中心</a>'+(account?'<span>'+esc(account.name+' · '+roles[account.role])+'</span>'+button('修改演示密码','password')+button('切换角色','logout'):link('角色入口','/login'))+'</div>';
+  $('#header').innerHTML='<div class="brand">博瑞康 Health<small>门诊 / 住院 / 体检全流程 · 虚构演示数据</small></div><div class="row">'+link('页面流程','/flow')+'<a href="#/after-care?tab=summary'+(current.query.get('patient')?'&amp;patient='+esc(current.query.get('patient')):'')+'">患者服务预览</a>'+(account?'<span>'+esc(account.name+' · '+roles[account.role])+'</span>'+button('修改演示密码','password')+button('切换角色','logout'):link('角色入口','/login'))+'</div>';
   $('#nav').innerHTML=account?'<small>'+esc(roles[account.role])+'</small>'+careHubNav():link('角色入口','/login')+link('完整页面流程','/flow')+link('系统公开介绍','/public');
   let html='';
   if(!allowed)html=forbidden();
@@ -209,6 +209,7 @@ function render(){
   else if(current.path==='/journeys'||/^\/journeys\/\d+$/.test(current.path))html=journeyPage();
   else if(current.path==='/enrollment')html=enrollmentPage();
   else if(current.path==='/in-care')html=inCarePage();
+  else if(current.path==='/service-center')html=typeof csWecom==='function'?csWecom():page('企业微信患者全程服务中心','2.1 受邀入组与患者 H5 增量；虚构内存演示，不代表真实接通。',`<iframe title="患者全程服务中心原型" src="admin/patient-service-center-2.1.html" style="width:100%;height:1100px;border:0"></iframe>`);
   else if(current.path==='/after-care')html=afterCarePage();
   else if(current.path==='/patients')html=patientList();
   else if(/^\/patients\/\d+$/.test(current.path))html=patientDetail(current.path.split('/').pop());
@@ -254,7 +255,7 @@ function requireAction(kind,id){
 document.addEventListener('click',event=>{
   const b=event.target.closest('[data-action]');if(!b)return;
   const action=b.dataset.action,id=b.dataset.id||'';
-  if(action.startsWith('journey-')||action.startsWith('service-')||action.startsWith('patient-import-')||action.startsWith('qa-')||action.startsWith('platform-')||action.startsWith('screen-')||action.startsWith('sheet-')||action.startsWith('ingest-')||action.startsWith('cycle-'))return;
+  if(action.startsWith('sc-')||action.startsWith('journey-')||action.startsWith('service-')||action.startsWith('patient-import-')||action.startsWith('qa-')||action.startsWith('platform-')||action.startsWith('screen-')||action.startsWith('sheet-')||action.startsWith('ingest-')||action.startsWith('cycle-'))return;
   if(action==='close'){$('#dialog').close();return}
   if(action==='reset'){demo=structuredClone(initial);demo.patients.forEach(p=>{p.service_consent=true;p.lifecycle='ENROLLED'});demo.records.forEach(r=>{r.occurred_at='2026-10-01T10:00';if(r.status==='READ')r.viewer=demo.patients.find(p=>p.id===r.patient)?.doctor});demo.accounts.forEach(a=>a.password='HealthDemo@2026!');lastPatientImport=null;account=null;go('/login');render();toast('已重置虚构演示数据。');return}
   if(action==='login'){const a=person($('#login-'+id).value);if(!a?.active){toast('该演示账号已停用。');return}account=a;go(home());return}
@@ -306,7 +307,7 @@ document.addEventListener('click',event=>{
 });
 document.addEventListener('submit',event=>{
   const f=event.target.closest('[data-form]');if(!f)return;event.preventDefault();
-  if(f.dataset.form.startsWith('screen-')||f.dataset.form.startsWith('sheet-')||f.dataset.form.startsWith('cycle-'))return;
+  if(f.dataset.form.startsWith('sc-')||f.dataset.form.startsWith('screen-')||f.dataset.form.startsWith('sheet-')||f.dataset.form.startsWith('cycle-'))return;
   const action=f.dataset.form,id=f.dataset.id||'',v=Object.fromEntries(new FormData(f));
   if(action.startsWith('journey-')||action.startsWith('service-'))return;Object.keys(v).forEach(k=>v[k]=v[k].trim());
   if(action==='search'){const q=new URLSearchParams(current.query);q.set('q',v.q);q.set('risk',v.risk);go(current.path+'?'+q);return}
@@ -370,6 +371,7 @@ document.addEventListener('submit',event=>{
   $('#dialog').close();if(location.hash==='#'+dest)render();else go(dest);toast('已保存演示记录；相关页面同步更新。');
 });
 window.addEventListener('hashchange',render);
+if(['screening-center','intervention-center'].includes(document.body.dataset.demoEntry)){account=person(1);if(!location.hash)location.hash=document.body.dataset.demoEntry==='intervention-center'?'/after-care':'/screening'}
 if(document.body.dataset.demoEntry==='patient-import'){account=person(1);if(!location.hash)location.hash='/patients'}
 render();
 

@@ -396,3 +396,53 @@ CREATE TABLE IF NOT EXISTS service_consent_withdrawal (
  gmt_create DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, gmt_modified DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
  PRIMARY KEY (id), UNIQUE KEY uk_service_consent_withdrawal (hospital_id,patient_id,consent_key)
 );
+
+CREATE TABLE IF NOT EXISTS intervention_work (
+ id BIGINT AUTO_INCREMENT PRIMARY KEY,
+ hospital_id BIGINT NOT NULL,
+ patient_id BIGINT NOT NULL,
+ center VARCHAR(20) NOT NULL,
+ phase VARCHAR(12) NOT NULL,
+ category VARCHAR(40) NOT NULL,
+ title VARCHAR(160) NOT NULL,
+ content TEXT,
+ clinical BOOLEAN NOT NULL,
+ record_id BIGINT,
+ due_at DATETIME NOT NULL,
+ status VARCHAR(20) NOT NULL,
+ approved_content TEXT,
+ reviewer_id BIGINT,
+ acknowledged_by BIGINT,
+ result TEXT,
+ first_response_at DATETIME,
+ arrived_at DATETIME,
+ arrival_evidence VARCHAR(2000),
+ score INT,
+ feedback VARCHAR(2000),
+ version INT NOT NULL,
+ del_flag TINYINT(1) NOT NULL DEFAULT 0,
+ creator VARCHAR(64),
+ modifier VARCHAR(64),
+ gmt_create DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ gmt_modified DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ INDEX idx_intervention_queue (hospital_id, center, phase, status, due_at),
+ INDEX idx_intervention_patient (patient_id)
+);
+
+CREATE TABLE IF NOT EXISTS intervention_log (
+ id BIGINT AUTO_INCREMENT PRIMARY KEY,
+ hospital_id BIGINT NOT NULL,
+ patient_id BIGINT NOT NULL,
+ work_id BIGINT NOT NULL,
+ actor_id BIGINT NOT NULL,
+ action VARCHAR(24) NOT NULL,
+ note VARCHAR(2000) NOT NULL,
+ before_json LONGTEXT,
+ after_json LONGTEXT,
+ del_flag TINYINT(1) NOT NULL DEFAULT 0,
+ creator VARCHAR(64),
+ modifier VARCHAR(64),
+ gmt_create DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ gmt_modified DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ INDEX idx_intervention_log (hospital_id, work_id, id)
+);

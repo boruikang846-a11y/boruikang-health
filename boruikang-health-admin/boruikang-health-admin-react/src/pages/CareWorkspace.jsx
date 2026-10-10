@@ -25,7 +25,7 @@ export function JourneyWorkspace() {
   const patientContext = search.get('patient') ? '?patient=' + encodeURIComponent(search.get('patient')) : ''
   return <><Card className="care-entry mb" title="按服务阶段开始办理"><div className="care-path-grid">
     {!doctor && <Link to={'/screening' + patientContext}><span>01 · 诊前</span><h3>诊前高危患者筛查中心</h3><p>筛查分层 → 建档分派 → 首次联系与邀约 → 预约到诊</p></Link>}
-    <Link to={'/after-care' + patientContext}><span>{doctor ? '我的患者服务' : '02 · 诊后'}</span><h3>诊后主动干预</h3><p>核对档案和报告 → 个案计划 → 医生审核 → 随访、异常、复诊与转诊</p></Link>
+    <Link to={'/after-care' + patientContext}><span>{doctor ? '我的患者服务' : '02 · 诊后'}</span><h3>诊后主动干预中心</h3><p>核对档案和报告 → 个案计划 → 医生审核 → 随访、异常、复诊与转诊</p></Link>
   </div><p className="muted mt">每次就诊通过下方旅程串联交接、原始报告、个案计划和结果。环节待办按当前账号的患者分派权限显示。</p></Card>
     <Tabs activeKey={active} onChange={step => setSearch(stageSearch(search, step))} items={[{ key: 'journeys', label: '就诊旅程与个案计划' }, { key: 'workbench', label: doctor ? '医生今日待办' : '团队今日待办' }]} />
     {active === 'workbench' ? doctor ? <DoctorHome /> : <Dashboard /> : <Journeys />}
@@ -88,7 +88,7 @@ export default function CareWorkspace({ phase }) {
       default: return null
     }
   }
-  return <><PageTitle title={before ? '诊前高危患者筛查中心' : '诊后主动干预'} subtitle={before ? '从筛查发现到到诊交接，按环节完成患者接入。' : '承接患者档案与原始报告，协同完成计划、随访、异常处置和复诊。'} extra={<Space wrap><Link to={'/journeys' + context}>查看就诊旅程</Link>{!doctor && <Link to={(before ? '/after-care' : '/screening') + context}>{before ? '转入诊后服务' : '回到诊前筛查'}</Link>}</Space>} />
+  return <><PageTitle title={before ? '诊前高危患者筛查中心' : '诊后主动干预中心'} subtitle={before ? '从筛查发现到到诊交接，按环节完成患者接入。' : '承接患者档案与原始报告，协同完成计划、随访、异常处置和复诊。'} extra={<Space wrap><Link to={'/journeys' + context}>查看就诊旅程</Link>{!doctor && <Link to={(before ? '/after-care' : '/screening') + context}>{before ? '转入诊后服务' : '回到诊前筛查'}</Link>}</Space>} />
     <Card className="care-guide mb" size="small"><Tag color="green">当前环节 · {stages.find(([key]) => key === step)[1]}</Tag><strong>{owner}</strong><p>{operation}</p><p className="muted">{boundary}</p></Card>
     <Tabs className="care-stage-tabs" activeKey={step} onChange={value => setSearch(stageSearch(search, value))} items={stages.map(([key, label]) => ({ key, label }))} />
     {scoped && <div className="care-patient-context"><span>患者范围</span><LoadState state={patientOptions}>{data => <Select aria-label="当前环节患者范围" showSearch allowClear filterOption={false} placeholder="全部可见患者，可搜索姓名" value={patientId} onSearch={setKeyword} style={{ width: 300, maxWidth: '100%' }} options={[...data.items.map(patient => ({ value: patient.id, label: patient.name + ' / #' + patient.id })), ...(patientId && !data.items.some(patient => patient.id === patientId) ? [{ value: patientId, label: '患者 #' + patientId }] : [])]} onChange={value => { const next = stageSearch(search, step); if (value) next.set('patient', value); else next.delete('patient'); setSearch(next) }} />}</LoadState><small>切换环节保留患者；切换患者清除上一项任务。</small></div>}

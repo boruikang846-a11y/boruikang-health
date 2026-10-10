@@ -9,7 +9,7 @@ for(const role of [1,2,3,4,5,6]){
   const entries=run('menu().map(x=>x[0])');
   for(const entry of entries)assert(!open(entry,role).includes('<h1>当前角色无权访问</h1>'),`visible menu ${role} ${entry}`);
 }
-const expected=['患者全旅程服务','企业微信','公众号','诊前高危患者筛查中心','诊后主动干预','宣教服务','服务包与方案','渠道管理','统计与复盘','医院数据','医护账号','运营设置','系统介绍'];
+const expected=['患者全旅程服务','企业微信','公众号','诊前高危患者筛查中心','诊后主动干预中心','宣教服务','服务包与方案','渠道管理','统计与复盘','医院数据','医护账号','运营设置','系统介绍'];
 open('/journeys');
 assert.deepEqual(Array.from(run('menu().map(x=>x[1])')),expected);
 assert(main().includes('发现风险，核实到诊'));
@@ -20,9 +20,9 @@ assert(!elements['#nav'].innerHTML.includes('>患者中心</a>'));
 // Old screening objects and the complete source-ledger interactions survive the merge.
 assert(open('/screening?tab=pool').includes('虚构筛查对象一'));
 assert(main().includes('data-action="enroll-pool"'));
-open('/screening');
+open('/screening?tab=invitations');
 assert.equal((main().match(/data-action="sheet-detail"/g)||[]).length,48);
-assert(main().includes('筛查对象接入'));
+assert(main().includes('全周期管理 · 回访邀约跟踪表'));
 open('/screening?tab=queue');
 assert(main().includes('href="#/screening?level=RED&amp;tab=queue"'));
 
@@ -35,7 +35,7 @@ assert(main().includes('/invitations/6001?flow=screening&amp;patient=1001'));
 assert.equal((main().match(/<h1>/g)||[]).length,1);
 open('/invitations/6001?flow=screening&patient=1001');
 assert(main().includes('返回诊前筛查环节'));
-assert(main().includes('/screening?tab=invitations&amp;patient=1001&amp;flow=screening'));
+assert(main().includes('/screening?tab=invitations&amp;view=records&amp;patient=1001&amp;flow=screening'));
 assert(elements['#nav'].innerHTML.includes('class="active" href="#/screening"'));
 open('/after-care?tab=archive&patient=1001');
 assert(main().includes('虚构出院报告 A'));

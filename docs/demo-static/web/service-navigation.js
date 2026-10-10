@@ -3,7 +3,7 @@
 // Navigation composition only: all mutations still use the existing role-checked handlers.
 const serviceOriginalScreening=screening,serviceOriginalAfterCare=afterCarePage,serviceOriginalJourney=journeyPage,serviceOriginalAcVisible=acVisible,serviceOriginalEnrollmentRows=enrollmentRows;
 const servicePreStages=[
-  ['intake','筛查对象接入',['ledger','pool','network','reconcile'],'ledger'],
+  ['intake','筛查对象接入',['statistics','pool','network','reconcile'],'statistics'],
   ['review','医生分层复核',['queue'],'queue'],
   ['invite','主动联系与邀约',['intervention','invitations'],'intervention'],
   ['arrival','预约与到诊核实',['appointments'],'appointments'],
@@ -60,7 +60,7 @@ function serviceRecordPatient(path){
   if((match=path.match(/^\/journeys\/(\d+)$/)))return journeyState().find(x=>x.id===Number(match[1]))?.patient;
   return undefined;
 }
-function serviceHubUrl(flow,tab,id){return servicePatientUrl('/'+flow+'?tab='+tab,id,flow)}
+function serviceHubUrl(flow,tab,id){return servicePatientUrl('/'+flow+'?tab='+tab+(flow==='screening'&&tab==='invitations'?'&view=records':''),id,flow)}
 function serviceEmbedded(path,fn,query={}){
   const saved=current;
   try{current={path,query:new URLSearchParams(saved.query)};current.query.delete('tab');Object.entries(query).forEach(([key,value])=>current.query.set(key,value));return fn()}
@@ -148,7 +148,7 @@ afterCarePage=function(){
 journeyPage=function(){
   if(!serviceRouteAllowed(current.path)||!servicePatientValid())return forbidden();
   if(/^\/journeys\/\d+$/.test(current.path))return serviceOriginalJourney();
-  const id=serviceRequestedPatient(),guide='<div class="service-overview"><section><span>01 · 诊前</span><h2>发现风险，核实到诊</h2><p>汇集筛查对象，医生复核后联系，持续记录邀约、预约与转诊承接。</p>'+link('进入诊前筛查',serviceHubUrl('screening','ledger'),'btn')+'</section><section><span>02 · 诊后</span><h2>个案计划，持续服务</h2><p>门诊、住院、体检分别承接；审核后执行随访，处理异常并核验复诊结果。</p>'+link('进入诊后服务',serviceHubUrl('after-care','overview',id),'btn primary')+'</section><section><span>03 · 协同</span><h2>一份档案，明确分工</h2><p>运营和护士办理本人患者，医生完成医学审核；每次交接保留负责人和下一步。</p>'+link('查看患者连续档案',serviceHubUrl('after-care','patients',id),'btn')+'</section></div>'+serviceRoleGuide('after-care');
+  const id=serviceRequestedPatient(),guide='<div class="service-overview"><section><span>01 · 诊前</span><h2>发现风险，核实到诊</h2><p>汇集筛查对象，医生复核后联系，持续记录邀约、预约与转诊承接。</p>'+link('进入诊前筛查',serviceHubUrl('screening','statistics'),'btn')+'</section><section><span>02 · 诊后</span><h2>个案计划，持续服务</h2><p>门诊、住院、体检分别承接；审核后执行随访，处理异常并核验复诊结果。</p>'+link('进入诊后服务',serviceHubUrl('after-care','overview',id),'btn primary')+'</section><section><span>03 · 协同</span><h2>一份档案，明确分工</h2><p>运营和护士办理本人患者，医生完成医学审核；每次交接保留负责人和下一步。</p>'+link('查看患者连续档案',serviceHubUrl('after-care','patients',id),'btn')+'</section></div>'+serviceRoleGuide('after-care');
   const pending='<div class="toolbar">'+link(account.role==='DOCTOR'?'查看本人医学审核与处置待办':'查看本人运营执行待办',account.role==='DOCTOR'?'/doctor':'/workbench','btn')+link('办理服务入组交接',servicePatientUrl('/enrollment',id),'btn')+'</div>';
   return serviceInsert(serviceOriginalJourney(),guide+pending);
 };
@@ -166,7 +166,7 @@ function serviceContextLinks(html,id,flow){
     else if(['/followups','/invitations','/appointments','/referrals','/revisits','/alerts'].includes(path))tab=path.slice(1);
     else if(['/doctor/reports','/doctor/reviews','/doctor/results','/doctor/alerts'].includes(path))tab=path.split('/')[2];
     if(tab==='appointments'&&flow!=='screening'&&(current.query.get('tab')==='revisits'||current.query.get('appointment_type')==='REVISIT'))tab='revisits';
-    if(tab){const nextFlow=flow==='screening'&&['invitations','appointments','referrals'].includes(tab)?'screening':'after-care';target='/'+nextFlow;q.set('tab',tab);q.set('flow',nextFlow)}
+    if(tab){const nextFlow=flow==='screening'&&['invitations','appointments','referrals'].includes(tab)?'screening':'after-care';target='/'+nextFlow;q.set('tab',tab);q.set('flow',nextFlow);if(nextFlow==='screening'&&tab==='invitations')q.set('view','records')}
     else if(serviceNavParent(path)==='/after-care'||/^\/(invitations|appointments|referrals)\//.test(path))q.set('flow',flow);
     else if(!['/after-care','/screening','/journeys','/enrollment'].includes(path)&&!path.startsWith('/journeys/'))return attribute;
     if(target==='/screening'&&!['invitations','appointments','referrals','handoff'].includes(q.get('tab')))q.delete('patient');
@@ -183,7 +183,7 @@ function serviceWrapLegacyPage(html){
   if(actual&&(!mine(patient(actual))||requested&&Number(requested)!==actual))return forbidden();
   const id=path==='/screening'&&!['invitations','appointments','referrals','handoff'].includes(current.query.get('tab'))?'':actual||requested,flow=serviceFlow(path);
   if(path!==parent&&!['/workbench','/doctor'].includes(path)){
-    const tab=/^\/patients\//.test(path)?'archive':path.startsWith('/screening/')?'ledger':path.startsWith('/journeys/')?'overview':path.startsWith('/appointments/')&&current.query.get('appointment_type')==='REVISIT'&&flow!=='screening'?'revisits':path.split('/')[1]==='doctor'?path.split('/')[2]:path.split('/')[1];
+    const tab=/^\/patients\//.test(path)?'archive':path.startsWith('/screening/')?(current.query.get('origin')||'invitations'):path.startsWith('/journeys/')?'overview':path.startsWith('/appointments/')&&current.query.get('appointment_type')==='REVISIT'&&flow!=='screening'?'revisits':path.split('/')[1]==='doctor'?path.split('/')[2]:path.split('/')[1];
     const destination=parent==='/journeys'?servicePatientUrl('/journeys',id):serviceHubUrl(flow,tab,id);
     html='<div class="service-return">'+link('← 返回'+(parent==='/journeys'?'患者全旅程服务':flow==='screening'?'诊前筛查环节':'诊后服务环节'),destination,'btn')+(id?'<span>当前患者：'+esc(patient(id)?.name||'')+'</span>':'')+'</div>'+html;
   }
