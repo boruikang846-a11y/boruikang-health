@@ -15,6 +15,9 @@ public class ScreeningRecord extends BaseRow {
     public LocalDateTime screenedAt;
     public String finding;
     public String category;
+    public String ecgGrade;
+    public String ecgScope;
+    public String ecgEvidence;
     public String riskLevel;
     public String riskEvidence;
     public Long judgedBy;

@@ -7,6 +7,8 @@ import { ScheduleOutlined,
 import { api, setToken, token } from './api'
 import { FormDialog, names } from './ui'
 import { JourneyDetail } from './pages/Journeys'
+import ScreeningCenter from './pages/ScreeningCenter'
+import { screeningSections } from './pages/screeningCenterModel'
 import CareWorkspace, { JourneyWorkspace, LegacyCareRedirect } from './pages/CareWorkspace'
 import { canReach, homeFor, selectedMenuPath } from './careNavigation'
 import Hospital from './pages/Hospital'
@@ -80,8 +82,9 @@ function Shell({ account, logout }) {
     <Space className="account-actions"><Tag>{names[account.role_code]}</Tag><Avatar size="small">{account.real_name?.slice(0, 1)}</Avatar><span className="account-name">{account.real_name}</span><Button type="text" icon={<KeyOutlined />} onClick={() => setPassword(true)}>修改密码</Button><Button type="text" icon={<LogoutOutlined />} onClick={logout}>退出</Button></Space>
   </header><Layout className="workspace"><Layout.Sider width={248} breakpoint="lg" collapsedWidth={64} className="sidebar">
     <div className="nav-caption">{account.role_code === 'DOCTOR' ? '医生工作台' : '院外连续服务'}</div>
-    <Menu mode="inline" selectedKeys={[selected]} items={visible.map(([path, title, Icon]) => ({
-      key: path, icon: <Icon />, label: <Link to={path}>{title}</Link>,
+    <Menu mode="inline" selectedKeys={[location.pathname === '/screening' ? '/screening?step=' + (new URLSearchParams(location.search).get('step') || 'statistics') : selected]} defaultOpenKeys={['/screening']} items={visible.map(([path, title, Icon]) => ({
+      key: path, icon: <Icon />, label: path === '/screening' ? title : <Link to={path}>{title}</Link>,
+      ...(path === '/screening' ? { children: screeningSections.map(([step, label]) => ({ key: '/screening?step=' + step, label: <Link to={'/screening?step=' + step}>{label}</Link> })) } : {}),
     }))} /><div className="sidebar-foot"><span className="online-dot" /> 医患协作 / 2.0</div>
   </Layout.Sider><main className="main-content"><div className="page-enter" key={location.pathname}><Outlet context={account} /></div></main></Layout>
     <PasswordDialog open={password} onClose={() => setPassword(false)} /></Layout>
@@ -105,7 +108,7 @@ export default function App() {
     <Route element={account ? allowed ? <Shell account={account} logout={async () => { try { await api('/logout', {}) } catch {} setToken(null); setAccount(null); navigate('/login') }} /> : <Navigate to={home(account.role_code)} replace /> : <Navigate to="/login" replace />}>
       <Route path="/overview" element={<SystemOverview account={account} />} />
       <Route path="/after-care" element={<CareWorkspace phase="after" />} /><Route path="/journeys" element={<JourneyWorkspace />} /><Route path="/journeys/:id" element={<JourneyDetail />} />
-      <Route path="/screening" element={<CareWorkspace phase="before" />} /><Route path="/packages" element={<Packages />} />
+      <Route path="/screening" element={<ScreeningCenter />} /><Route path="/packages" element={<Packages />} />
       {['/workbench', '/patients', '/patients/:id', '/invitations', '/appointments', '/followups', '/alerts', '/revisits', '/referrals', '/doctor', '/doctor/reviews', '/doctor/reports', '/doctor/results', '/doctor/alerts'].map(path => <Route key={path} path={path} element={<LegacyCareRedirect />} />)}
       <Route path="/hospital" element={<Hospital />} /><Route path="/knowledge" element={<Knowledge />} /><Route path="/channels" element={<Channels />} /><Route path="/reports" element={<Reports />} /><Route path="/settings" element={<Settings />} />
       <Route path="/accounts" element={<Accounts />} /><Route path="/wecom" element={<WechatChannel provider="WE_COM" key="WE_COM" />} /><Route path="/official-account" element={<WechatChannel provider="WECHAT_OFFICIAL" key="WECHAT_OFFICIAL" />} />

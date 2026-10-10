@@ -1,6 +1,6 @@
 const assert=require('node:assert/strict'),harness=require('./prototype-harness.cjs');
 const {run,elements}=harness();
-run("account=person(1);location.hash='#/screening';render()");
+run("account=person(1);location.hash='#/screening?tab=invitations';render()");
 assert.equal(run('sheetRows().length'),64);
 assert.equal((elements['#main'].innerHTML.match(/data-action="sheet-detail"/g)||[]).length,48);
 for(const section of ['communication','arrival','effective','followup']){

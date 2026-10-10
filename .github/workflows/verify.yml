@@ -48,6 +48,7 @@ jobs:
           node docs/demo-static/tests/service-navigation.test.cjs
           node docs/demo-static/tests/after-care-service.test.cjs
           node docs/demo-static/tests/screening-details.test.cjs
+          node docs/demo-static/tests/screening-center.test.cjs
       - name: Build admin UI
         working-directory: boruikang-health-admin/boruikang-health-admin-react
         run: |
