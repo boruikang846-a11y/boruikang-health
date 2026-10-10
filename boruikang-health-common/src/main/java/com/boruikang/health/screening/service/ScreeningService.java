@@ -27,7 +27,15 @@ public class ScreeningService {
     public ScreeningService(ScreeningRecordMapper screenings,PatientAccess access,AuditService audit,OrgService orgs,PatientService patients,OutreachService outreach){
         this.screenings=screenings;this.access=access;this.audit=audit;this.orgs=orgs;this.patients=patients;this.outreach=outreach;}
     public Paged<ScreeningResponse> query(ScreeningQueryRequest req){
-        log.info("query screenings status={} source={}",req.poolStatus(),req.sourceType());access.operations();var actor=CurrentAccount.get();
+        log.info("query screenings status={} source={}",req.poolStatus(),req.sourceType());access.operations();
+        ScreeningRecordExample ex=criteria(req);
+        ex.setOrderByClause("pool_status ASC,screened_at DESC,id DESC");
+        PageHelper.startPage(Paged.number(req.page()),Paged.size(req.size()));
+        List<ScreeningRecord> rows=screenings.selectByExample(ex);return Paged.of(rows,r->view(r,true));
+    }
+    private ScreeningRecordExample criteria(ScreeningQueryRequest req){
+        Checks.require(req.screenedFrom()==null||req.screenedTo()==null||!req.screenedFrom().isAfter(req.screenedTo()),"开始日期不能晚于结束日期");
+        var actor=CurrentAccount.get();
         ScreeningRecordExample ex=new ScreeningRecordExample();ex.eq("hospital_id",actor.hospitalId());
         if(access.executor())ex.eq("owner_id",actor.userId());
         if(Checks.text(req.keyword()))ex.like("name","%"+req.keyword().trim()+"%");
@@ -40,9 +48,32 @@ public class ScreeningService {
         if(Checks.text(req.importBatch()))ex.eq("import_batch",req.importBatch());
         if(req.screenedFrom()!=null)ex.ge("screened_at",req.screenedFrom().atStartOfDay());
         if(req.screenedTo()!=null)ex.lt("screened_at",req.screenedTo().plusDays(1).atStartOfDay());
-        ex.setOrderByClause("pool_status ASC,screened_at DESC,id DESC");
-        PageHelper.startPage(Paged.number(req.page()),Paged.size(req.size()));
-        List<ScreeningRecord> rows=screenings.selectByExample(ex);return Paged.of(rows,r->view(r,true));
+        if(Checks.text(req.phone()))ex.like("phone","%"+req.phone().trim()+"%");
+        if(Checks.text(req.idCardTail()))ex.eq("id_card_tail",req.idCardTail().trim());
+        if(Checks.text(req.category()))ex.eq("category",req.category().trim());
+        if(Boolean.TRUE.equals(req.highRisk())){ex.in("risk_level",List.of("HIGH","CRITICAL"));ex.ne("pool_status","DISCARDED");}
+        if("ARRHYTHMIA".equals(req.categoryGroup()))ex.in("category",List.of("心律失常","房颤","房扑","频发室早、室速","高度或三度房室传导阻滞","预激综合征"));
+        if("CORONARY".equals(req.categoryGroup()))ex.in("category",List.of("冠心病","心肌缺血"));
+        if("UNASSESSED".equals(req.ecgGrade()))ex.isNull("ecg_grade");
+        else if(Checks.text(req.ecgGrade()))ex.eq("ecg_grade",req.ecgGrade()).ne("pool_status","DISCARDED");
+        return ex;
+    }
+    public ScreeningStatisticsResponse statistics(ScreeningQueryRequest req){
+        access.operations();
+        var sources=new java.util.LinkedHashMap<String,Long>();
+        for(String source:List.of("ECG_NETWORK","EXAM","HEALTH_SCREENING","STROKE_SCREENING","OUTPATIENT","INPATIENT","CAMPAIGN")){
+            var ex=criteria(req);ex.eq("source_type",source);sources.put(source,screenings.countByExample(ex));
+        }
+        var risks=new java.util.LinkedHashMap<String,Long>();
+        for(String risk:List.of("UNKNOWN","LOW","MEDIUM","HIGH","CRITICAL")){
+            var ex=criteria(req);ex.eq("risk_level",risk);risks.put(risk,screenings.countByExample(ex));
+        }
+        var pending=criteria(req);pending.eq("pool_status","NEW");
+        var enrolled=criteria(req);enrolled.eq("pool_status","ENROLLED");
+        var high=criteria(req);high.in("risk_level",List.of("HIGH","CRITICAL")).ne("pool_status","DISCARDED");
+        var critical=criteria(req);critical.eq("ecg_grade","CRITICAL").ne("pool_status","DISCARDED");
+        return new ScreeningStatisticsResponse(screenings.countByExample(criteria(req)),screenings.countByExample(pending),
+            screenings.countByExample(high),screenings.countByExample(critical),screenings.countByExample(enrolled),sources,risks);
     }
     @Transactional
     public ScreeningResponse create(CreateScreeningRequest req){
@@ -77,13 +108,25 @@ public class ScreeningService {
         log.info("judge screening id={} status={}",req.id(),req.poolStatus());access.operations();ScreeningRecord r=load(req.id(),req.version());
         Checks.conflict(!"ENROLLED".equals(r.poolStatus));
         ScreeningRecord patch=new ScreeningRecord();patch.poolStatus=req.poolStatus();patch.judgedBy=CurrentAccount.get().userId();patch.judgedAt=LocalDateTime.now();patch.note=req.note();
+        if(req.ecgGrade()!=null){
+            Checks.require(List.of("CRITICAL","WARNING","NORMAL").contains(req.ecgGrade()),"请选择院方报告已确认的心电图分级；未评估不按普通处理");
+            Checks.require(List.of("REST_12_LEAD","ARRHYTHMIA_REFERENCE").contains(req.ecgScope()==null?"":req.ecgScope())&&Checks.text(req.ecgEvidence()),"需核对本次报告适用范围，并填写报告编号、院方审核人和分级依据");
+            patch.ecgGrade=req.ecgGrade();patch.ecgScope=req.ecgScope();patch.ecgEvidence=req.ecgEvidence().trim();
+        }
         switch(req.poolStatus()){
             case "HIGH_RISK"->{Checks.require(List.of("HIGH","CRITICAL").contains(req.riskLevel())&&Checks.text(req.riskEvidence()),"High risk requires HIGH or CRITICAL level with hospital evidence / 高危需填写风险等级及院方判定依据");patch.riskLevel=req.riskLevel();patch.riskEvidence=req.riskEvidence().trim();}
             case "NON_HIGH_RISK"->{Checks.require(Checks.text(req.nonHighRiskReason()),"Reason required / 请填写非高危原因");patch.riskLevel=req.riskLevel()==null?"LOW":req.riskLevel();patch.riskEvidence=req.riskEvidence();patch.nonHighRiskReason=req.nonHighRiskReason().trim();}
             default->{Checks.require(Checks.text(req.note()),"Discard reason required / 请填写作废原因");}
         }
         if(req.ownerId()!=null){patients.validateStaff(req.ownerId(),"OPERATOR","NURSE","MANAGER");patch.ownerId=req.ownerId();}
-        save(r,patch,"SCREENING_JUDGED",req.poolStatus());return view(screenings.selectByPrimaryKey(r.id),false);
+        save(r,patch,"SCREENING_JUDGED",req.poolStatus());
+        // Audit detail is limited to 500 characters; retain the complete evidence in numbered parts.
+        if(patch.ecgGrade!=null)for(int offset=0;offset<patch.ecgEvidence.length();offset+=400){
+            audit.append(r.patientId,"SCREENING_ECG_GRADE_RECORDED",r.id,r.ecgGrade,patch.ecgGrade,
+                "version="+patch.version+"; scope="+patch.ecgScope+"; part="+(offset/400+1)+"; evidence="+
+                patch.ecgEvidence.substring(offset,Math.min(offset+400,patch.ecgEvidence.length())));
+        }
+        return view(screenings.selectByPrimaryKey(r.id),false);
     }
     @Transactional
     public ScreeningResponse enroll(EnrollScreeningRequest req){
@@ -122,7 +165,7 @@ public class ScreeningService {
     }
     public static ScreeningResponse view(ScreeningRecord r,boolean masked){
         var actor=CurrentAccount.get();boolean full=!masked||"MANAGER".equals(actor.roleCode())||actor.userId().equals(r.ownerId);
-        return new ScreeningResponse(r.id,r.patientId,r.orgId,r.campaignId,r.ownerId,r.sourceType,full?r.name:PatientService.maskName(r.name),r.gender,r.age,full?r.phone:PatientService.maskPhone(r.phone),r.idCardTail,r.screenedAt,r.finding,r.category,
+        return new ScreeningResponse(r.id,r.patientId,r.orgId,r.campaignId,r.ownerId,r.sourceType,full?r.name:PatientService.maskName(r.name),r.gender,r.age,full?r.phone:PatientService.maskPhone(r.phone),r.idCardTail,r.screenedAt,r.finding,r.category,r.ecgGrade,r.ecgScope,r.ecgEvidence,
             r.riskLevel,r.riskEvidence,r.judgedBy,r.judgedAt,r.poolStatus,r.nonHighRiskReason,r.externalId,r.importBatch,r.note,r.version,r.gmtCreate);
     }
 }

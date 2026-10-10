@@ -20,9 +20,9 @@ assert(!elements['#nav'].innerHTML.includes('>患者中心</a>'));
 // Old screening objects and the complete source-ledger interactions survive the merge.
 assert(open('/screening?tab=pool').includes('虚构筛查对象一'));
 assert(main().includes('data-action="enroll-pool"'));
-open('/screening');
+open('/screening?tab=invitations');
 assert.equal((main().match(/data-action="sheet-detail"/g)||[]).length,48);
-assert(main().includes('筛查对象接入'));
+assert(main().includes('全周期管理 · 回访邀约跟踪表'));
 open('/screening?tab=queue');
 assert(main().includes('href="#/screening?level=RED&amp;tab=queue"'));
 
@@ -35,7 +35,7 @@ assert(main().includes('/invitations/6001?flow=screening&amp;patient=1001'));
 assert.equal((main().match(/<h1>/g)||[]).length,1);
 open('/invitations/6001?flow=screening&patient=1001');
 assert(main().includes('返回诊前筛查环节'));
-assert(main().includes('/screening?tab=invitations&amp;patient=1001&amp;flow=screening'));
+assert(main().includes('/screening?tab=invitations&amp;view=records&amp;patient=1001&amp;flow=screening'));
 assert(elements['#nav'].innerHTML.includes('class="active" href="#/screening"'));
 open('/after-care?tab=archive&patient=1001');
 assert(main().includes('虚构出院报告 A'));

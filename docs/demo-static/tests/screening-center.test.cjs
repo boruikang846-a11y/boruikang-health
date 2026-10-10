@@ -1,0 +1,56 @@
+const assert=require('node:assert/strict');
+const {run,elements}=require('./prototype-harness.cjs')();
+const open=(tab='',role=1)=>{run(`account=person(${role});location.hash='#/screening${tab?'?tab='+tab:''}';render()`);return elements['#main'].innerHTML};
+assert(open().includes('发现风险，让每一位患者得到跟进'));
+assert(!open().includes('全周期管理 · 回访邀约跟踪表'));
+assert.equal(run('scRecords().length'),80);
+assert.equal(run("scFilter(scRecords(),'exam',new URLSearchParams()).length"),5);
+for(const [tab,source] of [['network','ECG_NETWORK'],['exam','EXAM'],['health','HEALTH_SCREENING']]){
+  assert(open(tab).includes('导出筛选结果'));
+  assert(run(`scFilter(scRecords(),'${tab}',new URLSearchParams()).every(x=>x.source==='${source}')`));
+}
+assert(run("scFilter(scRecords(),'critical',new URLSearchParams()).every(x=>x.ecgGrade==='CRITICAL')"));
+assert(run("scFilter(scRecords(),'high-risk',new URLSearchParams()).every(x=>['危急','高危'].includes(x.risk))"));
+assert.equal(run("scFilter(scRecords(),'statistics',new URLSearchParams('from=2026-10-10&to=2026-10-10')).length"),3);
+assert.equal(run("scFilter(scRecords(),'network',new URLSearchParams('category=房颤')).length"),1);
+assert.equal(run("scFilter(scRecords(),'network',new URLSearchParams('family=coronary')).length"),1);
+assert.equal(run("scFilter(scRecords(),'exam',new URLSearchParams('name=不存在')).length"),0);
+assert.equal((open('invitations').match(/data-action="sheet-detail"/g)||[]).length,48);
+assert(open('ledger').includes('全周期管理 · 回访邀约跟踪表'));
+const original=run('JSON.stringify(screeningSheetData.records)');
+run("sheetSaveDetails(6102,{section:'followup',nextDemo:'2026-11-11T10:00',followupPlan:'迁移后继续回访',changeReason:'测试迁移'})");
+assert.equal(run('sheetState().logs.length'),1);assert.equal(run('JSON.stringify(screeningSheetData.records)'),original);
+open('health',3);assert(run('scRecords().every(x=>x.owner===account.id)'));
+const dialog=elements['#dialog-content'].innerHTML;run('scDetail(5201)');assert.equal(elements['#dialog-content'].innerHTML,dialog);
+open('statistics',5);assert(elements['#main'].innerHTML.includes('当前角色无权访问'));
+open('exam');const before=run('screeningState().rows.length');
+const values={rows:'导入演示,男,55,00000003333,演示检查结论',org:'虚构导入机构',date:'2026-10-10T10:00'};
+run(`scSaveImport('exam',${JSON.stringify(values)})`);assert.equal(run('screeningState().rows.length'),before+1);
+assert.equal(run('screeningState().rows.at(-1).sourceType'),'EXAM');assert.equal(run('screeningState().rows.at(-1).stage'),'REVIEW');
+run(`scSaveImport('exam',${JSON.stringify(values)})`);assert.equal(run('screeningState().rows.length'),before+1);
+run(`scSaveImport('health',${JSON.stringify({...values,rows:values.rows+'\n坏行'})})`);assert.equal(run('screeningState().rows.length'),before+1);
+assert(run("scCsv([{name:'=1+2',finding:'含逗号,和换行\\n的结论'}]).includes(\"'=1+2\")"));
+assert(!elements['#nav'].innerHTML.includes('&lt;span&gt;'));
+console.log('PASS: seven sections, scoped counts, source/date/category filters, legacy ledger editing, import atomicity/deduplication and CSV escaping.');
+// Report grading is separate from longitudinal patient risk and requires a physician.
+open('critical');assert.equal(run("scFilter(scRecords(),'critical',new URLSearchParams()).length"),2);
+assert.equal(run("scFilter(scRecords(),'critical',new URLSearchParams('grade=WARNING')).length"),1);
+assert.equal(run("scRecords().find(x=>x.id===5206).risk"),'高危');assert.equal(run("scRecords().find(x=>x.id===5206).ecgGrade"),'WARNING');
+assert(run("scRecords().filter(x=>x.kind==='sheet').every(x=>x.ecgGrade==='UNASSESSED')"));
+assert(elements['#main'].innerHTML.includes('历史 / 其他危急风险'));
+assert(elements['#main'].innerHTML.includes('即刻报告'));
+const grade=run("scRecords().find(x=>x.id===5202).ecgGrade");run("scGrade(5202,{grade:'NORMAL',scope:'REST_12_LEAD',evidence:'运营越权'})");assert.equal(run("scRecords().find(x=>x.id===5202).ecgGrade"),grade);
+open('critical',2);run("scGrade(5202,{grade:'WARNING',scope:'',evidence:'缺少范围'})");assert.equal(run("scRecords().find(x=>x.id===5202).ecgGrade"),grade);
+run("scGrade(5202,{grade:'WARNING',scope:'REST_12_LEAD',evidence:'虚构报告 ABC，责任医生核实本次新发生房扑，无危急条件'})");
+assert.equal(run("scRecords().find(x=>x.id===5202).ecgGrade"),'WARNING');assert.equal(run("scRecords().find(x=>x.id===5202).risk"),'待复核');
+assert(run("screeningState().rows.find(x=>x.id===5202).logs[0].text.includes('本次心电图分级')"));
+console.log('PASS: consensus report grades, unmapped historical risk, report scope, doctor authority and appended evidence.');
+
+open('invitations',2);run("scGrade(6102,{grade:'NORMAL',scope:'REST_12_LEAD',evidence:'虚构报告医生本人复核'})");
+assert.equal(run("scRecords().find(x=>x.id===6102).ecgGrade"),'NORMAL');
+open('invitations',1);run("sheetAction('sheet-edit',6102,{name:'摘要修改演示',gender:'男',age:'60',phone:'00000001234',reportConclusion:'已更改的虚构报告',note:'核对资料'})");
+assert.equal(run("scRecords().find(x=>x.id===6102).ecgGrade"),'UNASSESSED');
+run("location.hash='#/screening/5201?origin=network';render()");
+assert(elements['#main'].innerHTML.includes('tab=network'));
+assert(run("serviceHubUrl('screening','invitations',101).includes('view=records')"));
+console.log('PASS: changed report invalidates prior grade, detail return retains origin, shared invitation links select record view.');
