@@ -9,7 +9,7 @@ for(const role of [1,2,3,4,5,6]){
   const entries=run('menu().map(x=>x[0])');
   for(const entry of entries)assert(!open(entry,role).includes('<h1>当前角色无权访问</h1>'),`visible menu ${role} ${entry}`);
 }
-const expected=['患者全旅程服务','企业微信','公众号','诊前高危患者筛查中心','诊后主动干预中心','宣教服务','服务包与方案','渠道管理','统计与复盘','医院数据','医护账号','运营设置','系统介绍'];
+const expected=['患者全旅程服务','企业微信','公众号','诊前高危患者筛查中心','诊后健康服务中心','宣教服务','服务包与方案','渠道管理','统计与复盘','医院数据','医护账号','运营设置','系统介绍'];
 open('/journeys');
 assert.deepEqual(Array.from(run('menu().map(x=>x[1])')),expected);
 assert(main().includes('发现风险，核实到诊'));
@@ -59,10 +59,10 @@ for(const [scene,id,label] of [['OUTPATIENT',1002,'门诊诊后服务'],['DISCHA
   open('/after-care?scene='+scene);
   assert(main().includes(label));
   open('/after-care?scene='+scene+'&case='+id);
-  assert(main().includes('患者个案'));
-  assert(main().includes('个案随访计划表'));
+  assert(main().includes('患者服务清单'));
+  assert(main().includes('本阶段办理步骤'));
   assert(main().includes('原报告'));
-  assert(main().includes('patient='+id));
+  assert(main().includes('service='+id));
 }
 open('/after-care?scene=OUTPATIENT&patient=1002');
 assert(main().includes('name="patient" value="1002"'));

@@ -11,7 +11,7 @@ const menuFor = new Function('navigation', 'doctorNavigation', menuForSource + '
 const reachable = (role, path) => canReach(role, path, menuFor(role).map(([path]) => path))
 
 test('primary navigation has exactly the requested thirteen entries and order', () => {
-  assert.deepEqual(navigation.map(([, title]) => title), ['患者全旅程服务', '企业微信', '公众号', '诊前高危患者筛查中心', '诊后主动干预中心', '宣教服务', '服务包与方案', '渠道管理', '统计与复盘', '医院数据', '医护账号', '运营设置', '系统介绍'])
+  assert.deepEqual(navigation.map(([, title]) => title), ['患者全旅程服务', '企业微信', '公众号', '诊前高危患者筛查中心', '诊后健康服务中心', '宣教服务', '服务包与方案', '渠道管理', '统计与复盘', '医院数据', '医护账号', '运营设置', '系统介绍'])
   assert.equal(new Set(navigation.map(([path]) => path)).size, 13)
 })
 

@@ -24,7 +24,8 @@ html = html.replace('<link rel="stylesheet" href="service-navigation.css">', "<s
 scripts.extend(["service-navigation.js", "continuous-care.js", "connected-service.js", "screening-center.js"])
 html = html.replace('<link rel="stylesheet" href="screening-center.css">', "<style>" + (web / "screening-center.css").read_text(encoding="utf-8") + "</style>")
 html = html.replace('<link rel="stylesheet" href="connected-service.css">', "<style>" + (web / "connected-service.css").read_text(encoding="utf-8") + "</style>")
-scripts.extend(["intervention-config.js", "intervention-center.js"])
+scripts.extend(["intervention-config.js", "intervention-center.js", "health-service-journey.js"])
+html = html.replace('<link rel="stylesheet" href="health-service-journey.css">', '<style>' + (web / 'health-service-journey.css').read_text(encoding='utf-8') + '</style>')
 html = html.replace('<link rel="stylesheet" href="intervention-center.css">', '<style>' + (web / 'intervention-center.css').read_text(encoding='utf-8') + '</style>')
 for filename in scripts:
     js = (web / filename).read_text(encoding="utf-8")

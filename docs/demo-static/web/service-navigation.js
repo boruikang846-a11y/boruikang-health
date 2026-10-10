@@ -143,7 +143,7 @@ afterCarePage=function(){
   const shell=serviceStages('after-care',tab,id)+servicePatientContext('after-care',tab,id)+serviceRoleGuide('after-care');
   if(tab==='overview')return serviceInsert(serviceOriginalAfterCare(),shell);
   const body=serviceLegacyTab(tab);
-  return page('诊后主动干预','以同一患者和本次就诊事件连接报告、个案计划、执行反馈与复诊结果。',shell+(body?serviceBody(body):card('选择服务环节',link('进入个案服务工作区',serviceHubUrl('after-care','overview',id),'btn'))));
+  return page('诊后健康服务中心','以同一患者和本次就诊事件连接报告、个案计划、执行反馈与复诊结果。',shell+(body?serviceBody(body):card('选择服务环节',link('进入个案服务工作区',serviceHubUrl('after-care','overview',id),'btn'))));
 };
 journeyPage=function(){
   if(!serviceRouteAllowed(current.path)||!servicePatientValid())return forbidden();

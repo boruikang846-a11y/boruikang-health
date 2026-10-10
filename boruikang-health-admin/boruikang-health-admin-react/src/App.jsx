@@ -21,12 +21,12 @@ import { FunnelPlotOutlined, GiftOutlined, WechatOutlined, WechatWorkOutlined } 
 
 const navigation = [
   ['/journeys', '患者全旅程服务', HeartOutlined], ['/wecom', '企业微信', WechatWorkOutlined], ['/official-account', '公众号', WechatOutlined],
-  ['/screening', '诊前高危患者筛查中心', FunnelPlotOutlined], ['/after-care', '诊后主动干预中心', ScheduleOutlined], ['/knowledge', '宣教服务', ReadOutlined],
+  ['/screening', '诊前高危患者筛查中心', FunnelPlotOutlined], ['/after-care', '诊后健康服务中心', ScheduleOutlined], ['/knowledge', '宣教服务', ReadOutlined],
   ['/packages', '服务包与方案', GiftOutlined], ['/channels', '渠道管理', QrcodeOutlined], ['/reports', '统计与复盘', BarChartOutlined],
   ['/hospital', '医院数据', QrcodeOutlined], ['/accounts', '医护账号', IdcardOutlined], ['/settings', '运营设置', SettingOutlined], ['/overview', '系统介绍', HeartOutlined],
 ]
 const doctorNavigation = [
-  ['/journeys', '患者全旅程服务', HeartOutlined], ['/after-care', '诊后主动干预中心', ScheduleOutlined],
+  ['/journeys', '医疗与质控工作台', HeartOutlined], ['/after-care', '诊后健康服务中心', ScheduleOutlined],
   ['/knowledge', '宣教服务', ReadOutlined], ['/overview', '系统介绍', HeartOutlined],
 ]
 /** Visible entries and route compatibility are distinct from role permissions. */
