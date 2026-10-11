@@ -5,6 +5,8 @@
 | 记录 | 依据与状态 |
 | --- | --- |
 | 当前实现 | [实现基线](../api/implementation-baseline.md)、[全旅程需求](../feature/journey-2.0.md) |
+| 2026-10-10 三中心旅程 2.4 | [功能设计](../feature/health-service-journey-2.4-design.md)、[实现计划](../feature/2026-10-10-health-service-journey.md)，HTML 交互原型范围 |
+| 2026-10-10 五中心工作单 2.3 | [功能与实现边界](../feature/intervention-centers-2.3.md)、[验证记录](../review/intervention-centers-2.3.md) |
 | 2026-10-09 导航整合 | [功能设计](../feature/2026-10-09-care-navigation-design.md)、[验证记录](../review/care-navigation-2026-10-09.md) |
 | 2026-10-09 诊后全流程 | [功能设计](../feature/after-care-full-process-2.1-design.md)，原型探索范围 |
 | 2026-10-09 患者服务中心 | [功能设计](../feature/patient-service-center-2.1-design.md)，独立虚构 H5 演示 |
