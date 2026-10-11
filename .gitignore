@@ -155,3 +155,9 @@ application-secrets.properties
 # 不被上面任何规则忽略，正常纳入版本控制。
 
 .local-data/
+
+# Rebuilt by npm run build:deploy before Maven packaging.
+/boruikang-health-admin/boruikang-health-admin/src/main/resources/static/index.html
+/boruikang-health-admin/boruikang-health-admin/src/main/resources/static/assets/
+/boruikang-health-user/boruikang-health-user/src/main/resources/static/index.html
+/boruikang-health-user/boruikang-health-user/src/main/resources/static/assets/

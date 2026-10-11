@@ -7,7 +7,7 @@
 - Java 全量测试：BUILD SUCCESS；common 22、user 3、admin 115，共 140 项，失败 0，MySQL 专项 17 项因本地无测试 MySQL 跳过。此后补充了医生改派/医院边界测试，最终工作单专项 4 项全部通过。
 - 工作单 HTTP 集成测试：五中心数据库读写、患者分派范围、岗位权限、关联报告归属、本人读报告与审批、正文修改失效、过期版本 409、结果查收后闭环、真实到院校验、一次性评分、长反馈保存、医生改派与跨医院读取。
 - React：文件导入和导航 23 项通过；Vite 构建通过。既有大包体积警告保留，不影响构建。
-- HTML：`node --test docs/demo-static/tests/*.test.cjs` 共 15 个测试条目通过，包括五中心/十五队列及旧筛查、企微、旅程和上传回归。
+- HTML：`node --test tools/prototype/tests/*.test.cjs` 共 15 个测试条目通过，包括五中心/十五队列及旧筛查、企微、旅程和上传回归。
 - 契约检查：36 个表、36 组 Mapper/Model 与 SQL 字段一致；正式 React/HTML 五中心、三阶段、状态和动作配置共享且无漂移。
 - `git diff --check` 通过。独立 HTML 打包约 1.50 MB，无外部脚本/样式依赖。
 

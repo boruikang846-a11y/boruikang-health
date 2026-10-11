@@ -1,0 +1,564 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>患者身份关系：字段与补充场景 · 博瑞康 Health</title>
+  <style>
+    :root { color-scheme: light; --ink:#23333d; --muted:#657783; --green:#238b54; --soft-green:#edf7f1; --border:#dde5e2; --bg:#f1f5f5; --amber:#976510; --soft-amber:#fff7e5; --red:#b64639; --soft-red:#fff0ec; }
+    * { box-sizing:border-box; }
+    [hidden] { display:none !important; }
+    body { margin:0; color:var(--ink); background:var(--bg); font:14px/1.65 "Microsoft YaHei","PingFang SC",system-ui,sans-serif; }
+    button,input,select,textarea { font:inherit; }
+    button,a,input,select,textarea,summary { outline-offset:4px; }
+    button { cursor:pointer; }
+    a { color:var(--green); text-decoration:none; }
+    a:hover { text-decoration:underline; }
+    button:disabled { cursor:default; opacity:.45; }
+    .topbar { background:#1d2632; color:#fff; min-height:66px; display:flex; align-items:center; justify-content:space-between; padding:14px 32px; gap:20px; }
+    .brand { display:flex; align-items:center; gap:12px; font-size:18px; font-weight:600; }
+    .brand-mark { background:#299e60; color:#fff; width:32px; height:32px; display:grid; place-items:center; border-radius:7px; font-size:20px; }
+    .topbar nav { display:flex; align-items:center; gap:22px; color:#bbc9ca; font-size:12px; }
+    .topbar a { color:#e2eeeb; }
+    .top-tag { border:1px solid #52625e; padding:3px 9px; border-radius:4px; }
+    .wrap { max-width:1560px; margin:auto; padding:34px 32px 28px; }
+    .intro { display:flex; align-items:center; justify-content:space-between; gap:36px; margin-bottom:24px; }
+    .eyebrow { color:var(--green); font-size:12px; font-weight:600; letter-spacing:1px; }
+    h1 { margin:8px 0 10px; font-size:30px; line-height:1.35; letter-spacing:-.6px; }
+    .intro p { margin:0; color:var(--muted); max-width:760px; }
+    .intro-aside { background:white; border:1px solid var(--border); border-radius:6px; padding:14px 20px; max-width:330px; flex-shrink:0; }
+    .intro-aside b { display:block; font-size:14px; margin-bottom:3px; }
+    .intro-aside span { font-size:12px; color:var(--muted); }
+    .teaching-label { display:flex; gap:9px; align-items:flex-start; border-left:3px solid #6a9b86; color:#5b7167; font-size:12px; background:#e9f1ed; padding:9px 13px; margin-bottom:22px; }
+    .background-panel { background:white; border:1px solid var(--border); border-radius:7px; padding:22px 26px; margin-bottom:24px; }
+    .background-panel h2 { font-size:19px; margin:0 0 8px; }
+    .background-panel>p { font-size:13px; color:var(--muted); margin:0 0 16px; }
+    .premises { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-bottom:20px; }
+    .premise { border:1px solid var(--border); border-radius:5px; padding:13px 15px; }
+    .premise b { display:block; font-size:13px; margin:8px 0 4px; }
+    .premise p { font-size:12px; color:var(--muted); margin:0; }
+    .future-story { border-top:1px solid var(--border); padding-top:18px; }
+    .story-top { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:12px; }
+    .story-top h3 { font-size:16px; margin:0; }
+    .story-steps { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:17px; }
+    .story-steps button { border:1px solid #dce5de; border-radius:4px; background:white; padding:8px 12px; color:var(--muted); font-size:12px; }
+    .story-steps button.active { background:var(--soft-green); border-color:#9fc5ae; color:#1e6d41; }
+    .story-card-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }
+    .story-card { border:1px solid #dbe5df; border-radius:5px; padding:16px; background:#fbfdfc; }
+    .story-card.primary { background:var(--soft-green); border-color:#c5ddcc; }
+    .story-card.pending { background:#fffaf0; border-color:#e8dfc8; }
+    .story-card h4 { font-size:13px; margin:0 0 9px; }
+    .story-card strong { font-size:16px; font-weight:600; display:block; margin:3px 0; }
+    .story-card p { margin:6px 0 0; font-size:12px; color:var(--muted); }
+    .story-card .story-link { margin-top:12px; color:#267849; font-size:12px; border-top:1px solid #dce9df; padding-top:9px; }
+    .assumption-switch { background:#fffaf0; border:1px solid #e8dfc8; border-radius:5px; padding:13px 16px; margin-top:16px; font-size:12px; }
+    .assumption-switch label { display:flex; align-items:flex-start; gap:9px; cursor:pointer; }
+    .assumption-switch input { accent-color:var(--green); margin-top:4px; }
+    .assumption-switch p { margin:5px 0 0 23px; color:#796b4b; }
+    .story-result { margin-top:15px; padding:13px 16px; border-left:3px solid var(--green); background:#f1f8f3; font-size:13px; }
+    .story-result p { font-size:12px; color:var(--muted); margin:5px 0 0; }
+    .story-boundary { margin-top:13px; font-size:12px; color:var(--muted); }
+    .identity-map { margin-top:15px; border:1px solid #dce5de; border-radius:5px; padding:14px 16px; }
+    .identity-map h4 { margin:0 0 8px; font-size:13px; }
+    .identity-map p { margin:7px 0; font-size:12px; color:var(--muted); }
+    .identity-map label { display:flex; align-items:flex-start; gap:9px; font-size:12px; margin:9px 0; }
+    .identity-map input { accent-color:var(--green); margin-top:4px; }
+    .identity-map select { border:1px solid #d4dfd8; border-radius:4px; padding:5px 9px; background:white; margin-left:8px; color:var(--ink); }
+    .identity-map .map-row { padding:8px 11px; background:#f7faf8; border-radius:4px; margin:6px 0; overflow-wrap:anywhere; }
+    .background-details { margin-top:20px; border-top:1px solid var(--border); padding-top:14px; }
+    .background-details summary { cursor:pointer; color:var(--muted); font-size:12px; }
+    .background-details .premises { margin-top:14px; margin-bottom:12px; }
+    .background-details>p { font-size:12px; color:var(--muted); }
+    .existing-heading { margin:0 0 14px; font-size:16px; }
+    .existing-heading span { color:var(--muted); font-size:12px; font-weight:400; display:block; margin-top:4px; }
+    .layout { display:grid; grid-template-columns:215px minmax(0,1fr); gap:22px; align-items:start; }
+    .layout>div { min-width:0; }
+    .scenario-nav { background:white; border:1px solid var(--border); border-radius:6px; padding:17px 10px; position:sticky; top:20px; }
+    .nav-title { padding:0 12px 10px; font-size:12px; color:var(--muted); }
+    .scenario-button { display:flex; align-items:flex-start; gap:10px; text-align:left; padding:12px; border:0; border-radius:5px; background:none; color:var(--ink); width:100%; margin:3px 0; }
+    .scenario-button:hover { background:#f2f6f3; }
+    .scenario-button.active { background:var(--soft-green); color:#186b40; }
+    .scenario-num { font-size:11px; color:#7a9286; padding-top:2px; width:18px; flex-shrink:0; }
+    .scenario-button b { font-size:13px; display:block; font-weight:600; }
+    .scenario-button small { display:block; color:var(--muted); font-size:11px; margin-top:3px; }
+    .nav-foot { border-top:1px solid var(--border); margin:16px 12px 0; padding-top:14px; font-size:11px; color:var(--muted); }
+    .stage { background:white; border:1px solid var(--border); border-radius:7px; overflow:hidden; }
+    .stage-top { padding:22px 26px 17px; border-bottom:1px solid #edf0ee; }
+    .stage-title { display:flex; align-items:flex-start; justify-content:space-between; gap:20px; }
+    .stage-title h2 { margin:0 0 5px; font-size:20px; line-height:1.5; }
+    .stage-title p { margin:0; font-size:13px; color:var(--muted); }
+    .controls { display:flex; align-items:center; gap:8px; flex-shrink:0; }
+    .btn { display:inline-flex; align-items:center; justify-content:center; gap:6px; background:white; border:1px solid #d4dfd8; border-radius:5px; padding:7px 13px; color:var(--ink); text-decoration:none; line-height:1.55; }
+    .btn:hover { border-color:var(--green); color:var(--green); text-decoration:none; }
+    .btn.primary { color:white; background:var(--green); border-color:var(--green); }
+    .btn.primary:hover { background:#1a7445; }
+    .btn.quiet { border-color:transparent; color:var(--muted); padding-left:6px; padding-right:6px; }
+    .steps { display:flex; align-items:center; gap:7px; overflow:auto; padding:20px 0 2px; }
+    .step-button { display:flex; align-items:center; gap:6px; white-space:nowrap; padding:6px 10px; background:none; border:0; border-radius:4px; color:#788b81; font-size:12px; }
+    .step-button span { width:20px; height:20px; border-radius:50%; background:#eaf0eb; display:grid; place-items:center; font-size:11px; }
+    .step-button.active { color:#185d39; background:var(--soft-green); font-weight:600; }
+    .step-button.active span { background:var(--green); color:white; }
+    .step-button.done span { background:#dceee2; color:var(--green); }
+    .step-sep { color:#b6c6bc; font-size:12px; }
+    .current-event { display:flex; gap:15px; padding:19px 26px 0; }
+    .event-number { width:36px; height:36px; flex-shrink:0; border-radius:50%; background:var(--soft-green); color:var(--green); display:grid; place-items:center; font-size:16px; }
+    .current-event h3 { margin:0 0 3px; font-size:17px; }
+    .current-event p { color:var(--muted); font-size:13px; margin:0; }
+    .graph { position:relative; padding:26px 26px 12px; }
+    .graph-grid { position:relative; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:58px; }
+    .graph svg.connections { position:absolute; inset:0; width:100%; height:100%; overflow:visible; pointer-events:none; }
+    .column { min-width:0; }
+    .column-title { margin:0 0 11px; display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600; }
+    .column-title span { color:var(--muted); font-weight:400; font-size:11px; }
+    .column-head-icon { width:24px; height:24px; border-radius:4px; background:#edf1ef; color:#536c5f; display:grid; place-items:center; font-size:12px; }
+    .identity-card { position:relative; background:#fbfdfc; border:1px solid #dbe5df; border-radius:6px; padding:16px; margin-bottom:12px; min-height:178px; }
+    .identity-card.patient-card { background:#f4faf6; border-color:#c5ddcc; }
+    .identity-card.pending { background:#fffdf7; border-color:#e9dfc6; }
+    .identity-card.removed { background:#f5f7f6; color:#6d7c73; }
+    .identity-card.selected { outline:2px solid #299e60; outline-offset:2px; }
+    .identity-card.changed { animation:highlight .85s ease-out; }
+    @keyframes highlight { from { box-shadow:0 0 0 5px #299e6035; } to { box-shadow:0 0 0 0 #299e6000; } }
+    .identity-card .card-heading { display:flex; align-items:center; gap:9px; margin-bottom:12px; }
+    .avatar { width:33px; height:33px; border-radius:6px; background:#e6ede8; color:#567460; display:grid; place-items:center; flex-shrink:0; font-size:14px; font-weight:600; }
+    .patient-card .avatar { background:#dceee1; color:#237343; }
+    .pending .avatar { background:#f4ecd8; color:#90733b; }
+    .card-heading strong { display:block; font-size:14px; line-height:1.5; }
+    .card-heading small { font-size:11px; color:var(--muted); display:block; }
+    .identity-card dl { margin:0; font-size:12px; }
+    .identity-card dl>div { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; margin:7px 0; }
+    dt { color:var(--muted); }
+    dd { margin:0; text-align:right; overflow-wrap:anywhere; }
+    .card-footer { border-top:1px solid #e5ede7; padding-top:9px; margin-top:12px; font-size:11px; display:flex; align-items:center; justify-content:space-between; gap:6px; }
+    .tag { display:inline-flex; padding:2px 7px; border-radius:4px; font-size:11px; color:#4b7160; background:#eaf3ee; line-height:1.7; }
+    .tag.amber { background:var(--soft-amber); color:var(--amber); }
+    .tag.grey { background:#ecf0ed; color:#65776b; }
+    .tag.red { background:var(--soft-red); color:var(--red); }
+    .card-action { font-size:11px; border:0; background:none; color:var(--green); padding:0; white-space:nowrap; }
+    .empty-card { min-height:178px; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; border:1px dashed #dce5df; border-radius:6px; background:#fafcfb; padding:16px; color:#7a8a81; gap:8px; }
+    .empty-card .empty-symbol { font-size:25px; color:#b7c7bc; }
+    .empty-card strong { font-size:13px; font-weight:500; }
+    .empty-card p { font-size:11px; margin:0; max-width:170px; }
+    .graph-legend { display:flex; align-items:center; flex-wrap:wrap; gap:18px; font-size:11px; color:var(--muted); margin-top:5px; }
+    .graph-legend span { display:flex; align-items:center; gap:7px; }
+    .line-key { width:24px; height:2px; background:#a0b4a8; }
+    .line-key.bound { background:#299e60; }
+    .relation-summary { margin:9px 0 0; font-size:12px; color:#526b5c; }
+    .gate { margin:5px 26px 18px; border:1px solid #e8dfc8; background:#fffaf0; border-radius:6px; padding:17px 20px; }
+    .gate h4 { margin:0 0 8px; font-size:14px; }
+    .gate p { color:#796b4b; font-size:12px; margin:4px 0 11px; }
+    .gate label.confirm { display:flex; align-items:flex-start; gap:9px; cursor:pointer; font-size:13px; }
+    .gate input[type=checkbox] { margin:5px 0 0; accent-color:var(--green); }
+    .gate textarea { display:block; width:100%; max-width:670px; padding:10px; border:1px solid #d9d4c6; border-radius:4px; background:white; min-height:74px; resize:vertical; margin-top:8px; }
+    .candidate-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:11px 0 14px; }
+    .candidate { display:flex; align-items:flex-start; gap:9px; background:white; border:1px solid #e0dccf; border-radius:5px; padding:12px; cursor:pointer; }
+    .candidate:has(input:checked) { border-color:#61a77d; background:#f0f8f2; }
+    .candidate input { accent-color:var(--green); margin-top:4px; }
+    .candidate strong { display:block; font-size:13px; }
+    .candidate small { font-size:11px; color:var(--muted); display:block; }
+    .gate-error { color:var(--red); background:var(--soft-red); font-size:12px; padding:9px 12px; margin-top:10px; border-radius:4px; }
+    .data-effect { margin:8px 26px 20px; display:flex; gap:12px; padding:15px 18px; border-radius:5px; background:var(--soft-green); border-left:3px solid #299e60; }
+    .data-effect.warning { background:var(--soft-amber); border-color:#ba8c2c; }
+    .data-effect .effect-label { font-size:11px; letter-spacing:.4px; color:#517762; flex-shrink:0; padding-top:3px; }
+    .data-effect strong { display:block; font-size:14px; }
+    .data-effect p { margin:3px 0 0; font-size:12px; color:#5f7467; }
+    .data-effect.warning .effect-label,.data-effect.warning p { color:#7c6b45; }
+    .counters { padding:0 26px 19px; display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+    .counter { border:1px solid #e4ebe6; background:#fff; border-radius:5px; padding:10px 14px; display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    .counter span { font-size:12px; color:var(--muted); }
+    .counter strong { font-size:21px; font-weight:500; font-variant-numeric:tabular-nums; }
+    .counter.changed { background:#f1f9f3; }
+    .bottom-controls { padding:15px 26px; border-top:1px solid #e7eee8; display:flex; justify-content:space-between; align-items:center; gap:14px; background:#fbfdfb; }
+    .step-explanation { color:var(--muted); font-size:12px; }
+    .bottom-buttons { display:flex; align-items:center; gap:9px; }
+    .inspect-panel { margin-top:18px; background:white; border:1px solid var(--border); border-radius:6px; }
+    .inspect-panel>summary { padding:16px 20px; cursor:pointer; font-weight:600; font-size:13px; display:flex; align-items:center; justify-content:space-between; list-style:none; gap:20px; }
+    .inspect-panel>summary::-webkit-details-marker { display:none; }
+    .inspect-panel>summary span { color:var(--muted); font-size:12px; font-weight:400; }
+    .inspect-panel>summary::after { content:'展开 ＋'; color:var(--green); font-size:12px; font-weight:400; margin-left:auto; flex-shrink:0; }
+    .inspect-panel[open]>summary::after { content:'收起 −'; }
+    .inspect-body { border-top:1px solid #e6ede7; padding:18px 20px 22px; }
+    .inspect-body>p { color:var(--muted); font-size:12px; margin:0 0 16px; }
+    .technical-tabs { display:flex; flex-wrap:wrap; gap:7px; margin-bottom:15px; }
+    .technical-tabs button { padding:7px 11px; border:1px solid #dce5de; background:white; border-radius:4px; font-size:12px; color:#6b7e72; }
+    .technical-tabs button.active { color:#216d42; border-color:#a3c8b0; background:#edf7f0; }
+    .table-scroll { overflow:auto; }
+    table { width:100%; border-collapse:collapse; font-size:12px; text-align:left; white-space:nowrap; }
+    th,td { padding:10px 11px; border-bottom:1px solid #e8eee9; vertical-align:top; }
+    th { font-weight:500; color:#6a7e70; background:#f7faf7; }
+    th small { display:block; color:#95a198; font-size:10px; font-weight:400; }
+    tr.added td { background:#eef8f1; }
+    td.updated { background:#fff4d7; color:#7b5b16; font-weight:600; }
+    td small { display:block; color:#8c9b90; font-size:10px; font-weight:400; }
+    .table-empty { text-align:center; padding:26px; color:#8b9c90; }
+    .table-key { color:#6b7e72; font-size:11px; margin-top:12px; }
+    .data-legend { display:flex; gap:16px; color:#75867b; font-size:11px; margin:13px 0 0; }
+    .data-legend span::before { content:''; display:inline-block; width:9px; height:9px; background:#e8f5ec; margin-right:5px; }
+    .data-legend span+span::before { background:#fff0c5; }
+    .trace-box { margin:4px 26px 20px; background:#f5f9f6; border:1px solid #d7e7dc; border-radius:5px; padding:15px 18px; }
+    .trace-box h4 { margin:0 0 10px; font-size:13px; }
+    .trace-row { display:flex; align-items:center; flex-wrap:wrap; gap:8px; font-size:12px; }
+    .trace-chip { background:white; border:1px solid #dbe6dd; border-radius:4px; padding:7px 10px; }
+    .trace-chip small { display:block; color:var(--muted); font-size:10px; }
+    .trace-box p { margin:9px 0 0; font-size:12px; color:var(--muted); }
+    .learning-note { padding:18px 2px 0; color:var(--muted); font-size:12px; }
+    .learning-note p { margin:0 0 7px; }
+    .learning-note b { color:#496053; }
+    .footer { max-width:1560px; margin:auto; padding:16px 32px 25px; color:#7f9086; font-size:11px; display:flex; justify-content:space-between; gap:20px; border-top:1px solid #dce6df; }
+    .footer a { color:#607e6c; }
+    .patient-dialog { border:1px solid #d4e3d8; border-radius:8px; padding:0; width:min(620px,calc(100vw - 32px)); max-height:85vh; overflow:auto; color:var(--ink); }
+    .patient-dialog::backdrop { background:#142a2170; }
+    .dialog-head { padding:18px 22px; border-bottom:1px solid #e0e9e2; display:flex; align-items:center; justify-content:space-between; gap:16px; }
+    .dialog-head h3 { font-size:17px; margin:0; }
+    .dialog-body { padding:18px 22px 24px; }
+    .dialog-body h4 { font-size:13px; margin:18px 0 8px; }
+    .dialog-body p { color:var(--muted); font-size:12px; margin:7px 0; }
+    .dialog-item { padding:12px 14px; background:#f6faf7; border:1px solid #e0e9e2; border-radius:5px; margin:8px 0; font-size:13px; }
+    .dialog-item small { display:block; font-size:11px; color:var(--muted); margin-top:4px; }
+    .sr-only { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0); }
+    @media(prefers-reduced-motion:reduce) { *,*::before,*::after { animation:none !important; scroll-behavior:auto !important; } }
+    @media(max-width:1250px) { .graph-grid { gap:36px; } .identity-card { padding:13px; } .layout { grid-template-columns:195px minmax(0,1fr); gap:18px; } .wrap { padding:28px 24px; } .stage-title { flex-wrap:wrap; } .intro-aside { max-width:275px; } }
+    @media(max-width:1000px) { .intro-aside { display:none; } .layout { grid-template-columns:1fr; } .scenario-nav { position:static; display:flex; overflow:auto; align-items:center; gap:5px; padding:10px; } .scenario-button { width:170px; flex-shrink:0; min-height:73px; } .nav-title,.nav-foot { display:none; } .graph-grid { gap:52px; } }
+    @media(max-width:760px) { h1 { font-size:25px; } .topbar { padding:14px 20px; } .topbar nav { gap:12px; } .top-tag { display:none; } .wrap { padding:24px 18px; } .background-panel { padding:20px; } .premises,.story-card-grid { grid-template-columns:1fr; } .story-top { flex-wrap:wrap; } .graph-grid { grid-template-columns:1fr; gap:40px; } .column-title { margin-bottom:12px; } .identity-card { min-height:0; } .empty-card { min-height:110px; } .stage-top { padding:20px; } .graph { padding:22px 20px 12px; } .current-event { padding:18px 20px 0; } .data-effect,.gate,.trace-box { margin-left:20px; margin-right:20px; } .counters { padding:0 20px 18px; grid-template-columns:repeat(2,1fr); } .bottom-controls { padding:14px 20px; align-items:flex-start; flex-direction:column; } .bottom-buttons { width:100%; justify-content:space-between; } .candidate-row { grid-template-columns:1fr; } .intro { margin-bottom:18px; } .footer { padding:16px 20px; flex-wrap:wrap; } .inspect-panel>summary { align-items:flex-start; gap:8px; flex-wrap:wrap; } .inspect-panel>summary span { width:100%; order:3; } }
+    @media(max-width:430px) { .brand { font-size:16px; } .topbar nav a { display:none; } .intro h1 { font-size:23px; } .controls .btn { font-size:12px; padding:6px 10px; } .data-effect { flex-direction:column; gap:5px; } .counter { padding:8px 11px; } .counter span { font-size:11px; } .gate { padding:14px; } }
+    @media(max-width:430px) { .topbar { flex-wrap:wrap; gap:8px; } .topbar nav a { display:inline; } }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark" aria-hidden="true">＋</span>博瑞康 Health <span style="font-size:12px;font-weight:400;color:#b2c5ba">产品讲解</span></div>
+    <nav><span class="top-tag">字段与补充场景</span><a href="patient-identity-demo.html">返回动画演示 ↗</a></nav>
+  </header>
+  <main class="wrap">
+    <section class="intro">
+      <div><div class="eyebrow">给老板与产品经理：用卡片讲清楚三个端怎么串联</div><h1>医院、微信、运营平台，怎么认出同一位患者？</h1><p>医院保存患者资料，患者用小程序和公众号接受服务，运营人员在平台开展工作。<br>中间靠一份经过核实的“身份对照关系”，让每个入口找到同一位患者。</p></div>
+      <div class="intro-aside"><b>重点观察：患者档案数量</b><span>加好友、关注公众号、绑定第二个联系人，都不应直接增加患者档案。</span></div>
+    </section>
+    <div class="teaching-label">本页是补充资料：医院记录不含患者微信号。以下关联演示均假设患者已建立相应企微好友/公众号关注关系，或主动进入小程序；三种入口互不替代。引导入口与首次核验流程仍待业务确认。所有资料虚构，核验勾选只预览假设结果，不证明业务已走通。请先看动画首页的流程缺口。</div>
+    <section class="background-panel" aria-labelledby="background-title">
+      <h2 id="background-title">先讲一个完整故事：陈阿姨的资料与两个微信入口</h2>
+      <p>依次点击 6 个步骤。观察医院档案、平台档案、微信账号怎样建立对应；再尝试关闭数据条件、分别核验两个微信入口。</p>
+      <div class="future-story">
+        <div class="story-top"><h3>医院提供资料 → 平台记住对应 → 微信定位患者 → 运营跟进</h3><span class="tag amber">方案讲解 · 小程序部分待建设</span></div>
+        <div class="story-steps" id="story-steps" role="group" aria-label="医院、微信与运营平台的讲解步骤"></div>
+        <div class="story-card-grid" id="story-cards"></div>
+        <div class="assumption-switch"><label><input id="hospital-assumption" type="checkbox"><span>仅作演示假设：院方允许本次数据使用，并提供带院内患者编号的资料</span></label><p>实际是否委托运营、是否同步数据仍待确认。关闭时，平台不会凭空出现医院档案；打开只演示条件成立后的路径。</p></div>
+        <div class="identity-map" id="identity-map" hidden></div>
+        <div class="story-result" id="story-result" aria-live="polite"></div>
+        <p class="story-boundary">当前能力：医院接入仅为虚构 Mock；公众号联系人可人工绑定到平台患者。小程序的患者登录、首次绑定和患者服务尚未实现，此处仅讲解所需关系。定位患者后，还需按具体业务的权限决定能看什么、能做什么。</p>
+        <details class="background-details"><summary>查看业务背景与待确认前提：体检、委托运营、医院数据</summary><div class="premises">
+          <article class="premise"><span class="tag">已提供的业务背景</span><b>体检 → 院前服务 → 引导入院</b><p>博瑞康可能先认识服务对象，之后才出现目标医院的患者编号。</p></article>
+          <article class="premise"><span class="tag amber">待确认的业务模式</span><b>医院是否委托博瑞康运营？</b><p>需要明确服务医院、运营范围与双方分工，本页不预设已经签约全托管。</p></article>
+          <article class="premise"><span class="tag amber">待确认的数据条件</span><b>医院是否提供患者与报告数据？</b><p>需要确认字段、来源编号、接入方式及使用范围。患者资料在医院，不等于平台已经取得资料。</p></article>
+        </div><p>如果患者先做博瑞康体检：先保存体检服务对象与来源记录；之后取得可信院内身份，再核验是否为同一人、追加来源关系。现有医院患者表尚未实现体检身份与院内身份的统一归并，需另行设计，不能仅凭同名或同号自动合并。</p></details>
+      </div>
+    </section>
+    <h2 class="existing-heading">再看现有医院路径：7 个数据关系场景<span>以仓库已有的医院范围、Mock 同步和人工绑定规则为例；不代表真实委托运营或医院数据合作已成立。</span></h2>
+    <div class="layout">
+      <aside class="scenario-nav" id="scenario-nav" aria-label="演示场景"></aside>
+      <div>
+        <section class="stage" aria-label="患者身份关联演示">
+          <div class="stage-top"><div class="stage-title"><div><h2 id="scene-title"></h2><p id="scene-question"></p></div><div class="controls"><button class="btn" id="play-button" type="button">播放步骤</button><button class="btn quiet" id="reset-button" type="button">重置本场景</button></div></div><nav class="steps" id="steps" aria-label="当前场景步骤"></nav></div>
+          <div class="current-event"><div class="event-number" id="event-number" aria-hidden="true"></div><div><h3 id="event-title"></h3><p id="event-description"></p></div></div>
+          <div class="graph" id="graph"><svg class="connections" id="connections" aria-hidden="true"></svg><div class="graph-grid" id="graph-grid"></div><div class="graph-legend"><span><i class="line-key" aria-hidden="true"></i>医院来源与平台档案的对应</span><span><i class="line-key bound" aria-hidden="true"></i>核实后建立的微信关联</span><span>没有连线 = 还没有确认对应哪位患者</span></div><p class="relation-summary" id="relation-summary"></p></div>
+          <div id="verification"></div>
+          <div id="trace"></div>
+          <div class="data-effect" id="data-effect"><span class="effect-label">数据发生了什么</span><div><strong id="effect-title"></strong><p id="effect-description"></p></div></div>
+          <div class="counters" id="counters" aria-label="当前数据数量"></div>
+          <div class="bottom-controls"><span class="step-explanation" id="step-explanation"></span><div class="bottom-buttons"><button class="btn" id="previous-button" type="button">← 上一步</button><button class="btn primary" id="next-button" type="button">下一步 →</button></div></div>
+        </section>
+        <details class="inspect-panel" id="inspect-panel"><summary>查看这一步的数据变化<span>按需展开：业务名词与数据库字段对照</span></summary><div class="inspect-body"><p>这些表由当前演示状态计算。绿色表示这一步新增，黄色表示字段改变；后退时显示所选步骤当时的数据。</p><div class="technical-tabs" id="technical-tabs" role="group" aria-label="选择数据表"></div><div id="technical-table"></div></div></details>
+        <details class="inspect-panel" id="history-panel"><summary>查看操作留痕<span>谁确认了绑定，为什么解绑，旧记录有没有消失</span></summary><div class="inspect-body" id="history-body"></div></details>
+        <div class="learning-note" id="learning-note"></div>
+      </div>
+    </div>
+  </main>
+  <footer class="footer"><span>本页解释现有身份与手工绑定规则；不代表患者自助绑定或家属查阅权限已实现。</span><span><a href="wechat-channels-1.9.md">业务规则</a> · <a href="../api/implementation-baseline.md">当前实现基线</a></span></footer>
+  <dialog class="patient-dialog" id="patient-dialog" aria-labelledby="dialog-title"><div class="dialog-head"><h3 id="dialog-title"></h3><button class="btn quiet" type="button" id="close-dialog" aria-label="关闭档案详情">关闭 ×</button></div><div class="dialog-body" id="dialog-body"></div></dialog>
+  <div class="sr-only" role="status" aria-live="polite" id="announcement"></div>
+  <script>
+  (() => {
+    'use strict';
+    // Every name and identifier below is fictional. No network or persistent storage.
+    const $ = id => document.getElementById(id);
+    const esc = value => String(value ?? '').replace(/[&<>"']/g,c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const clone = value => JSON.parse(JSON.stringify(value));
+    const hospitalKey = x => `${x.hospital_id}|${x.source_system}|${x.hospital_patient_id}`;
+    const contactKey = x => `${x.hospital_id}|${x.channel}|${x.external_id}`;
+    let storyIndex=0,hospitalAssumption=false,storyEntry='official';
+    const storyVerified={official:false,mini:false};
+    const storySteps=['1 · 医院已有资料','2 · 平台接收资料','3 · 患者进入微信','4 · 首次核验关联','5 · 再次访问服务','6 · 运营平台跟进'];
+    function renderStory() {
+      $('story-steps').innerHTML=storySteps.map((text,i)=>`<button type="button" data-story="${i}" class="${storyIndex===i?'active':''}" aria-pressed="${storyIndex===i}">${text}</button>`).join('');
+      const imported=storyIndex>=1&&hospitalAssumption,accounts=storyIndex>=2,canVerify=storyIndex>=3&&imported;
+      const bound=key=>canVerify&&storyVerified[key];
+      const count=Number(bound('official'))+Number(bound('mini'));
+      const hospitalCard='<article class="story-card"><h4>① 医院：患者资料从这里来</h4><strong>陈阿姨 · A-02388</strong><p>A 医院的患者档案，附 1 份出院资料。院内编号只在这家医院的来源范围内识别患者。</p><div class="story-link">资料来源：A 医院（全部虚构）</div></article>';
+      const platformCard=`<article class="story-card ${imported?'primary':'pending'}"><h4>② 平台：运营围绕这份档案工作</h4><strong>${imported?'陈阿姨 · P1001':'还没有接收院内资料'}</strong><p>${imported?'保留“P1001 对应 A 医院 A-02388”。已接收的报告挂在 P1001 下，院内与平台编号可以不同。':'需要先确认数据条件，再接收带可信来源编号的资料；医院有病历不代表平台已有病历。'}</p><div class="story-link">${imported?'院内 A-02388 → 平台 P1001 · 1 份档案':'对应关系暂时空缺'}</div>${storyIndex===5&&imported?'<p><b>运营专员登录自己的工作账号</b>，在被允许的范围内打开 P1001，处理任务与联系记录。</p>':''}</article>`;
+      const wechatCard=`<article class="story-card ${count?'primary':'pending'}"><h4>③ 微信：患者使用服务的入口</h4><strong>${accounts?'公众号账号 + 小程序账号':'患者还没有进入微信服务'}</strong><p>${accounts?'同一位陈阿姨，在公众号和小程序内分别有各自的账号标识。登录能识别账号，首次仍要确认这个账号对应哪位患者。':'微信入口不会自动知道医院患者编号。患者微信账号与运营员工工作账号分开。'}</p><div class="story-link">${accounts?`公众号入口：${bound('official')?'已核验 → P1001':'待核验'}<br>小程序入口：${bound('mini')?'已核验 → P1001（方案）':'待核验（方案）'}`:'先识别账号，再核验患者身份'}</div></article>`;
+      $('story-cards').innerHTML=hospitalCard+platformCard+wechatCard;
+      $('identity-map').hidden=!accounts;
+      if(accounts){
+        $('identity-map').innerHTML=`<h4>身份对照卡：把账号对应到患者，档案仍只有 ${imported?1:0} 份</h4><p>下面每次勾选仅模拟“工作人员已核实此账号与 A 医院 A-02388 是同一位患者”。两个入口分别核验；不会按手机号、昵称或共同的微信特征自动合并。</p><label><input type="checkbox" data-story-verify="official" ${storyVerified.official?'checked':''} ${canVerify?'':'disabled'}><span>已模拟核实公众号账号对应陈阿姨本人</span></label><label><input type="checkbox" data-story-verify="mini" ${storyVerified.mini?'checked':''} ${canVerify?'':'disabled'}><span>已模拟核实小程序账号对应陈阿姨本人（待建设方案）</span></label><p class="map-row">本医院公众号内的账号 G-DEMO-01 → ${bound('official')?'P1001 → A 医院 A-02388':'尚未对应患者'}</p><p class="map-row">本小程序内的账号 X-DEMO-01 → ${bound('mini')?'P1001 → A 医院 A-02388':'尚未对应患者'}</p><p>微信入口 ${accounts?2:0} 个 · 已核验关联 ${count} 个 · 平台患者 ${imported?1:0} 位</p>${storyIndex===4?`<label for="story-entry">模拟患者再次从哪个入口访问？<select id="story-entry"><option value="official" ${storyEntry==='official'?'selected':''}>公众号</option><option value="mini" ${storyEntry==='mini'?'selected':''}>小程序（方案）</option></select></label>`:''}${!canVerify?'<p>先在第 2 步模拟数据条件成立，再到第 4 步核验。</p>':''}`;
+      }
+      let outcome;
+      if(storyIndex===0)outcome=['医院先有患者档案；微信和平台还没有接上。','陈阿姨是同一个人，但医院档案号、平台档案号、微信账号各有用途。先知道资料从哪里来。'];
+      else if(!imported)outcome=['医院数据条件未确认，平台与院内身份的关系暂时空缺。','勾选“仅作演示假设”可比较条件成立后的结果。实际需先确认院方提供什么数据、如何使用，不能凭姓名或电话推测病历归属。'];
+      else if(storyIndex===1)outcome=['平台知道：P1001 对应 A 医院的 A-02388。','医院给资料时必须带患者来源身份。平台记录这份对照，之后运营查看报告和任务，都围绕 P1001。'];
+      else if(storyIndex===2)outcome=['患者进入微信后，平台先认识两个账号，还不能认定是陈阿姨。','关注公众号或登录小程序，只能说明“这个账号来了”。首次账号与患者的对应仍需核验，第 4 步演示建立关系。'];
+      else if(storyIndex===3)outcome=[count?`已核验 ${count} 个入口，患者档案仍为 1 份。`:'首次要把微信账号与院内患者核对，再记录关联。','分别勾选两个入口，观察身份对照卡变化。已有明确关系后，后续来访可以沿关系找到患者。小程序如何完成首次核验仍需产品设计与开发。'];
+      else if(storyIndex===4)outcome=bound(storyEntry)?[`${storyEntry==='official'?'公众号':'小程序'}账号 → 平台 P1001 → A 医院 A-02388`,'本次来访先识别应用内账号，再查已核验关系，找到这位患者及其资料归属。这里仅演示定位；小程序实际患者服务尚未实现。']:[`这个${storyEntry==='official'?'公众号':'小程序'}入口还未核验，不能定位到陈阿姨。`,'即使另一个入口已经核验，也不自动替代这个账号的确认。返回第 4 步核验对应入口，再观察来访结果。'];
+      else outcome=['运营打开平台 P1001，跟进的仍是医院里的陈阿姨。','运营人员用员工工作账号登录；患者用自己的微信账号接受服务。平台患者档案是两端共同的业务对象。员工权限决定可操作范围，账号绑定只解决“对应谁”。'];
+      $('story-result').innerHTML=`<strong>${outcome[0]}</strong><p>${outcome[1]}</p>`;
+    }
+    const hospitalName = id => id === 1 ? 'A 医院（虚构）' : 'B 医院（虚构）';
+    const channelName = channel => channel === 'WE_COM' ? '企业微信' : '公众号';
+    const sources = {
+      a:{hospital_id:1,source_system:'HOSPITAL_MOCK',hospital_patient_id:'A-02388',name:'陈阿姨（虚构）',age:67,phone:'演示尾号 0001',preferred_id:1001,report:'R-DEMO-001'},
+      b:{hospital_id:1,source_system:'HOSPITAL_MOCK',hospital_patient_id:'A-04021',name:'许叔叔（虚构）',age:70,phone:'演示尾号 0001',preferred_id:1002,report:'R-DEMO-002'},
+      otherHospital:{hospital_id:2,source_system:'HOSPITAL_MOCK',hospital_patient_id:'A-02388',name:'周先生（虚构）',age:52,phone:'演示尾号 0003',preferred_id:1003,report:'R-DEMO-003'},
+    };
+    const contactSeeds = {
+      official:{id:501,hospital_id:1,channel:'WECHAT_OFFICIAL',external_id:'openid-demo-001',label:'公众号联系人 #501',story:'陈阿姨的微信账号',intake_channel_id:11},
+      wecom:{id:502,hospital_id:1,channel:'WE_COM',external_id:'external-demo-001',label:'企微联系人 #502',story:'陈阿姨的另一个沟通入口',intake_channel_id:11},
+      sharedPhone:{id:503,hospital_id:1,channel:'WECHAT_OFFICIAL',external_id:'openid-demo-002',label:'公众号联系人 #503',story:'许叔叔的微信账号',intake_channel_id:12},
+      family:{id:504,hospital_id:1,channel:'WECHAT_OFFICIAL',external_id:'openid-demo-family',label:'家属的公众号联系人 #504',story:'陈阿姨的女儿（虚构）',intake_channel_id:11},
+    };
+    const blank = () => ({inputs:[],patients:[],reports:[],contacts:[],messages:[],audit:[],lastChange:'',traceContact:null});
+    function addSource(data, source) { if(!data.inputs.some(x=>hospitalKey(x)===hospitalKey(source)))data.inputs.push(clone(source)); }
+    function syncSource(data, source) {
+      addSource(data,source);
+      let patient=data.patients.find(x=>hospitalKey(x)===hospitalKey(source));
+      const fresh=!patient;
+      if(fresh) { patient={id:source.preferred_id,hospital_id:source.hospital_id,source_system:source.source_system,hospital_patient_id:source.hospital_patient_id,name:source.name,phone:source.phone};data.patients.push(patient); }
+      const exists=data.reports.some(r=>r.hospital_id===source.hospital_id&&r.source_system===source.source_system&&r.external_id===source.report);
+      if(!exists)data.reports.push({id:2000+source.preferred_id-1000,hospital_id:source.hospital_id,patient_id:patient.id,source_system:source.source_system,external_id:source.report,record_type:'DISCHARGE',content:'出院记录的虚构摘要，用于解释资料归属。'});
+      data.lastChange=fresh?'新增 1 份平台档案、1 份报告':'找到已有来源身份；档案和报告均未重复新增';
+    }
+    function follow(data, seed) {
+      let contact=data.contacts.find(x=>contactKey(x)===contactKey(seed));
+      if(!contact) { contact={...clone(seed),patient_id:0,relation:'ACTIVE',bound_at:null,bound_by:null,removed_at:null};data.contacts.push(contact); }
+      else {contact.relation='ACTIVE';contact.removed_at=null;}
+      recordEvent(data,contact,contact.channel==='WE_COM'?'添加企业微信好友（演示事件）':'关注公众号（演示事件）');
+      data.lastChange='更新微信联系人；患者档案数量不变';
+    }
+    function recordEvent(data, contact, content) {
+      data.messages.push({id:7001+data.messages.length,hospital_id:contact.hospital_id,contact_id:contact.id,channel:contact.channel,direction:'INBOUND',kind:'EVENT',content,status:'HANDLED'});
+    }
+    function bind(data, contactId, patientId, note = '已模拟工作人员核实本人身份') {
+      const c=data.contacts.find(x=>x.id===contactId),p=data.patients.find(x=>x.id===patientId);
+      if(!c||!p||c.hospital_id!==p.hospital_id||c.patient_id)throw new Error('Invalid demonstration binding');
+      c.patient_id=patientId;c.bound_by=3001;c.bound_at='演示时间 10:04';
+      data.audit.push({actor:'演示运营专员',action:'绑定联系人',contact_id:contactId,patient_id:patientId,before:'待绑定',after:`P${patientId}`,reason:note});
+      data.lastChange='只新增绑定关系，没有新增患者档案';
+    }
+    function receive(data, contactId) {
+      const c=data.contacts.find(x=>x.id===contactId);
+      if(!c||c.channel!=='WECHAT_OFFICIAL'||c.relation!=='ACTIVE')throw new Error('Only an active official-account contact receives text in this demo');
+      data.messages.push({id:7001+data.messages.length,hospital_id:c.hospital_id,contact_id:c.id,channel:c.channel,direction:'INBOUND',kind:'TEXT',content:'下次联系请安排在下午。（虚构来信）',status:'RECEIVED'});
+      data.traceContact=c.id;data.lastChange='新增 1 条联系人消息；由当前绑定关系定位患者';
+    }
+    function initialBound(data, both = false) {syncSource(data,sources.a);follow(data,contactSeeds.official);bind(data,501,1001,'场景开始前已核实并绑定');if(both){follow(data,contactSeeds.wecom);bind(data,502,1001,'场景开始前已核实第二个通道');}}
+    const step = (short,title,description,effect,detail,apply = () => {},options = {}) => ({short,title,description,effect,detail,apply,...options});
+    const scenes = [
+      {id:'first',title:'从医院档案到微信联系人',nav:'首次找到这位患者',question:'患者关注公众号后，系统怎么知道她就是医院里的陈阿姨？',hint:'先建档，再核验，最后绑定',seed:d=>addSource(d,sources.a),notes:'现有规则：医院数据按来源编号对应档案，微信身份由工作人员核实后绑定。本页的核验勾选是教学操作，不是生产系统新增字段。',steps:[
+        step('院内已有','医院已经认识这位患者','医院有陈阿姨的患者编号和出院资料。此时平台还没有她的档案，也没有微信联系人。','医院有资料，平台还未接收','只有左侧的院内来源资料；还不能从微信定位患者。'),
+        step('同步建档','把院内资料接到平台','使用“A 医院 + 医院来源系统 + 患者编号 A-02388”建立对应关系。','新增 1 份平台档案、1 份报告','P1001 是平台档案，A-02388 是医院患者编号。两个编号不同，但来源关系明确。',d=>syncSource(d,sources.a)),
+        step('公众号关注','陈阿姨关注了医院公众号','讲解中知道是陈阿姨；系统仅知道有一个公众号联系人，尚未核实其真实身份。','新增 1 位微信联系人，患者档案仍为 1 份','关注事件不携带医院患者编号。渠道二维码只能告诉平台她从哪里来。',d=>follow(d,contactSeeds.official),{warning:true}),
+        step('人工核验','假设另行核实了账号与患者的对应关系','核验方式与凭据仍待业务确认；本步骤仅假设可信核验结果已确认联系人对应 A-02388。医院未提供微信号。','核验前仍是“待绑定”','勾选仅模拟核验结果，再预览平台保存关联。不能凭同名或同号完成身份确认。',undefined,{gate:{type:'verify',contact:501,target:1001,text:'仅作演示假设：核验结果已确认对应 A 医院 A-02388'}}),
+        step('确认绑定','现在，三个入口接上了','微信联系人 #501 已指向平台 P1001，P1001 保留 A 医院患者编号。','只改变微信联系人的“对应患者”','平台档案和医院报告都没有复制。记录谁在什么时候确认了绑定。',d=>bind(d,501,1001)),
+        step('消息定位','收到消息时，沿关系找到这位患者','收到一条公众号消息，先找到联系人 #501，再找到 P1001 和院内来源。','新增 1 条消息，不新增患者档案','在工作人员权限范围内查找对应档案。普通个人微信聊天正文和企微会话存档不在这个演示链路中。',d=>receive(d,501)),
+      ]},
+      {id:'repeat',title:'同一份资料重复同步',nav:'重复同步会多一个人吗？',question:'医院把同一份患者资料和同一份报告又发来一次，会创建第二位患者吗？',hint:'同一来源找到已有档案',seed:d=>addSource(d,sources.a),notes:'现有医院接入仍是 HOSPITAL_MOCK。此场景解释已实现的来源身份与报告编号去重规则，不表示真实医院接口已接通。',steps:[
+        step('第一次接收','准备接收一份院内资料','来源是 A 医院的 A-02388，报告来源编号为 R-DEMO-001。','平台档案为 0 份','同一来源的唯一身份由医院、来源系统、医院患者编号共同确定。'),
+        step('首次同步','第一次同步，建立档案','平台首次见到这组来源身份，所以创建 P1001 和报告记录。','新增 1 份档案、1 份报告','平台保留来源编号，后续可以查到这份已有记录。',d=>syncSource(d,sources.a)),
+        step('再次同步','医院再次发送完全相同的资料','来源身份和报告来源编号都与前一次相同。','患者仍为 1 位，报告仍为 1 份','这里演示完全相同的数据重送；同报告编号但内容冲突需另外处理，不能静默覆盖。',d=>syncSource(d,sources.a)),
+        step('核对结果','重复发送，不等于重复建档','再发送一次，仍找到 P1001。微信联系人不是这次医院同步的产物。','没有新增患者、报告或微信联系人','重送次数可以增加，但不应改变唯一患者和唯一报告的数量。',d=>syncSource(d,sources.a)),
+      ]},
+      {id:'channels',title:'一个患者，两个微信入口',nav:'公众号和企微是两个人吗？',question:'同一位患者既关注公众号，又添加医院企业微信，平台应该看到几个患者？',hint:'两个联系人指向一份档案',seed:d=>initialBound(d),notes:'现有规则：企微和公众号是两套独立联系人。一个患者可绑定多个联系人；每个联系人只能对应一个患者。不按昵称、手机号或 UnionID 自动合并。',steps:[
+        step('已有公众号','公众号联系人已经核实并绑定','已有 P1001 和公众号联系人 #501。','1 份档案，1 个已确认关联','这段场景从已经完成首次核验的状态开始。'),
+        step('添加企微','同一位患者又添加企业微信','新增企微联系人 #502；它与公众号 #501 的通道和账号标识不同。','联系人增加到 2 个，患者仍为 1 位','新企微联系人仍待绑定。系统不会因为看起来相同就自动认定是同一个人。',d=>follow(d,contactSeeds.wecom),{warning:true}),
+        step('单独核验','核实第二个通道的联系人','工作人员确认企微 #502 也是 A-02388 的本人或授权联系人。','第二个入口仍待人工确认','完成核验后，选中已有 P1001，点击确认绑定；不要新建第二份患者档案。',undefined,{gate:{type:'verify',contact:502,target:1001,text:'已模拟核实企微联系人，并确认应关联已有 P1001'}}),
+        step('关联已有','把第二个入口关联到 P1001','两个微信联系人都指向同一份档案，联系人自身的通道和编号各自保留。','1 位患者、2 个联系人、2 个关联','联系人记录没有被揉成一条，患者档案也没有复制成两份。',d=>bind(d,502,1001,'已模拟核实企业微信联系人与既有患者的关系')),
+      ]},
+      {id:'phone',title:'相同手机号，对应两个患者',nav:'只凭手机号能绑定吗？',question:'两位患者共用家庭联系方式，新的公众号联系人应该绑定谁？',hint:'候选匹配不是身份确认',seed:d=>{syncSource(d,sources.a);syncSource(d,sources.b);follow(d,contactSeeds.sharedPhone);},notes:'现有绑定规则要求人工核实。本场景通过两个同号候选展示误绑风险；姓名和电话可辅助查找，不能取代身份确认。',steps:[
+        step('两个候选','陈阿姨和许叔叔共用家庭联系方式','两份院内档案的姓名、患者编号不同，但演示电话尾号都是 0001。','患者档案有 2 份，新联系人尚未绑定','同一个联系方式可以查到多个候选。平台必须保留他们各自的身份。',undefined,{warning:true}),
+        step('发现冲突','系统不能仅凭电话替你做决定','这位联系人提供了相同的电话线索。现在只能列出候选，不能自动画上关联线。','没有新增绑定关系','候选列表是查找工具，匹配到联系方式不表示已确认身份。',undefined,{warning:true}),
+        step('核验选择','核验结果：这是许叔叔本人','工作人员已模拟电话或当面核对，确认院内编号是 A-04021。请选择对应档案。','确认前不改变任何患者归属','如果选错陈阿姨，本演示会阻止推进。真实系统仍依赖工作人员完成核实，不能从这枚勾选自动判断本人。',undefined,{gate:{type:'choice',contact:503,target:1002,text:'已模拟核实：此联系人对应许叔叔，A 医院 A-04021'}}),
+        step('正确绑定','联系人正确指向许叔叔 P1002','陈阿姨的档案和许叔叔的档案保持独立，共用电话没有触发自动合并。','只新增联系人 #503 到 P1002 的关系','患者仍为 2 位。陈阿姨的报告不会因为电话号码相同被带到许叔叔的档案。',d=>bind(d,503,1002,'已模拟核对医院患者编号 A-04021，排除同号候选 P1001')),
+      ]},
+      {id:'family',title:'家属代办，联系人不等于患者本人',nav:'女儿联系，患者是谁？',question:'女儿关注公众号帮陈阿姨联系，是否应把女儿建成第二位患者？',hint:'联系身份与患者身份分开',seed:d=>initialBound(d),notes:'现有页面允许核实本人或授权联系人后绑定。当前 wechat_contact 没有“本人/家属关系、家属查阅范围”字段：这里的家属称谓是教学标签，关系字段与查阅授权仍需产品设计，不表示已实现。',steps:[
+        step('患者已建档','陈阿姨已有平台档案','陈阿姨的院内编号、平台档案和本人公众号入口已经关联。','只有 1 份患者档案','档案服务的对象始终是陈阿姨。'),
+        step('家属关注','女儿用自己的微信账号来联系','这是一位新的公众号联系人 #504，她本人不是这份病历的患者。','新增 1 个联系人，不新增患者','不能看到陈阿姨的病历就推断微信操作者也叫陈阿姨。',d=>follow(d,contactSeeds.family),{warning:true}),
+        step('核验授权','核实代办关系及患者认可的联系用途','工作人员核实女儿的代办关系，确认可用于联系陈阿姨。本演示不授予家属查看病历的权限。','核实授权联系人后再绑定','下面只模拟当前已有的联系人绑定；本人/家属的结构化关系和不同查阅范围仍待产品定义。',undefined,{gate:{type:'verify',contact:504,target:1001,text:'已模拟核实代办关系与联系用途；本次绑定不代表授予病历查阅权限'}}),
+        step('绑定联系人','把女儿的联系入口关联到陈阿姨档案','患者仍是 P1001，两个联系入口是不同微信身份。家属称谓仅是讲解标签。','1 份患者档案、2 位联系人','现有表只记录联系人对应哪位患者。要可靠区分本人、家属和访问权限，还需单独设计关系及授权记录。',d=>bind(d,504,1001,'已模拟人工核实授权联系人；家属称谓与查阅范围仅作讨论')),
+      ]},
+      {id:'hospital',title:'同一个患者编号，在不同医院',nav:'编号一样就是同一人吗？',question:'A 医院与 B 医院都出现 A-02388，这两份资料能自动合并吗？',hint:'患者编号有医院范围',seed:d=>{addSource(d,sources.a);addSource(d,sources.otherHospital);},notes:'现有系统按医院隔离患者。跨医院的同一自然人识别，需要另外的核验、授权与主索引设计；当前不按相同编号、姓名或联系方式跨院合并。',steps:[
+        step('两院资料','两家医院恰好使用了相同编号','A 医院 A-02388 是陈阿姨，B 医院 A-02388 是周先生。编号字符串相同，医院范围不同。','两份来源身份，不能认成一位患者','医院患者编号通常在自己的来源范围内使用，不能独立作为平台全局身份。',undefined,{warning:true}),
+        step('同步 A 院','先接收 A 医院的资料','平台建立 P1001，来源明确为 A 医院。','新增 A 医院的 1 份档案','对应关系包含医院、来源系统和患者编号。',d=>syncSource(d,sources.a)),
+        step('同步 B 院','再接收 B 医院的资料','B 医院的医院范围不同，所以建立独立 P1003。','2 位患者、2 份报告，彼此独立','即使编号一样，也不把周先生的报告挂到陈阿姨的档案下。',d=>syncSource(d,sources.otherHospital)),
+      ]},
+      {id:'unlink',title:'取消关注，与工作人员解绑',nav:'联系中断会删病历吗？',question:'取消关注会不会删除患者档案？主动解绑又会改变哪份数据？',hint:'联系状态、绑定和档案独立',seed:d=>{initialBound(d);receive(d,501);},notes:'现有规则：取消关注或删好友标为 REMOVED，不删除联系人。解绑必须填写原因并追加留痕。微信消息存储 contact_id，解绑不删除消息；其患者显示范围仍由当前关联与权限规则决定。',steps:[
+        step('正常关联','患者档案、联系人和一条文字消息都在','公众号 #501 对应 P1001，历史文字消息和关注事件保存在这个联系人名下。','1 份档案、1 份报告、1 条文字消息','数据表另有 1 条关注事件。联系关系与患者病历不是同一份数据。'),
+        step('取消关注','陈阿姨取消关注公众号','联系人标为“已失联”，历史绑定与记录保留，不能当作仍可用的联系通道。','联系状态改变，追加事件，病历不消失','取消关注没有删除医院报告、平台患者、联系人或旧消息。',d=>{const c=d.contacts[0];c.relation='REMOVED';c.removed_at='演示时间 10:08';recordEvent(d,c,'取消关注公众号（演示事件）');d.traceContact=null;},{warning:true}),
+        step('决定解绑','工作人员准备解除这条关联','主动解绑与取消关注不同，必须说明为什么解除患者关联。','填写原因前，绑定仍保留','输入演示解绑原因，再点击“确认解绑”。',undefined,{gate:{type:'reason',contact:501,target:1001}}),
+        step('确认解绑','联系人恢复待绑定，旧资料继续保留','当前联系人已不指向患者。患者档案、报告与联系人消息均未删除，解绑留下原患者与原因。','只把对应患者从 P1001 清为空','历史绑定人和时间保留，当前 patient_id=0 表示已解绑。旧消息仍属于联系人 #501，解绑留痕保留原患者编号。',d=>{const c=d.contacts[0];d.audit.push({actor:'演示运营专员',action:'解绑联系人',contact_id:c.id,patient_id:c.patient_id,before:`P${c.patient_id}`,after:'待绑定',reason:state.reason});c.patient_id=0;d.traceContact=null;}),
+      ]},
+    ];
+    const state={scene:0,index:0,checked:false,choice:null,reason:'',error:'',table:'patients',selected:null};
+    let timer=null,currentData=blank(),previousData=blank();
+    const scene=()=>scenes[state.scene];
+    function snapshot(index) {const data=blank();scene().seed(data);for(let i=0;i<=index;i++)scene().steps[i].apply(data);return data;}
+    function getContact(id) {return currentData.contacts.find(c=>c.id===id);}
+    function getPatient(id) {return currentData.patients.find(p=>p.id===id);}
+    const rowChanged=(kind,id)=>JSON.stringify(currentData[kind].find(x=>x.id===id))!==JSON.stringify(previousData[kind].find(x=>x.id===id));
+    function card(kind,id,content,extra='') {return `<article class="identity-card ${extra} ${kind!=='inputs'&&rowChanged(kind,id)?'changed':''} ${kind==='patients'&&state.selected===id?'selected':''}" data-node="${kind}:${esc(id)}">${content}</article>`;}
+    function sourceCard(source) {
+      const key=hospitalKey(source);
+      return card('inputs',key,`<div class="card-heading"><div class="avatar" aria-hidden="true">院</div><div><strong>${esc(source.name)}</strong><small>${hospitalName(source.hospital_id)}</small></div></div><dl><div><dt>院内患者编号</dt><dd>${esc(source.hospital_patient_id)}</dd></div><div><dt>联系电话</dt><dd>${esc(source.phone)}</dd></div><div><dt>资料来源</dt><dd>医院 Mock</dd></div></dl><div class="card-footer"><span class="tag grey">院内来源资料</span><span>含 1 份演示报告</span></div>`);
+    }
+    function patientCard(patient) {
+      const count=currentData.reports.filter(r=>r.patient_id===patient.id).length;
+      return card('patients',patient.id,`<div class="card-heading"><div class="avatar" aria-hidden="true">档</div><div><strong>${esc(patient.name)}</strong><small>平台档案 P${patient.id}</small></div></div><dl><div><dt>来源医院</dt><dd>${hospitalName(patient.hospital_id)}</dd></div><div><dt>院内编号</dt><dd>${esc(patient.hospital_patient_id)}</dd></div><div><dt>演示报告</dt><dd>${count} 份</dd></div></dl><div class="card-footer"><span class="tag">保留院内来源</span><button type="button" class="card-action" data-patient="${patient.id}">查看档案 →</button></div>`,'patient-card');
+    }
+    function contactCard(contact) {
+      const p=getPatient(contact.patient_id),removed=contact.relation==='REMOVED';
+      const tag=removed?'<span class="tag grey">已失联</span>':p?'<span class="tag">已核实绑定</span>':'<span class="tag amber">待绑定</span>';
+      const family=contact.id===504&&p?'<span class="tag amber">家属称谓仅作讲解</span>':tag;
+      return card('contacts',contact.id,`<div class="card-heading"><div class="avatar" aria-hidden="true">微</div><div><strong>${esc(contact.label)}</strong><small>${channelName(contact.channel)} · ${hospitalName(contact.hospital_id)}</small></div></div><dl><div><dt>微信侧编号</dt><dd>${esc(contact.external_id)}</dd></div><div><dt>对应患者</dt><dd>${p?`P${p.id} · ${esc(p.name)}`:'尚未确认'}</dd></div><div><dt>联系状态</dt><dd>${removed?'已失联':'关系有效'}</dd></div></dl><div class="card-footer">${family}<span>${p?'档案未复制':'仅有联系入口'}</span></div>`,removed?'removed':p?'':'pending');
+    }
+    const emptyCard=(title,description)=>`<div class="empty-card"><span class="empty-symbol" aria-hidden="true">○</span><strong>${title}</strong><p>${description}</p></div>`;
+    function renderGraph() {
+      const cols=[['院','医院提供的身份','来源资料',currentData.inputs.map(sourceCard).join('')||emptyCard('没有院内资料','先由医院提供已确认的来源身份')],['档','平台患者档案','服务对象',currentData.patients.map(patientCard).join('')||emptyCard('还没有平台档案','接收医院资料后建立并保留来源编号')],['微','微信联系人','沟通入口',currentData.contacts.map(contactCard).join('')||emptyCard('还没有微信联系人','关注公众号或添加企微后才产生')]];
+      $('graph-grid').innerHTML=cols.map(([i,title,sub,body])=>`<section class="column"><h4 class="column-title"><i class="column-head-icon" aria-hidden="true">${i}</i>${title}<span>${sub}</span></h4>${body}</section>`).join('');
+      const bound=currentData.contacts.filter(c=>c.patient_id>0).length;
+      $('relation-summary').textContent=bound?`${currentData.patients.length} 份平台档案，${currentData.contacts.length} 个微信联系人，其中 ${bound} 个已确认对应患者。`:`当前没有已确认的微信患者关联。关注、候选匹配或相同编号都不等于完成绑定。`;
+      requestAnimationFrame(drawConnections);
+    }
+    function drawConnections() {
+      const box=$('graph').getBoundingClientRect(),svg=$('connections');
+      svg.setAttribute('viewBox',`0 0 ${box.width} ${box.height}`);
+      let markup='<defs><marker id="source-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8" fill="#a0b4a8"/></marker><marker id="bound-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8" fill="#299e60"/></marker></defs>';
+      const nodes=new Map(Array.from($('graph-grid').querySelectorAll('[data-node]')).map(n=>[n.dataset.node,n.getBoundingClientRect()]));
+      const path=(a,b,type)=>{
+        if(!a||!b)return;
+        let x1,y1,x2,y2,d;
+        const stacked=window.matchMedia('(max-width:760px)').matches;
+        if(stacked){const down=a.top<b.top;x1=a.left+a.width/2-box.left;x2=b.left+b.width/2-box.left;y1=(down?a.bottom:a.top)-box.top;y2=(down?b.top:b.bottom)-box.top;const mid=(y1+y2)/2;d=`M${x1} ${y1} C${x1} ${mid},${x2} ${mid},${x2} ${y2}`;}
+        else {const right=a.left<b.left;x1=(right?a.right:a.left)-box.left;x2=(right?b.left:b.right)-box.left;y1=a.top+a.height/2-box.top;y2=b.top+b.height/2-box.top;const mid=(x1+x2)/2;d=`M${x1} ${y1} C${mid} ${y1},${mid} ${y2},${x2} ${y2}`;}
+        markup+=`<path d="${d}" fill="none" stroke="${type==='bound'?'#299e60':'#a0b4a8'}" stroke-width="1.7" marker-end="url(#${type==='bound'?'bound':'source'}-arrow)"/>`;
+      };
+      currentData.patients.forEach(p=>path(nodes.get(`inputs:${hospitalKey(p)}`),nodes.get(`patients:${p.id}`),'source'));
+      currentData.contacts.filter(c=>c.patient_id).forEach(c=>path(nodes.get(`contacts:${c.id}`),nodes.get(`patients:${c.patient_id}`),'bound'));
+      svg.innerHTML=markup;
+    }
+    function renderGate() {
+      const gate=scene().steps[state.index].gate;
+      if(!gate){$('verification').innerHTML='';return;}
+      if(gate.type==='reason'){
+        $('verification').innerHTML=`<section class="gate"><h4>说明为什么解除绑定</h4><p>当前联系人 #501 对应陈阿姨 P1001；解绑留下原关联和操作原因。请仅填写虚构演示内容。</p><label for="reason-input">解绑原因<textarea id="reason-input" maxlength="200" placeholder="例如：演示联系人关系调整，经核实解除本次关联。">${esc(state.reason)}</textarea></label>${state.error?`<div class="gate-error" role="alert">${esc(state.error)}</div>`:''}</section>`;
+      }else{
+        const options=gate.type==='choice'?`<div class="candidate-row">${currentData.patients.map(p=>`<label class="candidate"><input type="radio" name="candidate" value="${p.id}" ${state.choice===p.id?'checked':''}><span><strong>${esc(p.name)} · P${p.id}</strong><small>A 医院 · ${esc(p.hospital_patient_id)}<br>${esc(p.phone)}</small></span></label>`).join('')}</div>`:'';
+        $('verification').innerHTML=`<section class="gate"><h4>${gate.type==='choice'?'请选择与核验结果一致的档案':'模拟人工核验'}</h4><p>${gate.type==='choice'?'核验结果是许叔叔，院内编号 A-04021。请尝试选错与选对，观察关系是否改变。':'工作人员演示身份：运营专员。确认动作仅解释手工绑定，不调用实名认证接口。'}</p>${options}<label class="confirm"><input id="verify-check" type="checkbox" ${state.checked?'checked':''}><span>${esc(gate.text)}</span></label>${state.error?`<div class="gate-error" role="alert">${esc(state.error)}</div>`:''}</section>`;
+      }
+    }
+    function renderTrace() {
+      const c=getContact(currentData.traceContact);
+      if(!c||!c.patient_id){$('trace').innerHTML='';return;}
+      const p=getPatient(c.patient_id);
+      $('trace').innerHTML=`<section class="trace-box"><h4>这条消息怎么定位患者？</h4><div class="trace-row"><div class="trace-chip">公众号来信<small>消息里没有院内患者号</small></div><span aria-hidden="true">→</span><div class="trace-chip">联系人 #${c.id}<small>${esc(c.external_id)}</small></div><span aria-hidden="true">→</span><div class="trace-chip">平台 P${p.id}<small>来自已核实的绑定</small></div><span aria-hidden="true">→</span><div class="trace-chip">${hospitalName(p.hospital_id)}<small>院内编号 ${esc(p.hospital_patient_id)}</small></div></div><p>消息保存联系人编号，再沿绑定查档案；这里没有把整份病历复制到消息里，也没有向微信发送报告。</p></section>`;
+    }
+    const tableSpecs={
+      inputs:{label:'医院输入资料',name:'输入示意',fields:[['hospital_id','来源医院'],['source_system','来源系统'],['hospital_patient_id','院内患者编号'],['name','姓名（虚构）'],['phone','联系方式（虚构）']],key:hospitalKey,note:'医院接口输入示意，不含患者微信号、OpenID 或企微客户标识。它只能建立医院来源与平台患者的对应，不能创建关注/好友关系，也不能据此认定微信操作者身份。'},
+      patients:{label:'平台患者',name:'patient',fields:[['id','平台患者编号'],['hospital_id','所属医院'],['source_system','来源系统'],['hospital_patient_id','院内患者编号'],['name','姓名（虚构）'],['phone','联系方式（虚构）']],key:x=>x.id,note:'对应现有 patient 表。唯一来源身份是 hospital_id + source_system + hospital_patient_id；P1001 是讲解用显示编号，实际 id 为 1001。'},
+      contacts:{label:'微信联系人',name:'wechat_contact',fields:[['id','联系人编号'],['hospital_id','医院范围'],['channel','沟通通道'],['external_id','微信侧接口标识'],['patient_id','对应患者'],['relation','联系状态'],['bound_by','绑定操作人'],['bound_at','绑定时间']],key:x=>x.id,note:'平台自己的 wechat_contact 表；标识来自微信侧接口，关联由平台另行保存，不是医院导入字段。patient_id=0 表示未绑定；唯一微信身份是 hospital_id + channel + external_id。绑定不代表当前满足发送条件。'},
+      reports:{label:'医院报告',name:'care_record',fields:[['id','平台报告编号'],['hospital_id','所属医院'],['patient_id','报告归属患者'],['source_system','来源系统'],['external_id','医院报告编号'],['record_type','资料类型']],key:x=>x.id,note:'对应现有 care_record 表。相同医院、来源系统与报告编号的相同报告重送不重复新增；平台报告用 patient_id 指向患者。'},
+      messages:{label:'微信消息与事件',name:'wechat_message',fields:[['id','消息编号'],['hospital_id','医院范围'],['contact_id','对应联系人'],['channel','通道'],['direction','方向'],['kind','类型'],['content','正文 / 事件（虚构）'],['status','处理状态']],key:x=>x.id,note:'对应现有 wechat_message 表。关注、取消关注记录为 EVENT，公众号文字来信为 TEXT；欢迎语发送未展开。消息存储 contact_id，没有直接存储 patient_id，患者定位依赖当前绑定及工作人员权限。'},
+    };
+    function valueText(field,value) {
+      if(field==='hospital_id')return `${value} · ${hospitalName(value)}`;
+      if(field==='patient_id')return value?`${value} · P${value}`:'0 · 待绑定';
+      if(field==='channel')return `${value} · ${channelName(value)}`;
+      if(field==='relation')return value==='ACTIVE'?'ACTIVE · 有效':'REMOVED · 已失联';
+      if(field==='bound_by')return value?`${value} · 演示运营专员`:'空';
+      return value===null||value===undefined?'空':value;
+    }
+    function renderTable() {
+      $('technical-tabs').innerHTML=Object.entries(tableSpecs).map(([id,s])=>`<button type="button" class="${state.table===id?'active':''}" data-table="${id}" aria-pressed="${state.table===id}">${s.label} <span>(${currentData[id].length})</span></button>`).join('');
+      const spec=tableSpecs[state.table],rows=currentData[state.table],old=new Map(previousData[state.table].map(r=>[spec.key(r),r]));
+      const table=`<div class="table-scroll"><table><caption class="sr-only">${esc(spec.label)} · 当前步骤状态</caption><thead><tr>${spec.fields.map(([field,label])=>`<th>${label}<small>${field}</small></th>`).join('')}</tr></thead><tbody>${rows.map(row=>{const prev=old.get(spec.key(row));return `<tr class="${!prev?'added':''}">${spec.fields.map(([f])=>{const changed=prev&&prev[f]!==row[f];return `<td class="${changed?'updated':''}">${esc(valueText(f,row[f]))}${changed?`<small>原值：${esc(valueText(f,prev[f]))}</small>`:''}</td>`;}).join('')}</tr>`;}).join('')||`<tr><td colspan="${spec.fields.length}" class="table-empty">当前还没有${spec.label}记录</td></tr>`}</tbody></table></div>`;
+      $('technical-table').innerHTML=`<p style="font-size:12px;margin:0 0 12px"><strong>${spec.name}</strong> · ${spec.note}</p>${table}<div class="data-legend"><span>这一步新增的记录</span><span>这一步改变的字段</span></div><p class="table-key">没有显示的生产字段被省略；演示姓名、来源编号、时间和内容均为虚构。这里不展示真实连接或数据库执行结果。</p>`;
+    }
+    function renderHistory() {
+      const rows=currentData.audit;
+      $('history-body').innerHTML=`<p>人工绑定、解绑逐条追加，不覆盖前一次留痕。下面是业务动作摘要，不是 audit_event 完整字段清单；回调系统留痕未展开。</p><div class="table-scroll"><table><thead><tr><th>操作人</th><th>动作</th><th>联系人</th><th>对应患者</th><th>变化</th><th>核验说明 / 原因（演示）</th></tr></thead><tbody>${rows.map(a=>`<tr><td>${a.actor}</td><td>${a.action}</td><td>#${a.contact_id}</td><td>P${a.patient_id}</td><td>${a.before} → ${a.after}</td><td>${esc(a.reason)}</td></tr>`).join('')||'<tr><td colspan="6" class="table-empty">尚未产生人工绑定或解绑留痕</td></tr>'}</tbody></table></div>`;
+    }
+    function renderCounters() {
+      const counts=d=>[d.patients.length,d.contacts.length,d.contacts.filter(c=>c.patient_id>0).length,d.reports.length];
+      const current=counts(currentData),before=counts(previousData);
+      $('counters').innerHTML=['患者档案','微信联系人','已确认关联','医院报告'].map((t,i)=>`<div class="counter ${current[i]!==before[i]?'changed':''}"><span>${t}</span><strong data-count="${i}">${current[i]}</strong></div>`).join('');
+    }
+    function updateControls() {
+      const s=scene(),gate=s.steps[state.index].gate,end=state.index===s.steps.length-1;
+      $('previous-button').disabled=state.index===0;
+      $('next-button').disabled=end||Boolean(gate&&gate.type!=='reason'&&!state.checked)||Boolean(gate&&gate.type==='reason'&&!state.reason.trim());
+      $('next-button').textContent=end?'本场景结束':gate?(gate.type==='reason'?'确认解绑（演示） →':'确认绑定（演示） →'):'下一步 →';
+      $('step-explanation').textContent=end?'可从左侧切换场景，或展开下方查看数据。':gate?'播放会停在这里，必须由你模拟确认。':`第 ${state.index+1} / ${s.steps.length} 步 · 每次前进观察一次数据变化`;
+      $('play-button').textContent=gate?'等待人工确认':timer?'暂停播放':'播放步骤';
+      $('play-button').disabled=end||Boolean(gate);
+    }
+    function render() {
+      const s=scene(),item=s.steps[state.index];currentData=snapshot(state.index);previousData=state.index? snapshot(state.index-1):blank();
+      $('scenario-nav').innerHTML='<div class="nav-title">选择一个问题</div>'+scenes.map((x,i)=>`<button type="button" class="scenario-button ${state.scene===i?'active':''}" data-scene="${i}" aria-pressed="${state.scene===i}"><span class="scenario-num">${String(i+1).padStart(2,'0')}</span><span><b>${x.nav}</b><small>${x.hint}</small></span></button>`).join('')+'<div class="nav-foot">一位患者 ≠ 一个微信账号。<br>同一份档案可有多个联系入口。</div>';
+      $('scene-title').textContent=s.title;$('scene-question').textContent=s.question;
+      $('steps').innerHTML=s.steps.map((x,i)=>`${i?'<span class="step-sep" aria-hidden="true">›</span>':''}<button type="button" class="step-button ${i===state.index?'active':i<state.index?'done':''}" data-step="${i}" ${i>state.index?'disabled':''} ${i===state.index?'aria-current="step"':''}><span>${i+1}</span>${x.short}</button>`).join('');
+      $('event-number').textContent=state.index+1;$('event-title').textContent=item.title;$('event-description').textContent=item.description;
+      $('effect-title').textContent=item.effect;$('effect-description').textContent=item.detail;$('data-effect').classList.toggle('warning',Boolean(item.warning));
+      $('learning-note').innerHTML=`<p><b>现有能力与讨论边界</b>　${esc(s.notes)}</p><p>本页是产品经理的讲解视角，不是生产系统的登录角色或权限页面。所有患者、联系人、医院与报告都为虚构。</p>`;
+      renderGraph();renderGate();renderTrace();renderCounters();renderTable();renderHistory();updateControls();
+      $('announcement').textContent=`${s.title}，第 ${state.index+1} 步：${item.title}。${item.effect}`;
+    }
+    function stopPlayback() {if(timer){clearInterval(timer);timer=null;}updateControls();}
+    function go(index) {state.index=index;state.error='';state.checked=false;state.choice=null;state.selected=null;render();$('steps').querySelector('[aria-current=step]')?.scrollIntoView({block:'nearest',inline:'nearest'});}
+    function next(fromPlayback=false) {
+      const item=scene().steps[state.index];
+      if(item.gate){
+        if(fromPlayback){stopPlayback();return;}
+        if(item.gate.type==='reason'&&!state.reason.trim())return;
+        if(item.gate.type!=='reason'&&!state.checked)return;
+        if(item.gate.type==='choice'&&state.choice!==item.gate.target){state.error=state.choice?'所选陈阿姨与核验结果“许叔叔 / A-04021”不一致，未建立绑定。请核对后重新选择。':'请先选择与核验结果一致的患者档案。';renderGate();return;}
+      }
+      if(state.index>=scene().steps.length-1){stopPlayback();return;}
+      go(state.index+1);
+      if(scene().steps[state.index].gate||state.index===scene().steps.length-1)stopPlayback();
+    }
+    function reset() {stopPlayback();Object.assign(state,{index:0,checked:false,choice:null,reason:'',error:'',selected:null});render();}
+    function openPatient(id) {
+      const p=getPatient(id);if(!p)return;
+      state.selected=id;renderGraph();
+      const contacts=currentData.contacts.filter(c=>c.patient_id===id),reports=currentData.reports.filter(r=>r.patient_id===id);
+      $('dialog-title').textContent=`${p.name} · 平台 P${p.id}`;
+      $('dialog-body').innerHTML=`<p>这是虚构数据教学档案。每条资料沿患者编号归属，展示不代表已授予任何微信联系人查阅权限。</p><h4>院内身份对应</h4><div class="dialog-item">${hospitalName(p.hospital_id)} · ${esc(p.hospital_patient_id)}<small>来源系统：${p.source_system}</small></div><h4>报告 (${reports.length})</h4>${reports.map(r=>`<div class="dialog-item">出院记录（虚构）<small>医院报告编号：${r.external_id} → 平台报告 ${r.id} → P${r.patient_id}</small></div>`).join('')}<h4>当前已绑定联系人 (${contacts.length})</h4>${contacts.map(c=>`<div class="dialog-item">${esc(c.label)}<small>${channelName(c.channel)} · ${c.relation==='ACTIVE'?'关系有效':'已失联'} · ${esc(c.external_id)} → P${c.patient_id}</small></div>`).join('')||'<p>还没有绑定任何微信联系人。</p>'}`;
+      $('patient-dialog').showModal();
+    }
+    $('next-button').addEventListener('click',()=>next());
+    $('previous-button').addEventListener('click',()=>{stopPlayback();go(Math.max(0,state.index-1));});
+    $('reset-button').addEventListener('click',reset);
+    $('play-button').addEventListener('click',()=>{if(timer){stopPlayback();return;}if(scene().steps[state.index].gate)return;timer=setInterval(()=>next(true),2600);updateControls();});
+    $('scenario-nav').addEventListener('click',e=>{const b=e.target.closest('[data-scene]');if(b){stopPlayback();Object.assign(state,{scene:Number(b.dataset.scene),index:0});reset();}});
+    $('steps').addEventListener('click',e=>{const b=e.target.closest('[data-step]');if(b&&!b.disabled){stopPlayback();go(Number(b.dataset.step));}});
+    $('verification').addEventListener('change',e=>{if(e.target.id==='verify-check')state.checked=e.target.checked;if(e.target.name==='candidate')state.choice=Number(e.target.value);state.error='';$('verification').querySelector('.gate-error')?.remove();updateControls();});
+    $('verification').addEventListener('input',e=>{if(e.target.id==='reason-input'){state.reason=e.target.value;updateControls();}});
+    $('technical-tabs').addEventListener('click',e=>{const b=e.target.closest('[data-table]');if(b){state.table=b.dataset.table;renderTable();}});
+    $('graph-grid').addEventListener('click',e=>{const b=e.target.closest('[data-patient]');if(b){stopPlayback();openPatient(Number(b.dataset.patient));}});
+    $('close-dialog').addEventListener('click',()=>$('patient-dialog').close());
+    $('story-steps').addEventListener('click',e=>{const b=e.target.closest('[data-story]');if(b){storyIndex=Number(b.dataset.story);if(storyIndex<3){storyVerified.official=false;storyVerified.mini=false;}renderStory();}});
+    $('hospital-assumption').addEventListener('change',e=>{hospitalAssumption=e.target.checked;if(!hospitalAssumption){storyVerified.official=false;storyVerified.mini=false;}renderStory();});
+    $('identity-map').addEventListener('change',e=>{if(e.target.dataset.storyVerify)storyVerified[e.target.dataset.storyVerify]=e.target.checked;if(e.target.id==='story-entry')storyEntry=e.target.value;renderStory();});
+    $('patient-dialog').addEventListener('close',()=>{state.selected=null;renderGraph();});
+    document.addEventListener('visibilitychange',()=>{if(document.hidden)stopPlayback();});
+    new ResizeObserver(drawConnections).observe($('graph-grid'));
+    renderStory();render();
+  })();
+  </script>
+</body>
+</html>

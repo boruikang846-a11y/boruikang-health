@@ -36,4 +36,4 @@
 
 正式 React/Java/MyBatis 已实现持久化接口；数据库新增 intervention_work、intervention_log，完整 DDL 为 36 表，另提供增量迁移。离线 HTML 为虚构内存演示，刷新恢复样例。工作单闭环不替代原有预约、转诊、医学记录与旅程结案。
 
-接口：[2.3 契约](../api/intervention-centers-2.3.md)。方案：[实施方案](../plans/2026-10-10-intervention-service-centers.md)。验收：[验证记录](../review/intervention-centers-2.3.md)。
+接口：[2.3 契约](../api/intervention-centers-2.3.md)。方案：[实施方案](2026-10-10-intervention-service-centers.md)。验收：[验证记录](../review/intervention-centers-2.3.md)。

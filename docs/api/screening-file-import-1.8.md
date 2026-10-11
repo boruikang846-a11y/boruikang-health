@@ -1,6 +1,6 @@
 # HEALTH 1.8 患者池文件导入契约与设计
 
-上游：[需求](../feature/screening-file-import-1.8.md)、[HTML 原型](../demo-static/web/admin/screening-file-import-1.8.html)。日期：2026-10-01。
+上游：[需求](../feature/screening-file-import-1.8.md)、[HTML 原型](../demo-static/web/admin/index.html#/screening)。日期：2026-10-01。
 
 ```mermaid
 sequenceDiagram

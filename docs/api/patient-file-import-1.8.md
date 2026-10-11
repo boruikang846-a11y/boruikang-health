@@ -1,6 +1,6 @@
 # HEALTH 1.8 患者中心批量导入契约
 
-上游：[需求](../feature/patient-file-import-1.8.md)、[原型](../demo-static/web/admin/patient-file-import-1.8.html)。与患者池共用本地文件读取、编码、模板和预览交互，患者字段按本契约校验。
+上游：[需求](../feature/patient-file-import-1.8.md)、[原型](../demo-static/web/admin/index.html#/after-care?tab=patients)。与患者池共用本地文件读取、编码、模板和预览交互，患者字段按本契约校验。
 
 ```mermaid
 sequenceDiagram
@@ -56,7 +56,7 @@ sequenceDiagram
 
 ## 原型交互与正式接口的对应（2026-10-02）
 
-患者中心与专项 HTML 共用三步弹窗，页面入口和清单联动以[完整原型](../demo-static/web/interactive.html)为准。`patient-import-files.js` 由 `docs/demo-static/build-import-parser.mjs` 打包现有 `patientImport.js` / `fileImport.js`，离线提供同口径 Excel/CSV 解析、模板和校验，不引入新的字段契约。
+患者中心与专项 HTML 共用三步弹窗，页面入口和清单联动以[完整原型](../demo-static/web/admin/index.html)为准。`patient-import-files.js` 由 `tools/prototype/build-import-parser.mjs` 打包现有 `patientImport.js` / `fileImport.js`，离线提供同口径 Excel/CSV 解析、模板和校验，不引入新的字段契约。
 
 第二步统一选择对应现有 `doctor_id/owner_id/patient_type/source_scene/org_id/outreach`；预览显示物理文件行号，错误阻止整批提交，重复来源编号或证件号预计跳过。确认后原型仅模拟内存建档、OUTREACH 任务与追加审计；正式应用继续使用本契约的 `/patients/import` 与后台最终查重。结果视图对应 `import_batch/created/skipped/messages`，可回到本批新增患者清单。浏览器演示结果不代表真实接口调用或数据库写入。
 
