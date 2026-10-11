@@ -1,4 +1,4 @@
-/* HEALTH-2.0 hospital workspace; reference: docs/demo-static/web/interactive.css. */
+/* HEALTH-2.0 hospital workspace; reference: docs/demo-static/web/admin/assets/interactive.css. */
 :root{--ink:#26343c;--ink-2:#647580;--ink-3:#718198;--ink-4:#8fa4b4;--accent:#299e60;--accent-ink:#208251;--mint:#299e60;--violet:#8a6de5;--amber:#d99b42;--rose:#c54643;--radius:5px;--radius-sm:4px;font-family:'PingFang SC','Microsoft YaHei',-apple-system,BlinkMacSystemFont,sans-serif;color:var(--ink);background:#f1f5f5;font-synthesis:none;-webkit-font-smoothing:antialiased}
 *{box-sizing:border-box}body{margin:0;min-height:100vh;background:#f1f5f5}a{color:var(--accent-ink);text-decoration:none}a:hover{color:#17663e}
 h1,h2,h3,p{margin-top:0}h1{font-size:26px;line-height:1.4;margin-bottom:8px;font-weight:650}h2{font-size:21px;line-height:1.5;font-weight:600}h3{font-size:15px;font-weight:600}p{line-height:1.8}

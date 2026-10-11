@@ -42,12 +42,12 @@ jobs:
       - name: Verify implementation contract and offline prototype
         run: |
           node tools/sync-implementation-contract.cjs
-          node docs/demo-static/tests/platform-prototype.test.cjs
-          node docs/demo-static/tests/implementation-prototype.test.cjs
-          node docs/demo-static/tests/patient-upload.test.cjs
-          node docs/demo-static/tests/service-navigation.test.cjs
-          node docs/demo-static/tests/after-care-service.test.cjs
-          node docs/demo-static/tests/screening-details.test.cjs
+          node tools/prototype/tests/platform-prototype.test.cjs
+          node tools/prototype/tests/implementation-prototype.test.cjs
+          node tools/prototype/tests/patient-upload.test.cjs
+          node tools/prototype/tests/service-navigation.test.cjs
+          node tools/prototype/tests/after-care-service.test.cjs
+          node tools/prototype/tests/screening-details.test.cjs
       - name: Build admin UI
         working-directory: boruikang-health-admin/boruikang-health-admin-react
         run: |

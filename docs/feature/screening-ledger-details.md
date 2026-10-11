@@ -27,7 +27,7 @@
 4. 超期与未超期根据当前演示计划日期展示，历史状态单独标注。
 5. 关闭弹窗保留筛选和分页；越权对象不可读取。
 
-原型入口：[筛查中心](../demo-static/web/interactive.html#/screening)。验证脚本：`docs/demo-static/tests/screening-details.test.cjs`。
+原型入口：[筛查中心](../demo-static/web/admin/index.html#/screening)。验证脚本：`tools/prototype/tests/screening-details.test.cjs`。
 
 当前交付是 HTML 交互原型与功能需求；数据仅保存在页面内存，刷新恢复初始化。正式 React、Java API 和数据库持久化待按本需求实现。
 

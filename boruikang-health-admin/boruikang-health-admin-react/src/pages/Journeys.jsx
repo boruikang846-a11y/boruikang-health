@@ -5,7 +5,7 @@ import { PlusOutlined, ReloadOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import { api, useLoad } from '../api'
 import { DataTable, dateText, FormDialog, LoadState, PageTitle, required, stamp } from '../ui'
-import implementationContract from '../../../../docs/contracts/health-2.0.json'
+import implementationContract from '../../../../docs/api/contracts/health-2.0.json'
 
 const statuses = { INTAKE: '待负责人接收', ACTIVE: '服务进行中', PAUSED: '已暂停', EXITED: '已退出', CLOSED: '本次服务已结案' }
 const types = { OUTPATIENT: '门诊旅程', DISCHARGE: '住院与出院旅程' }

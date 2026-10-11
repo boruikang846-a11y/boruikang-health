@@ -1,6 +1,6 @@
 # HEALTH 2.0 页面与 API 映射
 
-当前全量口径见 [同步基线](../contracts/README.md)，全旅程字段及 Controller 见 [生成契约](journey-2.0.md)。下方 1.x 表保留兼容接口，角色和 SOP 的历史表述按 1.6 / 2.0 修正。
+当前全量口径见 [同步基线](implementation-baseline.md)，全旅程字段及 Controller 见 [生成契约](journey-2.0.md)。下方 1.x 表保留兼容接口，角色和 SOP 的历史表述按 1.6 / 2.0 修正。
 
 前缀 A=/boruikang/admin。页面路径由各端 PAGE-FLOW.html 维护。
 
