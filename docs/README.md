@@ -4,10 +4,10 @@
 
 | 分类 | 入口与内容 |
 | --- | --- |
-| 需求与功能设计 | [服务中心旅程原型 2.4](feature/health-service-journey-2.4-design.md)、[五中心工作单 2.3](feature/intervention-centers-2.3.md)、[已实现全旅程 2.0](feature/journey-2.0.md)、[患者身份讲解](feature/patient-identity-demo.html) |
-| 架构与工程说明 | [系统架构](architecture/health-mvp.md)、[原型运行与打包](architecture/prototype-guide.md)、[部署交接](architecture/deployment/README.md) |
+| 需求与功能设计 | [服务中心旅程原型 2.4](feature/health-service-journey-2.4-design.md)、[五中心工作单 2.3](feature/intervention-centers-2.3.md)、[已实现全旅程 2.0](feature/journey-2.0.md)、[患者身份讲解](feature/patient-identity-flow.html) |
+| 架构与工程说明 | [系统架构](architecture/health-mvp.md)、[原型运行与打包](architecture/prototype-guide.md)、[AECG 参考说明](architecture/aecg-reference.md)、[部署交接](architecture/deployment/README.md) |
 | 接口与机器契约 | [当前 API](api/journey-2.0.md)、[页面与 API 映射](api/page-api-mapping.md)、[机器契约](api/contracts/health-2.0.json) |
-| 原型 | [管理端](demo-static/web/admin/index.html)、[用户端介绍](demo-static/web/user/index.html)、[患者服务演示](demo-static/web/user/patient-service-center.html) |
+| 原型 | [页面导航](demo-static/PAGE-FLOW.html)、[管理端](demo-static/web/admin/index.html)、[用户端介绍](demo-static/web/user/index.html)、[患者服务演示](demo-static/web/user/patient-service-center.html)、[参考界面](demo-static/web/admin/reference-aecg.html) |
 | 项目资料与历史 | [参考资料吸收](project/reference-intake.md)、[原型历史记录](project/prototype-history.md) |
 | 检查与验收记录 | [五中心验证](review/intervention-centers-2.3.md)、[导航与连续管理验收](review/care-navigation-2026-10-09.md)、[MVP 验证](review/mvp-validation.md) |
 | 安全 | [开发试点边界](security/health-mvp.md) |

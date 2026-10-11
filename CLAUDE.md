@@ -1,5 +1,7 @@
 # boruikang-health
 
+文档与原型归档统一遵循 docs/DIRECTORY-LAYOUT.md。运行界面只放 docs/demo-static，各端资源归 assets；需求与流程图解归 feature，脚本和测试归 tools/prototype。归档后执行 node tools/prototype/check-layout.cjs。
+
 本仓是苏州博瑞康医疗科技有限公司（博瑞康）的资产，界面品牌写作「博瑞康 Health」。
 
 遵守用户的 GitHub PR-only 工作流。开发在独立 worktree 的 codex/* 分支；提交、push、draft PR 分别记录。未明确授权合并不得合并。dev/prod 均部署 develop。部署走 boruikang-workflows（Jenkins 文件夹 boruikang），发布脚本与说明都在那个仓，本仓不放部署文件。

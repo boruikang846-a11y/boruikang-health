@@ -19,7 +19,7 @@ function journeyPage(){
   const id=Number(current.path.split('/')[2]||current.query.get('id'));
   if(id){const j=journeyVisible().find(x=>x.id===id);return j?journeyDetail(j):forbidden()}
   const q=current.query,rows=journeyVisible().filter(j=>(!q.get('kind')||j.kind===q.get('kind'))&&(!q.get('status')||j.status===q.get('status'))&&(!q.get('patient')||j.patient===Number(q.get('patient'))));
-  return page('患者全旅程服务',card('两条服务路径','<div class="scene-enrollment-grid">'+Object.entries(journeyPaths).map(([kind,steps])=>'<section><h3>'+journeyTypes[kind]+'</h3><p>'+steps.map(s=>esc(s.title)).join(' → ')+'</p></section>').join('')+'</div><p>运营负责患者全旅程服务，医生核对本次报告和个案计划，护士负责医疗护理核对与服务质控。诊后接入明确记录前段不适用，不伪造到院。</p>'+(canOperate()?button('建立就诊旅程','journey-create','','primary'):''))+
+  return page('患者全旅程服务',(canOperate()?'<div class="toolbar">'+button('建立就诊旅程','journey-create','','primary')+'</div>':'')+
     card('患者服务旅程','<form data-form="journey-filter"><div class="toolbar">'+field('kind','路径','select',q.get('kind')||'',[{value:'',label:'全部路径'},...journeyOptions(journeyTypes)],false)+field('status','状态','select',q.get('status')||'',[{value:'',label:'全部状态'},...journeyOptions(journeyLabels.statuses)],false)+'<button>筛选</button></div></form>'+table(['患者 / 事件','路径 / 当前阶段','状态','主责团队','进入'],rows.map(j=>[patientCell(j.patient)+'<br>'+esc(j.event_key),esc(journeyTypes[j.kind])+'<br>'+esc(journeyPaths[j.kind][j.stage]?.title||'旅程结束'),esc(journeyLabels.statuses[j.status]),esc(person(patient(j.patient).owner)?.name)+' / '+esc(person(patient(j.patient).doctor)?.name),link('办理与核验','/journeys/'+j.id,'btn')]))));
 }
 function journeyDetail(j){

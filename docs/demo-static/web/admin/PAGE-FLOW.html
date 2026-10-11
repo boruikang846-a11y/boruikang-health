@@ -1,12 +1,15 @@
 <!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>管理端页面跳转</title><style>body{max-width:1000px;margin:40px auto;padding:20px;font:16px/1.8 system-ui;color:#24342d}td,th{padding:12px;border:1px solid #dbe5df}table{border-collapse:collapse;width:100%}a{color:#186d49}</style></head><body>
-<h1>管理端页面跳转</h1><p>页面地图供评审与维护使用。进入工作台后选择角色，按账号权限访问。</p>
-<table><thead><tr><th>入口</th><th>办理路径</th></tr></thead><tbody>
-<tr><td><a href="index.html#/journeys">患者全旅程服务</a></td><td>本人待办 → 就诊事件 → 报告核对 → 个案计划 → 责任医生审核 → 随访结果 → 问题闭环 → 复诊与结案</td></tr>
-<tr><td><a href="index.html#/screening">诊前筛查</a></td><td>筛查对象与台账 → 医生分层复核 → 联系邀约 → 预约到诊 → 转诊承接 → 服务交接</td></tr>
-<tr><td><a href="index.html#/after-care">诊后主动干预</a></td><td>患者档案 → 原报告 → 门诊/住院/体检个案 → 医生审核 → 执行与反馈 → 异常/咨询 → 复诊与结案</td></tr>
-<tr><td><a href="index.html#/wecom">企业微信</a> / <a href="index.html#/official-account">公众号</a></td><td>联系人 → 人工核实绑定 → 会话与发送 → 通道状态与回执</td></tr>
-<tr><td>运营主管</td><td>医院数据 → 分派 → 医护账号 → 运营配置 → 统计与复盘</td></tr>
-<tr><td>平台管理员</td><td>接入设置、系统介绍；不访问患者</td></tr>
-</tbody></table><p><a href="index.html">进入管理端</a> · <a href="../user/PAGE-FLOW.html">用户端页面跳转</a> · <a href="../../../api/implementation-baseline.md">实现基线</a></p>
+<h1>管理端页面跳转</h1><p>进入工作台后选择角色，页面按账号权限显示。</p>
+<table><thead><tr><th>一级页面</th><th>可继续打开的页面</th></tr></thead><tbody>
+<tr><td><a href="index.html#/journeys">患者全旅程服务 / 医疗与质控工作台</a></td><td><a href="index.html#/patients">患者档案</a> · <a href="index.html#/after-care">诊后健康服务中心</a></td></tr>
+<tr><td><a href="index.html#/screening">诊前高危患者筛查中心</a></td><td><a href="index.html#/screening?stage=intake">对象接入</a> · <a href="index.html#/screening?stage=review">医生复核</a> · <a href="index.html#/screening?stage=invite">联系邀约</a> · <a href="index.html#/screening?stage=arrival">预约到诊</a> · <a href="index.html#/screening?stage=referral">转诊承接</a></td></tr>
+<tr><td><a href="index.html#/after-care">诊后健康服务中心</a></td><td><a href="index.html#/after-care?center=OUTPATIENT">门诊</a> · <a href="index.html#/after-care?center=INPATIENT">住院</a> · <a href="index.html#/after-care?center=EXAM">体检</a> · <a href="index.html#/after-care?center=CONSULTATION">咨询</a> · <a href="index.html#/after-care?center=REFERRAL">转诊</a></td></tr>
+<tr><td><a href="index.html#/wecom">企业微信</a></td><td><a href="index.html#/wecom?tab=contacts">联系人与会话</a> · <a href="index.html#/wecom?tab=service">患者受邀服务</a></td></tr>
+<tr><td><a href="index.html#/official-account">公众号</a></td><td><a href="index.html#/settings">外部接入设置</a></td></tr>
+<tr><td><a href="index.html#/knowledge">宣教服务</a> · <a href="index.html#/packages">服务包与方案</a></td><td><a href="index.html#/patients">患者档案</a></td></tr>
+<tr><td><a href="index.html#/channels">渠道管理</a> · <a href="index.html#/reports">统计与复盘</a></td><td><a href="index.html#/reports/archives">报告归档</a></td></tr>
+<tr><td><a href="index.html#/hospital">医院数据</a> · <a href="index.html#/accounts">医护账号</a></td><td><a href="index.html#/patients">患者分派与资料</a></td></tr>
+<tr><td><a href="index.html#/settings">运营设置</a> · <a href="index.html#/overview">系统介绍</a></td><td>平台管理员仅显示这两个入口</td></tr>
+</tbody></table><p><a href="index.html">管理端启动台</a> · <a href="../user/PAGE-FLOW.html">用户端页面跳转</a> · <a href="../../PAGE-FLOW.html">原型导航</a></p>
 </body></html>
