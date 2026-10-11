@@ -41,6 +41,7 @@ jobs:
             boruikang-health-user/boruikang-health-user-react/package-lock.json
       - name: Verify implementation contract and offline prototype
         run: |
+          node tools/prototype/check-layout.cjs
           node tools/sync-implementation-contract.cjs
           node tools/prototype/tests/platform-prototype.test.cjs
           node tools/prototype/tests/implementation-prototype.test.cjs

@@ -17,7 +17,7 @@
 | 慢病系统所需数据说明 | 医院患者号、科室、医生、门诊/出院时间、诊断、指标、用药周期 | 院方接口交接字段；不复制身份证等非 MVP 必需字段 |
 | AECG 截图 | 筛查/随访/精细化导航、患者表格、过滤、转化视图 | 管理端清晰侧栏、筛选表格、任务抽屉、运营统计 |
 
-AECG 参考界面的离线 HTML 浏览入口见 [参考界面预览](../architecture/references/aecg-doctor-html/index.html)，维护说明见 [README](../architecture/references/aecg-doctor-html/README.md)。公开仓库中的预览截图由虚构数据 HTML 生成；原始含个人信息的参考截图保留本地，不随仓库公开。
+AECG 参考界面的离线 HTML 浏览入口见 [参考界面预览](../demo-static/web/admin/reference-aecg.html)，维护说明见 [README](../architecture/aecg-reference.md)。公开仓库中的预览截图由虚构数据 HTML 生成；原始含个人信息的参考截图保留本地，不随仓库公开。
 
 ## 已发现的冲突与决定
 

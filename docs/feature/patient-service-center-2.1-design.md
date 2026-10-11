@@ -1,5 +1,7 @@
 # 患者全程服务中心 2.1：系统设计整合
 
+[功能流程图解](patient-service-center-2.1-flow.html) · [当前运营工作台](../demo-static/web/admin/index.html#/wecom) · [患者服务演示](../demo-static/web/user/patient-service-center.html)
+
 更新日期：2026-10-09。输入为本聊天中确认的患者服务 H5 功能拆解；首期使用博瑞康企业微信，服务江阴人民医院心血管科。本文定义当前系统的目标增量；本分支基于 develop 2.0，未包含先前草稿 PR #20 的业务代码，不能据此宣称已上线。
 
 ## 模块定位与架构

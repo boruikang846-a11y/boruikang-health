@@ -43,4 +43,4 @@ AI 接入仅支持 DeepSeek 官方接口 `https://api.deepseek.com/chat/completi
 | A07 | 主管/平台管理员可查询已保存密钥的余额，AI 关闭也可查；按币种显示总额、赠金、充值及时间，其他角色 403，未登录 401 |
 | A08 | 无密钥、上游鉴权失败、限流、超时和异常响应均有错误提示，不回显密钥或上游原文；错误和刷新期间不显示旧金额 |
 
-接口见 [1.7 契约](../api/followup-ai-1.7.md)。原型见 [followup-ai-1.7.html](followup-ai-1.7.html)。
+接口见 [1.7 契约](../api/followup-ai-1.7.md)、[功能流程图解](followup-ai-1.7-flow.html)；实际办理入口为 [管理端](../demo-static/web/admin/index.html#/followups)。

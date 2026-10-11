@@ -78,12 +78,12 @@ GitHub 通过 draft PR 交付，目标 `develop`；明确获得合并授权后�
 
 ## 1.9 企业微信与公众号
 
-[需求](docs/feature/wechat-channels-1.9.md)、[API](docs/api/wechat-channels-1.9.md)、[流程图解](docs/feature/wechat-channels-1.9.html)、[交互原型](docs/demo-static/web/admin/wechat-channels-1.9.html)、[验证记录](docs/review/wechat-channels-1.9.md)。接入配置与真实连接测试、签名校验的公开回调、微信联系人与患者档案的人工绑定、文字 / 公众号模板消息 / 医生已审核正文三类发送、患者来信待处理与转咨询、渠道活码、欢迎语。临床内容仍须责任医生审核；企业微信未开通会话存档，系统看不到成员的聊天正文。没有真实凭证时用模拟通道演示，页面全程标注，不代表已接通。
+[需求](docs/feature/wechat-channels-1.9.md)、[API](docs/api/wechat-channels-1.9.md)、[流程图解](docs/feature/wechat-channels-1.9-flow.html)、[交互原型](docs/demo-static/web/admin/wechat-console.html)、[验证记录](docs/review/wechat-channels-1.9.md)。接入配置与真实连接测试、签名校验的公开回调、微信联系人与患者档案的人工绑定、文字 / 公众号模板消息 / 医生已审核正文三类发送、患者来信待处理与转咨询、渠道活码、欢迎语。临床内容仍须责任医生审核；企业微信未开通会话存档，系统看不到成员的聊天正文。没有真实凭证时用模拟通道演示，页面全程标注，不代表已接通。
 
 ## 1.6 医生、护士登录
 
-[需求](docs/feature/clinical-login-1.6.md)、[API](docs/api/clinical-login-1.6.md)、[流程图解](docs/feature/clinical-login-1.6.html)、[交互原型](docs/demo-static/web/admin/index.html#/doctor)。1.4 起“院方医生护士不登录、运营登记院方凭证”的做法取消：医生看报告、审核随访意见、查收结果、处置异常、审核宣教都在系统里本人完成；护士与运营人员同一套随访执行页面。院方联系人表删除，责任医生、转介医生、接诊医生都指向医生账号。发版仍为全量口径。
+[需求](docs/feature/clinical-login-1.6.md)、[API](docs/api/clinical-login-1.6.md)、[流程图解](docs/feature/clinical-login-1.6-flow.html)、[交互原型](docs/demo-static/web/admin/index.html#/doctor)。1.4 起“院方医生护士不登录、运营登记院方凭证”的做法取消：医生看报告、审核随访意见、查收结果、处置异常、审核宣教都在系统里本人完成；护士与运营人员同一套随访执行页面。院方联系人表删除，责任医生、转介医生、接诊医生都指向医生账号。发版仍为全量口径。
 
 ## 本轮托管运营修正与后续边界
 
-[需求](docs/feature/managed-operations-1.4.md)、[API](docs/api/managed-operations-1.4.md)、[操作图解](docs/feature/managed-operations-1.4.html)。1.5 运营台账（患者池、邀约、预约到诊、服务包与方案、转诊、模板与短信登记、十项指标、工作台队列）见 [需求](docs/feature/operations-ledger-1.5.md)、[API](docs/api/operations-ledger-1.5.md)、[流程图解](docs/feature/operations-ledger-1.5.html)、[交互原型](docs/demo-static/web/admin/index.html#/journeys)。发版为全量口径：备份后清库，按 sql/DDL.sql → DML.sql → dev/DML.sql 重建。节点日期均人工确认；系统无自动诊断、用药调整或未经批准的医学阈值。患者侧业务与扫码自助入组未开放；微信身份只由工作人员核实后绑定（1.9）。完整筛查干预与长期专病管理仍待迭代；现有转诊和服务包台账、门诊/出院旅程按对应 1.5 / 2.0 契约实施，现有内容条目不代表全科室可执行知识规则。报告外发为人工交付凭证登记，没有自动发送。
+[需求](docs/feature/managed-operations-1.4.md)、[API](docs/api/managed-operations-1.4.md)、[操作图解](docs/feature/managed-operations-1.4-flow.html)。1.5 运营台账（患者池、邀约、预约到诊、服务包与方案、转诊、模板与短信登记、十项指标、工作台队列）见 [需求](docs/feature/operations-ledger-1.5.md)、[API](docs/api/operations-ledger-1.5.md)、[流程图解](docs/feature/operations-ledger-1.5-flow.html)、[交互原型](docs/demo-static/web/admin/index.html#/journeys)。发版为全量口径：备份后清库，按 sql/DDL.sql → DML.sql → dev/DML.sql 重建。节点日期均人工确认；系统无自动诊断、用药调整或未经批准的医学阈值。患者侧业务与扫码自助入组未开放；微信身份只由工作人员核实后绑定（1.9）。完整筛查干预与长期专病管理仍待迭代；现有转诊和服务包台账、门诊/出院旅程按对应 1.5 / 2.0 契约实施，现有内容条目不代表全科室可执行知识规则。报告外发为人工交付凭证登记，没有自动发送。

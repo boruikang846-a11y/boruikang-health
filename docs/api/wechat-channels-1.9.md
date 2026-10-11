@@ -1,6 +1,6 @@
 # HEALTH 1.9 企业微信与公众号契约
 
-上游：[需求](../feature/wechat-channels-1.9.md)、[原型](../demo-static/web/admin/wechat-channels-1.9.html)。管理端接口前缀 `/boruikang/admin`，沿用 Jwttoken、snake_case、`ApiResponse` 与限流；回调接口前缀 `/boruikang/open`，不带登录，凭微信签名校验。
+上游：[需求](../feature/wechat-channels-1.9.md)、[原型](../demo-static/web/admin/wechat-console.html)。管理端接口前缀 `/boruikang/admin`，沿用 Jwttoken、snake_case、`ApiResponse` 与限流；回调接口前缀 `/boruikang/open`，不带登录，凭微信签名校验。
 
 ```mermaid
 sequenceDiagram

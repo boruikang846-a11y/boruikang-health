@@ -184,7 +184,7 @@ function reports(){
   return page('统计与复盘','<div class="grid">'+[['在管患者',patients().length],['应随访',ts.length],['已完成',completed],['完成率',ts.length?Math.round(completed/ts.length*100)+'%':'—']].map(([l,n])=>card(l,'<strong class="metric">'+n+'</strong>')).join('')+'</div>'+card('运营漏斗','<div class="flow">'+link('筛查对象 '+pool().length,'/screening')+link('患者 '+patients().length,'/patients')+link('邀约 '+demo.invitations.filter(x=>mine(patient(x.patient))).length,'/invitations')+link('预约 '+demo.appointments.filter(x=>mine(patient(x.patient))).length,'/appointments')+link('服务实例 '+demo.enrollments.filter(x=>mine(patient(x.patient))).length,'/packages')+'</div>')+card('指标口径',table(['指标','当前演示值'],[['首触率','—（没有完整统计分母）'],['有效随访率',ts.length?completed+'/'+ts.length:'—'],['按时履约率','—（需逐任务核对）'],['预约率','—'],['到院率','—'],['有效到院率','—'],['服务激活率','—'],['转诊闭环率','—'],['异常响应率','—'],['失联恢复率','—']]))+'<div class="toolbar">'+button('生成演示日报 / 周报','archive','','primary')+link('查看已归档报告','/reports/archives','btn')+'</div>');
 }
 function overview(publicMode=false){
-  return '<div class="public">'+page(publicMode?'系统公开介绍':'系统与团队分工','<div class="hero"><h1>让出院后的服务<br>有人负责，有据可循。</h1><p>运营人员负责患者全旅程服务、执行、记录与闭环；医生负责医学判断与计划审核，护士负责医疗护理核对与服务质控。</p></div>'+card('服务过程','<div class="flow"><span class="tag">医院报告</span><span class="tag">团队起草</span><span class="tag">责任医生审核</span><span class="tag">人工联系与记录</span><span class="tag">查收与复诊核实</span></div>')+card('三种计划模式',table(['模式','状态'],[['企业微信',tag('规划中，未接通')],['微信小程序',tag('规划中，未开放')],['Web 患者业务',tag('规划中，当前仅公开介绍')]]))+'<div class="toolbar">'+link(account?'返回当前角色工作台':'进入医护与运营演示',account?home():'/login','btn primary')+'</div>')+'</div>';
+  return '<div class="public">'+page(publicMode?'系统公开介绍':'系统与团队分工','<div class="hero"><h1>让出院后的服务<br>有人负责，有据可循。</h1><p>运营人员负责患者全旅程服务、执行、记录与闭环；医生负责医学判断与计划审核，护士负责医疗护理核对与服务质控。</p></div>'+card('服务入口状态',table(['入口','状态'],[['企业微信',tag('未接通')],['微信小程序',tag('未开放')],['Web 患者业务',tag('仅公开介绍')]]))+'<div class="toolbar">'+link(account?'返回当前角色工作台':'进入医护与运营演示',account?home():'/login','btn primary')+'</div>')+'</div>';
 }
 
 function forbidden(){return page('当前角色无权访问','<div class="toolbar">'+link('返回我的工作台',account?home():'/login','btn primary')+button('切换角色','logout')+'</div>')}
@@ -205,7 +205,6 @@ function render(){
   else if(current.path==='/journeys'||/^\/journeys\/\d+$/.test(current.path))html=journeyPage();
   else if(current.path==='/enrollment')html=enrollmentPage();
   else if(current.path==='/in-care')html=inCarePage();
-  else if(current.path==='/service-center')html=typeof csWecom==='function'?csWecom():page('企业微信患者全程服务中心',`<iframe title="患者全程服务中心原型" src="patient-service-center-2.1.html" style="width:100%;height:1100px;border:0"></iframe>`);
   else if(current.path==='/after-care')html=afterCarePage();
   else if(current.path==='/patients')html=patientList();
   else if(/^\/patients\/\d+$/.test(current.path))html=patientDetail(current.path.split('/').pop());
@@ -369,4 +368,4 @@ if(['screening-center','intervention-center'].includes(document.body.dataset.dem
 if(document.body.dataset.demoEntry==='patient-import'){account=person(1);if(!location.hash)location.hash='/patients'}
 render();
 
-function wechatChannelPage(path){const title=path==='/wecom'?'企业微信':'公众号',role=manager()?'M':'O';return page(title,'<iframe class="wechat-prototype" title="'+title+'沟通原型" src="wechat-channels-1.9.html?embed=1&amp;role='+role+'&amp;page='+(path==='/wecom'?'wecom':'official')+'"></iframe>')}
+function wechatChannelPage(path){const title=path==='/wecom'?'企业微信':'公众号',role=manager()?'M':'O';return page(title,'<iframe class="wechat-prototype" title="'+title+'沟通原型" src="wechat-console.html?embed=1&amp;role='+role+'&amp;page='+(path==='/wecom'?'wecom':'official')+'"></iframe>')}
