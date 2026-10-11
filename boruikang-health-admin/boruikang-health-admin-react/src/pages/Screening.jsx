@@ -104,7 +104,7 @@ export default function Screening() {
       <Alert type="info" message="判定只记录院方或筛查医生的结论，系统不做医学判断。高危对象建档后按 SLA 自动开出首次联系任务。" />
     </FormDialog>
     <FormDialog title={'建档入组：' + (enroll?.name || '')} open={Boolean(enroll)} initialValues={{ department: '心血管内科', disease: enroll?.category || enroll?.finding, patient_type: 'OUTPATIENT', outreach: true, owner_id: enroll?.owner_id }} onClose={() => setEnroll(null)} onSubmit={async values => { const saved = await api('/screenings/enroll', { id: enroll.id, version: enroll.version, ...values }); state.reload(); if (saved.patient_id) navigate('/patients/' + saved.patient_id) }}>
-      <Alert className="mb" type="warning" message={'风险 ' + (names[enroll?.risk_level] || '') + '，来源 ' + (names[enroll?.source_type] || '')} description="建档后可在诊后主动干预的患者档案中统一查阅；继续在诊前中心办理首次联系和邀约，联系截止时间按风险等级的 SLA 计算。" />
+      <Alert className="mb" type="warning" message={'风险 ' + (names[enroll?.risk_level] || '') + '，来源 ' + (names[enroll?.source_type] || '')} description="建档后可在诊后健康服务中心的患者档案中统一查阅；继续在诊前中心办理首次联系和邀约，联系截止时间按风险等级的 SLA 计算。" />
       <div className="form-grid"><Form.Item name="department" label="科室" rules={required}><Input maxLength={80} /></Form.Item><Form.Item name="disease" label="病种 / 管理原因" rules={required}><Input maxLength={120} /></Form.Item>
         <Form.Item name="patient_type" label="患者类型"><Select options={options(['OUTPATIENT', 'INPATIENT', 'DISCHARGED', 'UNKNOWN'])} /></Form.Item>
         <LoadState state={clinicians}>{data => <Form.Item name="doctor_id" label="责任医生"><Select allowClear options={doctorOptions(data)} /></Form.Item>}</LoadState>

@@ -7,6 +7,8 @@ import { ScheduleOutlined,
 import { api, setToken, token } from './api'
 import { FormDialog, names } from './ui'
 import { JourneyDetail } from './pages/Journeys'
+import InterventionCenter from './pages/InterventionCenter'
+import { centers } from './interventionConfig'
 import CareWorkspace, { JourneyWorkspace, LegacyCareRedirect } from './pages/CareWorkspace'
 import { canReach, homeFor, selectedMenuPath } from './careNavigation'
 import Hospital from './pages/Hospital'
@@ -19,12 +21,12 @@ import { FunnelPlotOutlined, GiftOutlined, WechatOutlined, WechatWorkOutlined } 
 
 const navigation = [
   ['/journeys', '患者全旅程服务', HeartOutlined], ['/wecom', '企业微信', WechatWorkOutlined], ['/official-account', '公众号', WechatOutlined],
-  ['/screening', '诊前高危患者筛查中心', FunnelPlotOutlined], ['/after-care', '诊后主动干预', ScheduleOutlined], ['/knowledge', '宣教服务', ReadOutlined],
+  ['/screening', '诊前高危患者筛查中心', FunnelPlotOutlined], ['/after-care', '诊后健康服务中心', ScheduleOutlined], ['/knowledge', '宣教服务', ReadOutlined],
   ['/packages', '服务包与方案', GiftOutlined], ['/channels', '渠道管理', QrcodeOutlined], ['/reports', '统计与复盘', BarChartOutlined],
   ['/hospital', '医院数据', QrcodeOutlined], ['/accounts', '医护账号', IdcardOutlined], ['/settings', '运营设置', SettingOutlined], ['/overview', '系统介绍', HeartOutlined],
 ]
 const doctorNavigation = [
-  ['/journeys', '患者全旅程服务', HeartOutlined], ['/after-care', '诊后主动干预', ScheduleOutlined],
+  ['/journeys', '医疗与质控工作台', HeartOutlined], ['/after-care', '诊后健康服务中心', ScheduleOutlined],
   ['/knowledge', '宣教服务', ReadOutlined], ['/overview', '系统介绍', HeartOutlined],
 ]
 /** Visible entries and route compatibility are distinct from role permissions. */
@@ -75,17 +77,19 @@ function Shell({ account, logout }) {
   const [password, setPassword] = useState(false)
   const visible = menuFor(account.role_code)
   const selected = selectedMenuPath(location.pathname)
+  const selectedCenter = new URLSearchParams(location.search).get('center') || 'OUTPATIENT'
   return <Layout className="app-shell"><header className="topbar">
     <Link className="brand" to={home(account.role_code)}><HeartOutlined /><span>博瑞康 <b>Health</b></span><small>医患运营管理平台</small></Link>
     <Space className="account-actions"><Tag>{names[account.role_code]}</Tag><Avatar size="small">{account.real_name?.slice(0, 1)}</Avatar><span className="account-name">{account.real_name}</span><Button type="text" icon={<KeyOutlined />} onClick={() => setPassword(true)}>修改密码</Button><Button type="text" icon={<LogoutOutlined />} onClick={logout}>退出</Button></Space>
   </header><Layout className="workspace"><Layout.Sider width={248} breakpoint="lg" collapsedWidth={64} className="sidebar">
     <div className="nav-caption">{account.role_code === 'DOCTOR' ? '医生工作台' : '院外连续服务'}</div>
-    <Menu mode="inline" selectedKeys={[selected]} items={visible.map(([path, title, Icon]) => ({
-      key: path, icon: <Icon />, label: <Link to={path}>{title}</Link>,
-    }))} /><div className="sidebar-foot"><span className="online-dot" /> 医患协作 / 2.0</div>
+    <Menu mode="inline" selectedKeys={[selected === '/after-care' ? '/after-care:' + selectedCenter : selected]} defaultOpenKeys={['/after-care']} items={visible.map(([path, title, Icon]) => path === '/after-care' ? {
+      key: path, icon: <Icon />, label: title, children: Object.entries(centers).map(([key, center]) => ({ key: path + ':' + key, label: <Link to={path + '?center=' + key + '&phase=PRE'}>{center.title}</Link> })),
+    } : ({ key: path, icon: <Icon />, label: <Link to={path}>{title}</Link> }))} /><div className="sidebar-foot"><span className="online-dot" /> 医患协作 / 2.0</div>
   </Layout.Sider><main className="main-content"><div className="page-enter" key={location.pathname}><Outlet context={account} /></div></main></Layout>
     <PasswordDialog open={password} onClose={() => setPassword(false)} /></Layout>
 }
+function AfterCareEntry() { const location = useLocation(); return new URLSearchParams(location.search).has('step') ? <CareWorkspace phase="after" /> : <InterventionCenter /> }
 export default function App() {
   const [account, setAccount] = useState(null)
   const [loading, setLoading] = useState(Boolean(token()))
@@ -104,7 +108,7 @@ export default function App() {
   return <Routes>{!account && <Route path="/overview" element={<SystemOverview account={null} />} />}<Route path="/login" element={<Login account={account} onLogin={result => { setAccount(result); navigate(home(result.role_code)) }} />} />
     <Route element={account ? allowed ? <Shell account={account} logout={async () => { try { await api('/logout', {}) } catch {} setToken(null); setAccount(null); navigate('/login') }} /> : <Navigate to={home(account.role_code)} replace /> : <Navigate to="/login" replace />}>
       <Route path="/overview" element={<SystemOverview account={account} />} />
-      <Route path="/after-care" element={<CareWorkspace phase="after" />} /><Route path="/journeys" element={<JourneyWorkspace />} /><Route path="/journeys/:id" element={<JourneyDetail />} />
+      <Route path="/after-care" element={<AfterCareEntry />} /><Route path="/journeys" element={<JourneyWorkspace />} /><Route path="/journeys/:id" element={<JourneyDetail />} />
       <Route path="/screening" element={<CareWorkspace phase="before" />} /><Route path="/packages" element={<Packages />} />
       {['/workbench', '/patients', '/patients/:id', '/invitations', '/appointments', '/followups', '/alerts', '/revisits', '/referrals', '/doctor', '/doctor/reviews', '/doctor/reports', '/doctor/results', '/doctor/alerts'].map(path => <Route key={path} path={path} element={<LegacyCareRedirect />} />)}
       <Route path="/hospital" element={<Hospital />} /><Route path="/knowledge" element={<Knowledge />} /><Route path="/channels" element={<Channels />} /><Route path="/reports" element={<Reports />} /><Route path="/settings" element={<Settings />} />

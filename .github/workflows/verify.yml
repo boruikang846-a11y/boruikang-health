@@ -46,6 +46,9 @@ jobs:
           node tools/prototype/tests/implementation-prototype.test.cjs
           node tools/prototype/tests/patient-upload.test.cjs
           node tools/prototype/tests/service-navigation.test.cjs
+          node tools/sync-intervention-config.cjs
+          node tools/prototype/tests/intervention-center.test.cjs
+          node tools/prototype/tests/health-service-journey.test.cjs
           node tools/prototype/tests/after-care-service.test.cjs
           node tools/prototype/tests/screening-details.test.cjs
       - name: Build admin UI

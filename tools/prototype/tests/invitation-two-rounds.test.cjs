@@ -1,0 +1,46 @@
+const assert=require('node:assert/strict');
+const {run,elements}=require('./prototype-harness.cjs')();
+const open=(query='')=>{run(`account=person(1);location.hash='#/screening?tab=invitations${query}';render()`);return elements['#main'].innerHTML};
+let html=open();
+assert(html.includes('<th>风险</th>'));assert(html.includes('两轮沟通'));
+assert(!/三轮|第3轮|P 状态|P7-|P8-|P9-|P11-|name="status"/.test(html));
+assert.equal((html.match(/第1轮/g)||[]).length,12);assert.equal((html.match(/第2轮/g)||[]).length,12);
+assert(run('sheetRows().every(x=>x.communications.length===2 && x.communicationDetails.length===2)'));
+assert.equal(run('screeningSheetData.records[0].communications.length'),3);
+assert.equal(run('sheetRows()[0].archivedCommunications.length'),1);
+assert(!/P7-|P8-|P9-|P11-|三轮|第 3 轮/.test(run('screeningSheetDetail(6102)')));
+run("sheetShowDetails(6102,'communication')");html=elements['#dialog-content'].innerHTML;
+assert.equal((html.match(/class="sheet-edit-round"/g)||[]).length,2);assert(!html.includes('round2'));
+const before=run('JSON.stringify(sheetRows().find(x=>x.id===6102))');
+run("sheetAction('sheet-contact',6102,{round:'3',result:'SUCCESS',note:'不允许第三轮',next:''})");
+assert.equal(run('JSON.stringify(sheetRows().find(x=>x.id===6102))'),before);
+run("sheetAction('sheet-status',6102,{status:'P7-管理中',note:'停用入口',next:''})");
+assert.equal(run('JSON.stringify(sheetRows().find(x=>x.id===6102))'),before);
+run("sheetSaveDetails(6102,{section:'communication',round2Text:'过期第三轮表单',changeReason:'校验'})");
+assert.equal(run('JSON.stringify(sheetRows().find(x=>x.id===6102))'),before);
+run("sheetAction('sheet-contact',6102)");html=elements['#dialog-content'].innerHTML;assert(!html.includes('value="3"'));assert(html.includes('跟进沟通'));
+run("sheetAction('sheet-contact',6102,{round:'2',result:'FAILED',note:'下次再联络',next:''})");
+assert.equal(run('JSON.stringify(sheetRows().find(x=>x.id===6102))'),before);
+run("sheetAction('sheet-contact',6102,{round:'2',result:'SUCCESS',note:'第二轮有效记录',next:'2026-11-01T10:00'})");
+assert.equal(run('sheetRows().find(x=>x.id===6102).communications.length'),2);
+assert.equal(run('sheetRows().find(x=>x.id===6102).communicationDetails[1].text'),'第二轮有效记录');
+assert.equal(run('sheetState().logs.at(-1).section'),'communication');
+assert.equal(run('screeningSheetData.records[1].communications[1]'),'已记录（原文已移除）');
+assert(!open('&status=P9-%E6%9A%82%E7%BC%93%2F%E6%8B%92%E7%BB%9D').includes('清单 · 1 条'));
+assert(open('&risk=待核实').includes('清单 · 64 条'));
+// Old patient-risk labels never manufacture a report grade.
+assert.equal(run("sheetGrade({risk:'低危'})"),'UNASSESSED');
+for(const [id,grade,label] of [[6101,'CRITICAL','危急'],[6102,'WARNING','预警'],[6103,'NORMAL','普通']]){
+ run(`account=person(2);scGrade(${id},{grade:'${grade}',scope:'REST_12_LEAD',evidence:'虚构报告本人复核'})`);
+ assert(open('&risk='+label).includes('清单 · 1 条'));
+ assert(elements['#main'].innerHTML.includes('演示对象'+String(id-6100).padStart(3,'0')));
+}
+assert(open('&risk=待核实').includes('清单 · 61 条'));
+run("account=person(3);scGrade(6102,{grade:'NORMAL',scope:'REST_12_LEAD',evidence:'越权'})");assert.equal(run('sheetRows().find(x=>x.id===6102).ecgGrade'),'WARNING');
+run("account=person(2);sheetShowDetails(6102,'communication')");html=elements['#dialog-content'].innerHTML;
+assert(!html.includes('data-form='));assert.equal((html.match(/<section>/g)||[]).length,2);assert(!html.includes('第 3 轮'));
+run("account=person(1);ingestAction('ingest-external');ingestAction('ingest-confirm')");
+assert.equal(run('sheetRows().at(-1).communications.length'),2);
+assert.equal(run('sheetGrade(sheetRows().at(-1))'),'UNASSESSED');
+assert(open('&arrival=不存在').includes('暂无符合条件的邀约记录'));
+console.log('PASS: two-round editing, third-round rejection, P-state removal, source preservation, risk filters, authority and import.');

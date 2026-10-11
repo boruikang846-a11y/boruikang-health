@@ -4,26 +4,43 @@ import argparse
 import base64
 import gzip
 import json
+import re
 from pathlib import Path
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("output", type=Path, help="Destination for the standalone HTML")
 parser.add_argument("--browser-url", type=Path, help="Optional compressed data URL for opening in a browser")
 parser.add_argument("--patient-import", action="store_true", help="Open directly in the patient center as the fictional manager")
+parser.add_argument("--screening-center", action="store_true", help="Open screening center as the fictional manager")
+parser.add_argument("--intervention-center", action="store_true", help="Open the five service centers")
 args = parser.parse_args()
 web = Path(__file__).resolve().parents[2] / "docs/demo-static/web/admin"
 html = (web / "index.html").read_text(encoding="utf-8")
-css = (web / "assets/interactive.css").read_text(encoding="utf-8")
-scripts = ["implementation-contract.js", "patient-import-files.js", "patient-import.js", "platform-prototype.js", "screening-sheet-data.js", "screening-sheet.js", "screening-cycle.js", "screening-import.js", "care-cycle.js", "journey.js", "interactive.js", "after-care-service.js"]
-html = html.replace('<link rel="stylesheet" href="assets/interactive.css">', "<style>" + css + "</style>")
-html = html.replace('<link rel="stylesheet" href="assets/after-care-service.css">', "<style>" + (web / "assets/after-care-service.css").read_text(encoding="utf-8") + "</style>")
-html = html.replace('<link rel="stylesheet" href="assets/service-navigation.css">', "<style>" + (web / "assets/service-navigation.css").read_text(encoding="utf-8") + "</style>")
-scripts.append("service-navigation.js")
-for filename in scripts:
-    js = (web / "assets" / filename).read_text(encoding="utf-8")
-    html = html.replace('<script src="assets/' + filename + '"></script>', "<script>" + js.replace("</script", "<\\/script") + "</script>")
+
+def asset_text(filename):
+    path = (web / filename).resolve()
+    if not path.is_relative_to(web.resolve()):
+        raise ValueError("Asset must stay inside the prototype: " + filename)
+    return path.read_text(encoding="utf-8")
+
+
+# Use the entry page's asset order so new centers are included automatically.
+html = re.sub(
+    r'<link rel="stylesheet" href="([^"]+)">',
+    lambda match: "<style>" + asset_text(match[1]) + "</style>",
+    html,
+)
+html = re.sub(
+    r'<script src="([^"]+)"></script>',
+    lambda match: "<script>" + asset_text(match[1]).replace("</script", "<\\/script") + "</script>",
+    html,
+)
 if args.patient_import:
-    html = html.replace("<body>", '<body data-demo-entry="patient-import">')
+    html = re.sub(r"<body[^>]*>", '<body data-demo-entry="patient-import">', html, count=1)
+if args.screening_center:
+    html = re.sub(r"<body[^>]*>", '<body data-demo-entry="screening-center">', html, count=1)
+if args.intervention_center:
+    html = re.sub(r"<body[^>]*>", '<body data-demo-entry="intervention-center">', html, count=1)
 args.output.parent.mkdir(parents=True, exist_ok=True)
 args.output.write_text(html, encoding="utf-8")
 result = {"html": str(args.output.resolve()), "html_bytes": args.output.stat().st_size}

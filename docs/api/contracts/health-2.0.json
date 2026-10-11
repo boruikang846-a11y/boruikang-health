@@ -328,7 +328,7 @@
       ],
       [
         "/after-care",
-        "诊后主动干预"
+        "诊后健康服务中心"
       ],
       [
         "/knowledge",
@@ -366,11 +366,11 @@
     "doctor": [
       [
         "/journeys",
-        "患者全旅程服务"
+        "医疗与质控工作台"
       ],
       [
         "/after-care",
-        "诊后主动干预"
+        "诊后健康服务中心"
       ],
       [
         "/knowledge",
@@ -1194,6 +1194,51 @@
       "consent_key": "VARCHAR(64)",
       "evidence": "VARCHAR(2000)",
       "actor_id": "BIGINT",
+      "del_flag": "TINYINT(1)",
+      "creator": "VARCHAR(64)",
+      "modifier": "VARCHAR(64)",
+      "gmt_create": "DATETIME",
+      "gmt_modified": "DATETIME"
+    },
+    "intervention_work": {
+      "id": "BIGINT",
+      "hospital_id": "BIGINT",
+      "patient_id": "BIGINT",
+      "center": "VARCHAR(20)",
+      "phase": "VARCHAR(12)",
+      "category": "VARCHAR(40)",
+      "title": "VARCHAR(160)",
+      "content": "TEXT",
+      "clinical": "BOOLEAN",
+      "record_id": "BIGINT",
+      "due_at": "DATETIME",
+      "status": "VARCHAR(20)",
+      "approved_content": "TEXT",
+      "reviewer_id": "BIGINT",
+      "acknowledged_by": "BIGINT",
+      "result": "TEXT",
+      "first_response_at": "DATETIME",
+      "arrived_at": "DATETIME",
+      "arrival_evidence": "VARCHAR(2000)",
+      "score": "INT",
+      "feedback": "VARCHAR(2000)",
+      "version": "INT",
+      "del_flag": "TINYINT(1)",
+      "creator": "VARCHAR(64)",
+      "modifier": "VARCHAR(64)",
+      "gmt_create": "DATETIME",
+      "gmt_modified": "DATETIME"
+    },
+    "intervention_log": {
+      "id": "BIGINT",
+      "hospital_id": "BIGINT",
+      "patient_id": "BIGINT",
+      "work_id": "BIGINT",
+      "actor_id": "BIGINT",
+      "action": "VARCHAR(24)",
+      "note": "VARCHAR(2000)",
+      "before_json": "LONGTEXT",
+      "after_json": "LONGTEXT",
       "del_flag": "TINYINT(1)",
       "creator": "VARCHAR(64)",
       "modifier": "VARCHAR(64)",

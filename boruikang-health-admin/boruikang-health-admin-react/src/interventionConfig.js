@@ -1,0 +1,17 @@
+export const centers = {
+  OUTPATIENT: { title: '门诊服务中心', short: '门诊', subtitle: '从预约准备到复诊跟踪，让每次门诊服务都有下文。', code: '01', categories: { PRE: ['导诊咨询', '预约准备', '就诊资料核对'], IN: ['到院核验', '检查指引', '报告领取协助'], POST: ['门诊随访', '复诊跟踪', '用药反馈收集'] } },
+  INPATIENT: { title: '住院服务中心', short: '住院', subtitle: '接续入院、住院与出院交接，持续跟进院后需求。', code: '02', categories: { PRE: ['入院协调', '资料准备', '床位衔接'], IN: ['住院服务', '出院交接', '护理需求协办'], POST: ['出院随访', '康复反馈', '复查准备'] } },
+  EXAM: { title: '体检服务中心', short: '体检', subtitle: '连接检前准备、检查协作与检后报告服务。', code: '03', categories: { PRE: ['体检预约', '检前准备', '套餐咨询'], IN: ['检查协调', '漏项跟进', '报告进度'], POST: ['报告解读', '异常复查', '检后回访'] } },
+  CONSULTATION: { title: '咨询服务中心', short: '咨询', subtitle: '统一接待患者问题，协同医护处理，追踪真实服务结果。', code: '04', categories: { PRE: ['就医咨询', '报告咨询', '挂号协助'], IN: ['院内咨询', '投诉协办', '检查咨询'], POST: ['随访咨询', '评价回访', '复诊咨询'] } },
+  REFERRAL: { title: '转诊服务中心', short: '转诊', subtitle: '记录申请、接收、到院与反馈，让跨机构服务交接可追溯。', code: '05', categories: { PRE: ['转诊申请', '接收协调', '转诊资料核对'], IN: ['转诊到院核验', '诊疗反馈', '接诊协作'], POST: ['回转交接', '转诊随访', '后续安排核验'] } },
+}
+export const phases = { PRE: { title: '院前', subtitle: '需求接入 · 预约准备' }, IN: { title: '院中', subtitle: '到院协助 · 服务交接' }, POST: { title: '院后', subtitle: '主动随访 · 结果跟进' } }
+export const workStatuses = { TODO: '待处理', ACTIVE: '处理中', REVIEW: '待医生审核', READY: '待执行', RESOLVED: '待核验', CLOSED: '已闭环' }
+export const workActions = { CREATE: '建立工作单', EDIT: '修改工作单', START: '开始处理', SUBMIT: '提交医生审核', APPROVE: '本人审核通过', ACKNOWLEDGE: '本人查收结果', REJECT: '退回修改', COMPLETE: '登记办理结果', CLOSE: '核验并闭环', REOPEN: '重新打开', NOTE: '追加协作记录', ARRIVAL: '核验实际到院', RATE: '登记患者评价' }
+export function availableActions(work, doctor) {
+  if (doctor && work.status === 'RESOLVED' && work.clinical && work.acknowledged_by !== work.doctor_id) return ['ACKNOWLEDGE', 'NOTE']
+  if (doctor) return work.status === 'REVIEW' ? ['APPROVE', 'REJECT', 'NOTE'] : work.status === 'CLOSED' ? [] : ['NOTE']
+  if (work.status === 'READY' && work.clinical && work.reviewer_id !== work.doctor_id) return ['SUBMIT', 'NOTE']
+  const actions = { TODO: ['START'], ACTIVE: [work.clinical ? 'SUBMIT' : 'COMPLETE'], REVIEW: [], READY: ['COMPLETE'], RESOLVED: [...(!work.clinical || work.acknowledged_by === work.doctor_id ? ['CLOSE'] : []), 'REOPEN'], CLOSED: ['REOPEN'] }[work.status] || []
+  return [...actions, ...(work.status !== 'CLOSED' ? ['NOTE'] : []), ...(!work.arrived_at ? ['ARRIVAL'] : []), ...(['RESOLVED', 'CLOSED'].includes(work.status) && !work.score ? ['RATE'] : [])]
+}

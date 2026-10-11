@@ -1,6 +1,6 @@
 const assert=require('node:assert/strict'),harness=require('./prototype-harness.cjs');
 const {run,elements}=harness();
-run("account=person(1);location.hash='#/screening';render()");
+run("account=person(1);location.hash='#/screening?tab=invitations';render()");
 assert.equal(run('sheetRows().length'),64);
 assert.equal((elements['#main'].innerHTML.match(/data-action="sheet-detail"/g)||[]).length,48);
 for(const section of ['communication','arrival','effective','followup']){
@@ -23,10 +23,10 @@ run("sheetSaveDetails(6102,{section:'arrival',appointmentDate:'2026-10-15T09:00'
 assert.equal(run('sheetRows().find(x=>x.id===6102).appointmentDepartment'),'演示复诊门诊');
 run("sheetSaveDetails(6102,{section:'effective',effective:'yes',effectiveBasis:'已核实演示接诊记录',absenceReason:'',changeReason:'确认凭据'})");assert.equal(run('sheetRows().find(x=>x.id===6102).effective'),true);
 run("sheetSaveDetails(6102,{section:'followup',nextDemo:'2026-11-10T10:00',followupPlan:'复诊后电话回访',changeReason:'调整计划'})");assert(elements['#dialog-content'].innerHTML.includes('复诊后电话回访'));
-const comm={section:'communication',changeReason:'更正三轮记录'};
-for(let i=0;i<3;i++)Object.assign(comm,{['round'+i+'At']:'2026-10-08T10:00',['round'+i+'Result']:'已核实身份并完成沟通',['round'+i+'Text']:'修改第'+(i+1)+'轮内容',['round'+i+'By']:'演示负责人',['round'+i+'Next']:''});
-run(`sheetSaveDetails(6102,${JSON.stringify(comm)})`);assert(elements['#dialog-content'].innerHTML.includes('修改第3轮内容'));
-assert.equal(run('sheetState().logs.length'),4);
+const comm={section:'communication',changeReason:'更正两轮记录'};
+for(let i=0;i<2;i++)Object.assign(comm,{['round'+i+'At']:'2026-10-08T10:00',['round'+i+'Result']:'已核实身份并完成沟通',['round'+i+'Text']:'修改第'+(i+1)+'轮内容',['round'+i+'By']:'演示负责人',['round'+i+'Next']:''});
+run(`sheetSaveDetails(6102,${JSON.stringify(comm)})`);assert(elements['#dialog-content'].innerHTML.includes('修改第2轮内容'));
+assert.equal(run('sheetState().logs.length'),5);
 run("sheetSaveDetails(6102,{section:'arrival',appointmentDate:'',appointmentDepartment:'',arrival:'未到诊',arrivalDate:'',changeReason:'取消到诊登记'})");assert.equal(run('sheetRows().find(x=>x.id===6102).effective'),false);
 const logs=run('sheetState().logs.length');
 run("sheetSaveDetails(6102,{section:'effective',effective:'yes',effectiveBasis:'错误登记',absenceReason:'',changeReason:'校验'})");assert.equal(run('sheetState().logs.length'),logs);

@@ -5,7 +5,7 @@ let count=0;
 for(const id of [1,2,3,4,5,6]){
  run(`account=person(${id})`);
  const menu=JSON.parse(run('JSON.stringify(menu())'));
- for(const [route,title] of menu){run(`location.hash=${JSON.stringify('#'+route)};render()`);assert(elements['#main'].innerHTML);assert(!elements['#main'].innerHTML.includes('没有找到这个原型页面'),route);assert(!elements['#main'].innerHTML.includes('当前角色无权访问'),`${id}: ${route} menu entry must be reachable`);assert(!elements['#header'].innerHTML.includes('页面流程'));assert(!elements['#main'].innerHTML.includes('service-role-guide'));count++}
+ for(const [route,title] of menu){run(`location.hash=${JSON.stringify('#'+route)};render()`);assert(elements['#main'].innerHTML);assert(!elements['#main'].innerHTML.includes('没有找到这个原型页面'),route);assert(!elements['#main'].innerHTML.includes('当前角色无权访问'),`${id}: ${route} menu entry must be reachable`);assert(!elements['#header'].innerHTML.includes('页面流程'));assert(!/service-role-guide|cs-acceptance/.test(elements['#main'].innerHTML));count++}
  assert(!menu.some(([route])=>['/patient-demo','/enrollment','/quality','/care-plans','/ai-reports','/data-ingestion'].includes(route)));
  if(id===5)assert.deepEqual(menu.map(x=>x[0]),['/settings','/overview']);
  for(const route of ['/journeys','/after-care','/patients']){run(`location.hash=${JSON.stringify('#'+route)};render()`);if(id===5)assert(elements['#main'].innerHTML.includes('当前角色无权访问'));}
