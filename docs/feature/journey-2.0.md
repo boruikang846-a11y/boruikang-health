@@ -49,7 +49,7 @@
 
 ## 当前版本与运行
 
-全旅程已通过 [PR #16](https://github.com/boruikang846-a11y/boruikang-health/pull/16) 合并到 develop。当前 [原型入口](../demo-static/web/index.html)、[API](../api/journey-2.0.md)、[四层同步基线](../contracts/README.md) 与 SQL 以 HEALTH 2.0 一致口径维护。1.9 微信、1.8 文件导入、1.7 随访 AI、1.6 医护登录和 1.5 台账仍是有效基线。
+全旅程已通过 [PR #16](https://github.com/boruikang846-a11y/boruikang-health/pull/16) 合并到 develop。当前 [原型入口](../demo-static/index.html)、[API](../api/journey-2.0.md)、[四层同步基线](../api/implementation-baseline.md) 与 SQL 以 HEALTH 2.0 一致口径维护。1.9 微信、1.8 文件导入、1.7 随访 AI、1.6 医护登录和 1.5 台账仍是有效基线。
 
 本地构建及 JAR 启动使用仓库 [README](../../README.md) 命令；管理端 local 默认为 http://localhost:8080，介绍端为 http://localhost:8081。旅程入口为管理端 /journeys，诊后队列 /after-care。此前独立 .command / V2.0.jar、8081 管理端和 work/runtime 的叙述属于集成前本地包，已移出当前运行说明。
 

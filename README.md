@@ -63,13 +63,15 @@ manager 可从侧栏“医院数据”预览并同步 Mock：2 位虚构患者�
 
 ## HEALTH 2.0 当前全量口径
 
-[四层同步基线](docs/contracts/README.md)、[全旅程需求](docs/feature/journey-2.0.md)、[全旅程 API](docs/api/journey-2.0.md)、[当前原型](docs/demo-static/web/index.html)。已实现门诊与出院事件旅程、本人交接、报告快照、个案计划审核生成任务、跨旅程咨询/异常/投诉队列、医生查收、独立复诊核验、满意度与结案、暂停/退出/撤回授权。完整扫码自助入组、患者 H5 及独立 AI 计划等旧探索稿仍属后续设计。
+[四层同步基线](docs/api/implementation-baseline.md)、[全旅程需求](docs/feature/journey-2.0.md)、[全旅程 API](docs/api/journey-2.0.md)、[当前原型](docs/demo-static/index.html)。已实现门诊与出院事件旅程、本人交接、报告快照、个案计划审核生成任务、跨旅程咨询/异常/投诉队列、医生查收、独立复诊核验、满意度与结案、暂停/退出/撤回授权。完整扫码自助入组、患者 H5 及独立 AI 计划等旧探索稿仍属后续设计。
 
 ## 文档与发布
 
+[文档分类总览](docs/README.md) · [目录规约](docs/DIRECTORY-LAYOUT.md)。需求与设计说明归入文档，可操作原型按管理端 / 用户端组织。
+
 - [范围与验收标准](docs/feature/health-mvp.md)、[参考资料吸收](docs/project/reference-intake.md)
-- [原型入口](docs/demo-static/web/index.html)、[技术设计](docs/architecture/health-mvp.md)、[API 契约](docs/api/health-mvp.md)
-- [SQL 使用说明](sql/README.md)、[部署交接](docs/deploy/health-mvp.md)、[验证记录](docs/review/mvp-validation.md)
+- [原型入口](docs/demo-static/index.html)、[技术设计](docs/architecture/health-mvp.md)、[API 契约](docs/api/health-mvp.md)
+- [SQL 使用说明](sql/README.md)、[部署交接](docs/architecture/deployment/health-mvp.md)、[验证记录](docs/review/mvp-validation.md)
 - [开发试点边界](docs/security/health-mvp.md)
 
 GitHub 通过 draft PR 交付，目标 `develop`；明确获得合并授权后遵守检查合并。**dev 和 prod 均部署 develop**，分别使用 `application-dev.properties` 与 `application-prod.properties`。部署由 [boruikang-workflows](https://github.com/boruikang846-a11y/boruikang-workflows) 的 Jenkins 流水线执行（文件夹 `boruikang`：`dev-health-deploy` / `dev-health-stop` / `dev-health-init-database`）；HEALTH 两端通过各自 loopback 地址共用标准 8080 端口，Nginx 提供 HTTPS。部署状态以 Jenkins 记录与线上验收为准。
@@ -80,8 +82,8 @@ GitHub 通过 draft PR 交付，目标 `develop`；明确获得合并授权后�
 
 ## 1.6 医生、护士登录
 
-[需求](docs/feature/clinical-login-1.6.md)、[API](docs/api/clinical-login-1.6.md)、[流程图解](docs/feature/clinical-login-1.6.html)、[交互原型](docs/demo-static/web/admin/clinical-login-1.6.html)。1.4 起“院方医生护士不登录、运营登记院方凭证”的做法取消：医生看报告、审核随访意见、查收结果、处置异常、审核宣教都在系统里本人完成；护士与运营人员同一套随访执行页面。院方联系人表删除，责任医生、转介医生、接诊医生都指向医生账号。发版仍为全量口径。
+[需求](docs/feature/clinical-login-1.6.md)、[API](docs/api/clinical-login-1.6.md)、[流程图解](docs/feature/clinical-login-1.6.html)、[交互原型](docs/demo-static/web/admin/index.html#/doctor)。1.4 起“院方医生护士不登录、运营登记院方凭证”的做法取消：医生看报告、审核随访意见、查收结果、处置异常、审核宣教都在系统里本人完成；护士与运营人员同一套随访执行页面。院方联系人表删除，责任医生、转介医生、接诊医生都指向医生账号。发版仍为全量口径。
 
 ## 本轮托管运营修正与后续边界
 
-[需求](docs/feature/managed-operations-1.4.md)、[API](docs/api/managed-operations-1.4.md)、[操作图解](docs/feature/managed-operations-1.4.html)。1.5 运营台账（患者池、邀约、预约到诊、服务包与方案、转诊、模板与短信登记、十项指标、工作台队列）见 [需求](docs/feature/operations-ledger-1.5.md)、[API](docs/api/operations-ledger-1.5.md)、[流程图解](docs/feature/operations-ledger-1.5.html)、[交互原型](docs/demo-static/web/admin/operations-ledger-1.5.html)。发版为全量口径：备份后清库，按 sql/DDL.sql → DML.sql → dev/DML.sql 重建。节点日期均人工确认；系统无自动诊断、用药调整或未经批准的医学阈值。患者侧业务与扫码自助入组未开放；微信身份只由工作人员核实后绑定（1.9）。完整筛查干预与长期专病管理仍待迭代；现有转诊和服务包台账、门诊/出院旅程按对应 1.5 / 2.0 契约实施，现有内容条目不代表全科室可执行知识规则。报告外发为人工交付凭证登记，没有自动发送。
+[需求](docs/feature/managed-operations-1.4.md)、[API](docs/api/managed-operations-1.4.md)、[操作图解](docs/feature/managed-operations-1.4.html)。1.5 运营台账（患者池、邀约、预约到诊、服务包与方案、转诊、模板与短信登记、十项指标、工作台队列）见 [需求](docs/feature/operations-ledger-1.5.md)、[API](docs/api/operations-ledger-1.5.md)、[流程图解](docs/feature/operations-ledger-1.5.html)、[交互原型](docs/demo-static/web/admin/index.html#/journeys)。发版为全量口径：备份后清库，按 sql/DDL.sql → DML.sql → dev/DML.sql 重建。节点日期均人工确认；系统无自动诊断、用药调整或未经批准的医学阈值。患者侧业务与扫码自助入组未开放；微信身份只由工作人员核实后绑定（1.9）。完整筛查干预与长期专病管理仍待迭代；现有转诊和服务包台账、门诊/出院旅程按对应 1.5 / 2.0 契约实施，现有内容条目不代表全科室可执行知识规则。报告外发为人工交付凭证登记，没有自动发送。

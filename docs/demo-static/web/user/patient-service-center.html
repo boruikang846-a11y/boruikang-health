@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>患者全程服务中心 · 博瑞康 Health</title>
+<style>
+:root{--ink:#17352f;--muted:#667870;--green:#206b56;--pale:#eaf3ed;--paper:#f5f6f1;--line:#dce5df;--gold:#a35d15;--red:#ae3f38}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.65 "PingFang SC","Microsoft YaHei",sans-serif}button,input,select,textarea{font:inherit}button,a,input,select,textarea{outline-offset:4px}button{cursor:pointer;border:1px solid var(--line);background:white;color:var(--ink);border-radius:8px;padding:9px 15px;transition:background .15s}button:hover{background:var(--pale)}button:disabled{cursor:not-allowed;opacity:.5}.primary{background:var(--green);color:white;border-color:var(--green)}.primary:hover{background:#185340}.danger{color:var(--red)}a{color:var(--green);text-underline-offset:4px}h1,h2,h3,p{margin:0}h1{font-size:30px;line-height:1.4;letter-spacing:-.8px}h2{font-size:19px}h3{font-size:16px}.muted,small{color:var(--muted)}small{font-size:12px}.topbar{height:78px;background:white;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 36px;gap:16px}.brand{display:flex;gap:12px;align-items:center}.mark{background:var(--green);color:white;width:39px;height:39px;display:grid;place-items:center;border-radius:12px;font:24px Georgia,serif}.brand strong{font-size:19px}.brand small{display:block;font-size:11px;letter-spacing:2px}.toplinks{display:flex;gap:24px;font-size:13px}.wrap{max-width:1450px;margin:auto;padding:28px 36px 48px}.crumb{font-size:12px;color:var(--muted);margin-bottom:16px}.hero{display:flex;align-items:center;justify-content:space-between;gap:24px;margin-bottom:20px}.eyebrow{font-size:11px;letter-spacing:2px;color:var(--green);font-weight:700;margin-bottom:6px}.hero p{color:var(--muted);margin-top:6px}.demo{display:flex;gap:9px;align-items:center;font-size:12px;white-space:nowrap;background:#fff7e9;border:1px solid #efdfc1;border-radius:20px;padding:7px 13px;color:#815d2e}.demo:before{content:'';width:6px;height:6px;border-radius:50%;background:#bd8a3b}.scope{display:flex;gap:28px;align-items:center;background:#e7eee8;border:1px solid #d7e2d8;border-radius:10px;padding:13px 20px;margin-bottom:22px;font-size:13px;flex-wrap:wrap}.scope span{color:var(--muted);margin-right:8px}.layout{display:grid;grid-template-columns:minmax(0,1fr) 378px;gap:28px;align-items:start}.staff{min-width:0}.staff-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}.role{display:flex;align-items:center;gap:8px;font-size:12px;white-space:nowrap}.role select{border:1px solid var(--line);padding:7px 9px;background:white;border-radius:7px;max-width:175px}.tabs{display:flex;border-bottom:1px solid var(--line);gap:24px;margin-bottom:18px;overflow:auto}.tabs button{background:none;border:0;border-radius:0;padding:10px 0 12px;color:var(--muted);white-space:nowrap}.tabs button[aria-selected=true]{color:var(--green);box-shadow:inset 0 -3px var(--green);font-weight:600}.count{font-size:11px;padding:1px 6px;background:var(--pale);border-radius:5px;margin-left:4px}.card{background:white;border:1px solid var(--line);border-radius:12px;padding:22px;margin-bottom:18px}.card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}.badge{display:inline-block;border-radius:5px;padding:3px 8px;background:var(--pale);color:var(--green);font-size:12px;white-space:nowrap}.badge.warm{background:#fff3df;color:var(--gold)}.badge.stop{background:#faece9;color:var(--red)}.person{display:flex;gap:12px;align-items:center}.avatar{width:44px;height:44px;display:grid;place-items:center;background:var(--pale);color:var(--green);border-radius:50%;font-weight:bold}.facts{display:grid;grid-template-columns:1fr 1fr;gap:15px 24px;margin:18px 0}.facts dt{font-size:12px;color:var(--muted)}.facts dd{margin:3px 0 0;font-size:14px}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}.notice{border-left:3px solid #91b19e;background:#f2f6f1;padding:12px 14px;font-size:13px;color:#496156;margin-top:16px}.empty{padding:30px 18px;text-align:center;border:1px dashed var(--line);border-radius:9px;color:var(--muted)}.empty b{display:block;color:var(--ink);font-size:16px;margin-bottom:8px}.steps{display:flex;gap:0;margin:20px 0 6px;list-style:none;padding:0}.steps li{flex:1;position:relative;font-size:12px;color:var(--muted)}.steps li:before{content:'';position:absolute;top:12px;left:26px;right:0;height:1px;background:var(--line)}.steps li:last-child:before{display:none}.steps b{position:relative;display:grid;place-items:center;width:25px;height:25px;border-radius:50%;background:#edf1eb;color:#89978f;font-size:11px;margin-bottom:8px}.steps .done b,.steps .active b{background:var(--green);color:white}.steps .active{color:var(--green);font-weight:600}label.field{display:block;font-size:13px;margin-top:15px}input:not([type=checkbox]),select,textarea{width:100%;border:1px solid #cbd9d0;background:white;border-radius:7px;padding:9px 10px;color:var(--ink);margin-top:6px}textarea{resize:vertical;min-height:80px}label.check{display:flex;gap:8px;align-items:flex-start;font-size:13px;margin:14px 0}label.check input{margin-top:6px;accent-color:var(--green)}.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}.route{display:flex;gap:12px;margin:14px 0}.route>div{flex:1;border:1px solid var(--line);padding:15px 12px;border-radius:9px}.route .current{background:var(--pale);border-color:#aac6b4}.route small,.route b{display:block}.route b{margin:7px 0 3px}.route p{font-size:12px;color:var(--muted)}.ticket{padding:18px 0;border-bottom:1px solid var(--line)}.ticket:first-child{padding-top:0}.ticket:last-child{border-bottom:0;padding-bottom:0}.ticket p{margin:9px 0;white-space:pre-wrap;overflow-wrap:anywhere}.ticket-top{display:flex;justify-content:space-between;gap:8px}.log{padding:0;margin:10px 0 0;list-style:none}.log li{display:flex;gap:16px;font-size:12px;border-top:1px solid #eef2ed;padding:10px 0}.log time{color:var(--muted);white-space:nowrap}.log span{overflow-wrap:anywhere}.activity summary,.tools summary{cursor:pointer;font-size:13px;color:var(--muted)}.tools{margin-top:24px;border-top:1px solid var(--line);padding-top:14px}.tools .actions button{font-size:12px}.phone-area{border-left:1px solid var(--line);padding-left:26px}.preview-label{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;font-size:13px}.live-dot{display:inline-block;width:6px;height:6px;background:#559577;border-radius:50%;margin-right:6px}.phone{background:white;border:1px solid #cfdbd2;border-radius:28px;box-shadow:0 16px 40px #203e2c0c;padding:8px;overflow:hidden}.phone-bar{display:flex;justify-content:space-between;padding:7px 19px;font-size:11px;font-weight:600}.mobile{background:#f5f8f4;border-radius:21px;overflow:hidden;min-height:610px}.mobile-header{background:#205744;color:white;padding:26px 21px 30px}.mobile-header small{color:#c0d9c9;font-size:11px;letter-spacing:1px}.mobile-header h2{font-size:25px;line-height:1.5;margin:12px 0 8px;font-weight:500}.mobile-header p{font-size:11px;color:#cce0d2}.mobile-body{padding:17px 15px}.mobile-body .card{padding:16px;border-radius:10px;margin-bottom:12px}.mobile-body p{font-size:13px}.mobile-body h3{font-size:15px}.mobile-body .primary{width:100%}.mobile-body label.field{font-size:12px;margin-top:12px}.mobile-body .notice{font-size:11px;margin-top:12px;padding:10px}.mobile-body .empty{background:white}.mobile-body .ticket p{font-size:12px}.consent{font-size:11px;color:var(--muted);margin-top:14px;line-height:1.7}.consent p{font-size:11px;margin-top:5px}.mobile-footer{text-align:center;font-size:10px;color:var(--muted);padding:8px 18px 22px}.step-note{font-size:12px;color:var(--muted);margin:14px 0}.divider{border-top:1px solid var(--line);margin:18px 0}.story{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:24px}.story article{border-top:2px solid #ccdacf;padding:14px 0;font-size:12px;color:var(--muted)}.story b{display:block;color:var(--ink);margin-bottom:5px}.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#193c31;color:white;padding:12px 20px;border-radius:10px;max-width:90vw;z-index:10;box-shadow:0 6px 20px #17352f25}.toast:empty{display:none}.only-phone{display:none}.patient-only .staff,.patient-only .scope,.patient-only .hero,.patient-only .crumb,.patient-only .story,.patient-only .topbar{display:none}.patient-only .wrap{padding:16px}.patient-only .layout{display:block}.patient-only .phone-area{border:0;padding:0;max-width:400px;margin:auto}.patient-only .only-phone{display:inline-block}.patient-only .phone{box-shadow:none}.patient-only .mobile{min-height:0}@media(max-width:1100px){.wrap{padding:24px}.layout{grid-template-columns:minmax(0,1fr) 340px;gap:20px}.phone-area{padding-left:18px}.hero{align-items:start}.hero .demo{display:none}.topbar{padding:0 24px}.route{flex-direction:column}}@media(max-width:780px){.topbar{padding:15px 18px;height:auto}.toplinks a:first-child{display:none}.wrap{padding:20px 16px}.layout{grid-template-columns:1fr}.phone-area{border-left:0;padding:0;max-width:400px;width:100%;margin:10px auto}.hero h1{font-size:25px}.hero p{font-size:13px}.scope{gap:6px 18px;padding:12px}.staff-head{flex-wrap:wrap}.role select{width:auto}.card{padding:17px}.facts{gap:12px}.story{grid-template-columns:1fr;gap:0}.two{grid-template-columns:1fr;gap:0}.tabs{gap:20px}.route{flex-direction:row}.route>div{padding:10px}.route p{font-size:11px}.phone .mobile{min-height:0}}
+</style>
+</head>
+<body>
+<header class="topbar"><div class="brand"><div class="mark">b</div><div><strong>博瑞康 Health</strong><small>患者全程服务</small></div></div><nav class="toplinks"><a href="../admin/index.html">返回运营系统</a><a href="../admin/index.html#/after-care">诊后主动干预</a></nav></header>
+<div class="wrap">
+ <div class="crumb">医患协作 / 企业微信 / 患者全程服务中心</div>
+ <section class="hero"><div><div class="eyebrow">PATIENT SERVICE · 2.1</div><h1>让每一次就医，都有人跟进。</h1><p>从企微相识，到登记入组，再到诊前、诊中与诊后的持续服务。</p></div><div class="demo">虚构演示数据 · 未连接外部服务</div></section>
+ <div class="scope"><div><span>服务通道</span><b>博瑞康企业微信</b></div><div><span>试点医院</span><b>江阴人民医院</b></div><div><span>科室</span><b>心血管科</b></div></div>
+ <div class="layout">
+  <section class="staff" aria-label="服务团队工作台"><div class="staff-head"><h2>服务团队工作台</h2><label class="role">演示角色<select id="role"><option value="OPERATOR">运营 · 服务负责人</option><option value="NURSE">护士 · 服务负责人</option><option value="DOCTOR">责任医生</option></select></label></div><div class="tabs" role="tablist" aria-label="工作台页面" id="tabs"></div><div id="staff-content"></div><details class="card activity" open><summary>本次服务记录</summary><ul class="log" id="history"></ul></details><details class="tools"><summary>演示工具与异常场景</summary><p class="step-note">仅改变本页虚构状态；刷新清空。角色切换用于审核流程，不代表正式身份认证。</p><div class="actions"><button data-action="expire">模拟链接到期</button><button data-action="withdraw" class="danger">模拟患者撤回授权</button><button data-action="reset">重置整个演示</button></div></details></section>
+  <aside class="phone-area" aria-label="患者 H5 预览"><div class="preview-label"><span><i class="live-dot"></i>患者手机端 · 同步预览</span><button id="view-toggle" style="font-size:12px;padding:5px 9px">只看患者端</button></div><div class="phone"><div class="phone-bar"><span>9:41</span><span>微信内打开 · H5</span></div><div class="mobile"><header class="mobile-header"><small>博瑞康 · 患者服务</small><h2>每一步，<br>都有人跟进。</h2><p>诊前准备 / 诊中协助 / 诊后随访</p></header><div class="mobile-body" id="patient-content"></div><footer class="mobile-footer">博瑞康服务团队<br>虚构演示 · 非急救入口<br>如需紧急医疗帮助，请及时联系急救或到院就医。</footer></div></div><p class="step-note">与左侧工作台共用本页演示状态。患者端仅展示本人服务摘要和反馈进度。</p></aside>
+ </div>
+
+</div><div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script id="service-prototype">
+'use strict';
+const $=id=>document.getElementById(id);
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const initial=()=>({entry:'NONE',expired:false,withdrawn:false,registration:null,journey:null,feedback:[],generation:0,history:[{time:'09:00',text:'虚构联系人甲已添加博瑞康企微服务成员，尚未绑定患者档案。'}]});
+let state=initial(),role='OPERATOR',tab='intake',toastTimer;
+const names={NONE:'待签发入口',ISSUED:'待患者登记',REGISTERED:'待人工核实',VERIFIED:'已核实入组',REVOKED:'入口已撤销',OPEN:'待受理',ACCEPTED:'已受理',RESOLVED:'已处理待确认',CLOSED:'已结案'};
+const kinds={SERVICE:'服务咨询',CLINICAL:'病情与随访反馈',COMPLAINT:'意见与投诉'};
+const badge=(text,extra='')=>'<span class="badge '+extra+'">'+esc(text)+'</span>';
+const btn=(text,action,extra='',disabled=false)=>'<button data-action="'+action+'" class="'+extra+'" '+(disabled?'disabled':'')+'>'+text+'</button>';
+const operating=()=>role==='OPERATOR'||role==='NURSE';
+const live=()=>!state.expired&&!state.withdrawn&&!['NONE','REVOKED'].includes(state.entry);
+function log(text){state.history.unshift({time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit',hour12:false}),text})}
+function tell(message){$('toast').textContent=message;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').textContent='',4500)}
+function requireThat(value,message){if(!value)throw new Error(message)}
+function transition(action,data={}){
+ if(action==='reset'){state=initial();role='OPERATOR';tab='intake';return}
+ if(action==='expire'){requireThat(live(),'请先签发一个有效入口');state.expired=true;log('演示链接已到期，患者入口停止访问。');return}
+ if(action==='withdraw'){requireThat(state.registration&&!state.withdrawn,'请先完成患者登记');state.withdrawn=true;log('演示患者撤回服务授权，患者业务访问已阻断。');return}
+ if(action==='issue'){
+  requireThat(operating(),'请由服务负责人签发入口');requireThat(!state.withdrawn,'授权已撤回，请重置演示后重新取得授权');
+  state.entry='ISSUED';state.expired=false;state.registration=null;state.generation++;log('已签发第 '+state.generation+' 个 7 天专属入口；旧入口失效。请体验右侧患者登记。');return
+ }
+ if(action==='revoke'){requireThat(operating()&&live(),'当前角色或入口状态不允许撤销');state.entry='REVOKED';log('服务负责人撤销了患者入口。');return}
+ if(action==='register'){
+  requireThat(live()&&state.entry==='ISSUED','入口不可登记，请联系服务团队');
+  requireThat(data.name?.trim()&&/^1[3-9]\d{9}$/.test(data.phone||''),'请填写姓名和有效联系人手机号');
+  requireThat(['SELF','FAMILY'].includes(data.relation)&&['FULL','AFTER_CARE'].includes(data.phase),'请选择关系与服务需求');requireThat(data.consent==='on','请阅读并同意服务授权');
+  state.registration={name:data.name.trim(),phone:data.phone,relation:data.relation,phase:data.phase,consent:'patient-service-2.1-brk'};state.entry='REGISTERED';log('患者已登记并确认服务授权，等待人工核实。');return
+ }
+ if(action==='verify'){
+  requireThat(operating()&&live()&&state.entry==='REGISTERED','请由服务负责人核实有效登记');
+  requireThat(data.identity==='on'&&data.authorization==='on'&&data.evidence?.trim(),'请核实身份、授权并填写依据');
+  requireThat(state.registration.relation!=='FAMILY'||data.family==='on','家属代办需额外核实患者授权');
+  state.entry='VERIFIED';log('已核实并绑定既有虚构患者档案 P-DEMO-001，分派本服务负责人及责任医生。依据：'+data.evidence.trim());return
+ }
+ if(action==='journey'){
+  requireThat(operating()&&live()&&state.entry==='VERIFIED'&&!state.journey,'请先核实绑定，且不重复创建本次旅程');
+  requireThat(['OUTPATIENT','DISCHARGE','CHECKUP'].includes(data.kind)&&data.handoff==='on','请选择服务类型并确认服务交接');
+  state.journey={kind:data.kind,phase:state.registration.phase==='AFTER_CARE'?2:0};log('已建立'+({OUTPATIENT:'门诊',DISCHARGE:'住院与出院',CHECKUP:'体检检后'}[data.kind])+'演示旅程并确认交接。');return
+ }
+ if(action==='feedback'){
+  requireThat(live()&&state.entry==='VERIFIED'&&state.journey,'当前没有可提交反馈的服务');requireThat(kinds[data.kind]&&data.content?.trim(),'请选择反馈类型并填写内容');
+  requireThat(data.content.length<=2000,'反馈不超过 2000 字');state.feedback.push({id:state.feedback.length+1,kind:data.kind,content:data.content.trim(),status:'OPEN',resolution:''});log('收到患者'+kinds[data.kind]+'，已进入'+(data.kind==='CLINICAL'?'责任医生':'服务负责人')+'队列。');return
+ }
+ if(action==='phase'){
+  requireThat(operating()&&live()&&state.entry==='VERIFIED'&&state.journey,'当前无法切换旅程预览');
+  requireThat([0,1,2].includes(Number(data.phase)),'请选择服务阶段');state.journey.phase=Number(data.phase);log('仅预览：切换患者所见阶段摘要，不代表正式业务节点已完成。');return
+ }
+ if(['accept','resolve','close'].includes(action)){
+  const item=state.feedback.find(f=>f.id===Number(data.id));requireThat(item,'未找到反馈');
+  // Already-open work remains accessible to staff after consent withdrawal.
+  const assigned=item.kind==='CLINICAL'?role==='DOCTOR':operating();
+  if(action==='accept'){requireThat(assigned&&item.status==='OPEN','仅当前办理人可受理');item.status='ACCEPTED'}
+  if(action==='resolve'){requireThat(assigned&&item.status==='ACCEPTED','请由办理人先受理');requireThat(data.resolution?.trim(),'请填写内部处理记录');item.resolution=data.resolution.trim();item.status='RESOLVED'}
+  if(action==='close'){requireThat(operating()&&item.status==='RESOLVED','由服务负责人确认闭环');requireThat(data.confirmed==='on','请确认已完成实际跟进');item.status='CLOSED'}
+  log('反馈 #'+item.id+'：'+names[item.status]+'（'+(role==='DOCTOR'?'责任医生':'服务负责人')+'）。');return
+ }
+ throw new Error('未知操作');
+}
+function intake(){
+ const s=state,r=s.registration,status=s.withdrawn?'授权已撤回':s.expired?'入口已到期':names[s.entry];
+ let html='<section class="card"><div class="card-head"><div class="person"><div class="avatar">甲</div><div><h3>虚构联系人甲</h3><small>博瑞康企微 · 来源：心血管科服务渠道</small></div></div>'+badge(status,s.expired||s.withdrawn?'stop':s.entry==='REGISTERED'?'warm':'')+'</div>';
+ html+='<dl class="facts"><div><dt>患者档案</dt><dd>'+(s.entry==='VERIFIED'?'P-DEMO-001 · 已人工绑定':'待核实，尚未绑定')+'</dd></div><div><dt>负责团队</dt><dd>服务负责人 / 责任医生</dd></div><div><dt>企微所属企业</dt><dd>博瑞康</dd></div><div><dt>患者所属医院</dt><dd>江阴人民医院 · 心血管科</dd></div></dl>';
+ const active=['NONE','ISSUED','REGISTERED','VERIFIED'].indexOf(s.entry);
+ html+='<ol class="steps">'+['企微联系','患者登记','人工核实','进入服务'].map((x,i)=>'<li class="'+(i<active?'done':i===active?'active':'')+'"><b>'+String(i+1).padStart(2,'0')+'</b>'+x+'</li>').join('')+'</ol>';
+ if(s.entry==='NONE')html+='<div class="notice">先签发专属入口，再由患者在右侧手机页面登记；姓名和手机号不会触发自动合并。</div>';
+ if(r)html+='<div class="divider"></div><h3>患者登记信息</h3><dl class="facts"><div><dt>患者姓名</dt><dd>'+esc(r.name)+'</dd></div><div><dt>联系人手机号</dt><dd>'+esc(r.phone.slice(0,3)+'****'+r.phone.slice(-4))+'</dd></div><div><dt>办理关系</dt><dd>'+(r.relation==='FAMILY'?'家属代办 · 需核实患者授权':'患者本人')+'</dd></div><div><dt>服务需求</dt><dd>'+(r.phase==='FULL'?'全程协助':'诊后随访')+'</dd></div></dl><small>已确认授权版本：'+esc(r.consent)+'</small>';
+ if(operating())html+='<div class="actions">'+btn(s.entry==='NONE'?'签发患者 H5 入口':'重新签发入口','issue','primary',s.withdrawn)+(live()?btn('撤销入口','revoke','danger'):'')+'</div>';
+ else html+='<div class="notice">责任医生通过“反馈工单”办理临床问题；入口核实由运营或护士执行。</div>';
+ if(s.generation)html+='<p class="step-note">演示入口 #'+s.generation+' · 有效期 7 天 · 此页不生成真实链接或发送消息</p>';
+ html+='</section>';
+ if(s.entry==='REGISTERED'&&live()&&operating())html+='<section class="card"><h3>核实身份并绑定档案</h3><p class="step-note">本演示绑定已有的虚构患者档案 P-DEMO-001。</p><form data-form="verify"><label class="check"><input type="checkbox" name="identity" required>已核对身份与患者档案匹配</label><label class="check"><input type="checkbox" name="authorization" required>已核实患者档案有有效服务授权，并确认负责人及责任医生</label>'+(r.relation==='FAMILY'?'<label class="check"><input type="checkbox" name="family" required>已核实家属代办权限和患者授权</label>':'')+'<label class="field">核实依据（仅内部可见）<textarea name="evidence" maxlength="500" placeholder="请填写虚构核实依据" required></textarea></label><div class="actions"><button class="primary">确认核实并绑定</button></div></form></section>';
+ if(s.entry==='VERIFIED'&&live())html+='<section class="card"><h3>身份核实完成</h3><p class="step-note">下一步建立本次门诊、住院或体检服务旅程。</p><button data-tab="journey" class="primary">进入服务旅程 →</button></section>';
+ return html;
+}
+function journey(){
+ if(!live()||state.entry!=='VERIFIED')return '<section class="card"><div class="empty"><b>先完成患者入组核实</b>有效授权和档案绑定完成后，才能建立本次旅程。</div></section>';
+ if(!state.journey)return '<section class="card"><h3>建立本次服务旅程</h3><p class="step-note">登记和绑定完成后，由团队明确本次就诊事件并交接服务。</p>'+(operating()?'<form data-form="journey"><label class="field">服务类型<select name="kind"><option value="OUTPATIENT">门诊服务</option><option value="DISCHARGE">住院与出院服务</option><option value="CHECKUP">体检检后服务</option></select></label><label class="check"><input name="handoff" type="checkbox" required>本服务负责人已确认接单与交接（虚构演示）</label><button class="primary">建立演示旅程</button></form>':'<div class="notice">等待服务负责人建立旅程。</div>')+'</section>';
+ const phases=['诊前','诊中','诊后'];return '<section class="card"><div class="card-head"><h3>'+({OUTPATIENT:'门诊服务',DISCHARGE:'住院与出院服务',CHECKUP:'体检检后服务'}[state.journey.kind])+' · J-DEMO-001</h3>'+badge('服务中')+'</div><div class="route">'+phases.map((p,i)=>'<div class="'+(state.journey.phase===i?'current':'')+'"><small>0'+(i+1)+'</small><b>'+p+'</b><p>'+['入组核实与就诊准备','到院协助与医生核对','随访、复诊与反馈'][i]+'</p></div>').join('')+'</div><div class="notice">查看本次患者的服务阶段，进入个案工作区办理计划、随访与结案。</div>'+(operating()?'<div class="actions">'+phases.map((p,i)=>'<button data-phase="'+i+'" '+(state.journey.phase===i?'disabled':'')+'>预览'+p+'</button>').join('')+'</div>':'')+'<div class="actions"><a href="../admin/index.html#/after-care">进入诊后个案工作区 ↗</a></div><p class="step-note">既有原型使用独立演示记录；本页记录不会传递。</p></section>';
+}
+function tickets(){
+ if(!state.feedback.length)return '<section class="card"><div class="empty"><b>暂无患者反馈</b>完成核实并建立旅程后，可在右侧提交一条虚构反馈。</div></section>';
+ return '<section class="card"><h3 style="margin-bottom:20px">患者反馈工单</h3>'+state.feedback.map(f=>{
+  const assigned=f.kind==='CLINICAL'?role==='DOCTOR':operating();
+  let html='<article class="ticket"><div class="ticket-top"><b>#'+f.id+' · '+kinds[f.kind]+'</b>'+badge(names[f.status],f.status==='OPEN'?'warm':'')+'</div><p>'+esc(f.content)+'</p><small>办理人：'+(f.kind==='CLINICAL'?'责任医生':'服务负责人')+' · 来源：患者 H5</small>';
+  if(f.status==='OPEN'&&assigned)html+='<div class="actions"><button class="primary" data-ticket="accept" data-id="'+f.id+'">受理反馈</button></div>';
+  if(f.status==='ACCEPTED'&&assigned)html+='<form data-form="resolve"><input type="hidden" name="id" value="'+f.id+'"><label class="field">内部处理记录<textarea name="resolution" required maxlength="1000" placeholder="填写虚构处理过程，不自动向患者发送"></textarea></label><div class="actions"><button class="primary">记录处理结果</button></div></form>';
+  if(f.resolution)html+='<div class="notice">内部处理记录：'+esc(f.resolution)+'</div>';
+  if(f.status==='RESOLVED'&&operating())html+='<form data-form="close"><input type="hidden" name="id" value="'+f.id+'"><label class="check"><input name="confirmed" type="checkbox" required>已跟进并确认本次反馈闭环</label><button class="primary">确认结案</button></form>';
+  if(f.kind==='CLINICAL'&&!assigned&&['OPEN','ACCEPTED'].includes(f.status))html+='<p class="step-note">等待责任医生本人受理或处置，可在上方切换演示角色。</p>';
+  return html+'</article>';
+ }).join('')+'</section>';
+}
+function patient(){
+ if(state.entry==='NONE')return '<div class="card"><h3>欢迎来到患者服务</h3><p style="margin-top:10px">添加博瑞康企微服务人员后，团队将发送您的专属登记入口。</p><div class="notice">演示第一步：在工作台点击“签发患者 H5 入口”。</div></div>';
+ if(!live())return '<div class="card"><h3>'+(state.withdrawn?'服务授权已撤回':'此入口暂不可用')+'</h3><p style="margin-top:10px">'+(state.withdrawn?'当前无法查看或提交服务信息。':state.expired?'链接已到期，请通过博瑞康企微联系服务团队。':'入口已撤销，请通过博瑞康企微联系服务团队。')+'</p></div>';
+ if(state.entry==='ISSUED')return '<section class="card"><h3>登记服务信息</h3><p class="step-note">请仅填写虚构信息体验。</p><form data-form="register"><label class="field">患者姓名<input name="name" maxlength="80" value="虚构患者甲" required></label><label class="field">联系人手机号<input name="phone" inputmode="tel" pattern="1[3-9][0-9]{9}" maxlength="11" value="13800000000" required></label><label class="field">您与患者的关系<select name="relation"><option value="SELF">患者本人</option><option value="FAMILY">家属代办（需核实授权）</option></select></label><label class="field">当前服务需求<select name="phase"><option value="FULL">诊前或住院中 · 全程协助</option><option value="AFTER_CARE">门诊结束或出院后 · 随访服务</option></select></label><details class="consent" open><summary>服务授权说明</summary><p>同意博瑞康服务团队及就诊医院为身份核实、就医协助和随访使用本次信息，并通过博瑞康企业微信联系。家属代办需进一步核实患者授权。本次登记不替代诊疗授权，可联系团队撤回。</p><p>AI 可辅助起草，临床建议由责任医生审核后人工提供。</p><small>版本：patient-service-2.1-brk</small></details><label class="check"><input type="checkbox" name="consent" required>我已阅读并同意服务授权说明</label><button class="primary">提交登记</button></form></section>';
+ if(state.entry==='REGISTERED')return '<section class="card">'+badge('等待团队核实','warm')+'<h3 style="margin-top:12px">登记已收到</h3><p style="margin-top:8px">团队将核实身份'+(state.registration.relation==='FAMILY'?'及家属代办授权':'与服务授权')+'，完成后为您开放服务。</p><div class="notice">可通过博瑞康企微联系您的服务人员。</div></section>';
+ let html='<section class="card"><div class="card-head"><h3>'+esc(state.registration.name)+'</h3>'+badge('已入组')+'</div><p>江阴人民医院 · 心血管科</p></section>';
+ if(!state.journey)return html+'<div class="card"><h3>团队正在安排服务</h3><p style="margin-top:8px">本次服务旅程建立后，将在这里显示阶段与进度。</p></div>';
+ html+='<section class="card"><div class="card-head"><h3>我的服务旅程</h3>'+badge(['诊前','诊中','诊后'][state.journey.phase])+'</div><p>'+({OUTPATIENT:'门诊服务',DISCHARGE:'住院与出院服务',CHECKUP:'体检检后服务'}[state.journey.kind])+'</p><p class="muted" style="margin-top:7px">'+['就诊准备与服务协助','到院与院内服务协助','随访与复诊持续跟进'][state.journey.phase]+'</p><small>本次服务 J-DEMO-001</small></section><section class="card"><h3>联系服务团队</h3><form data-form="feedback"><label class="field">本次服务<select name="journey"><option>J-DEMO-001 · 本次服务</option></select></label><label class="field">反馈类型<select name="kind">'+Object.entries(kinds).map(([v,t])=>'<option value="'+v+'">'+t+'</option>').join('')+'</select></label><label class="field">您的问题<textarea name="content" required maxlength="2000" placeholder="输入虚构咨询或随访反馈"></textarea></label><button class="primary" style="margin-top:14px">提交给服务团队</button></form><p class="consent">提交后由人工受理，不自动给出诊断或治疗建议。</p></section>';
+ if(state.feedback.length)html+='<section class="card"><h3 style="margin-bottom:14px">反馈进度</h3>'+state.feedback.slice().reverse().map(f=>'<article class="ticket"><div class="ticket-top"><small>'+kinds[f.kind]+'</small>'+badge(names[f.status])+'</div><p>'+esc(f.content)+'</p></article>').join('')+'</section>';
+ return html;
+}
+function render(){
+ $('role').value=role;
+ $('tabs').innerHTML=[['intake','入组核实',state.entry==='REGISTERED'?1:0],['journey','服务旅程',state.journey?1:0],['tickets','反馈工单',state.feedback.filter(f=>f.status!=='CLOSED').length]].map(([id,title,n])=>'<button role="tab" aria-selected="'+(tab===id)+'" data-tab="'+id+'">'+title+(n?'<span class="count">'+n+'</span>':'')+'</button>').join('');
+ $('staff-content').innerHTML=tab==='intake'?intake():tab==='journey'?journey():tickets();
+ $('patient-content').innerHTML=patient();
+ $('history').innerHTML=state.history.map(h=>'<li><time>'+esc(h.time)+'</time><span>'+esc(h.text)+'</span></li>').join('');
+}
+function act(action,data){try{transition(action,data);if(action==='register')tab='intake';if(action==='feedback')tab='tickets';render();tell({issue:'演示入口已签发，请在患者端登记',register:'登记已提交，等待人工核实',verify:'身份核实与档案绑定已完成',feedback:'反馈已进入对应办理队列',reset:'已重置全部虚构记录'}[action]||'演示状态已更新')}catch(e){tell(e.message)}}
+document.addEventListener('click',event=>{const b=event.target.closest('button');if(!b)return;if(b.dataset.tab){tab=b.dataset.tab;render()}else if(b.dataset.action){if(['reset','issue','revoke','withdraw'].includes(b.dataset.action)&&!(b.dataset.action==='issue'&&state.entry==='NONE')&&!window.confirm({reset:'清空全部虚构记录，重新体验？',issue:'重新签发将使旧入口失效，需要重新登记核实。继续？',revoke:'撤销后患者无法使用当前入口，继续？',withdraw:'模拟患者撤回授权，立即阻断患者业务访问。继续？'}[b.dataset.action]))return;act(b.dataset.action)}else if(b.dataset.ticket)act(b.dataset.ticket,{id:b.dataset.id});else if(b.dataset.phase!==undefined)act('phase',{phase:b.dataset.phase});else if(b.id==='view-toggle'){document.body.classList.toggle('patient-only');b.textContent=document.body.classList.contains('patient-only')?'返回双端预览':'只看患者端'}});
+document.addEventListener('submit',event=>{const form=event.target;if(!form.dataset.form)return;event.preventDefault();if(form.reportValidity())act(form.dataset.form,Object.fromEntries(new FormData(form)))});
+$('role').addEventListener('change',event=>{role=event.target.value;render()});
+render();
+</script>
+</body>
+</html>
